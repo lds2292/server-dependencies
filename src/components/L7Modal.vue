@@ -5,13 +5,9 @@
       <form @submit.prevent="onSubmit">
         <label>
           이름 *
-          <input v-model="form.name" required placeholder="예: api-lb-prod" />
+          <input v-model="form.name" required placeholder="예: api-lb-prod" :class="{ 'input-error': isDuplicate }" />
+          <span v-if="isDuplicate" class="error-msg">이미 사용 중인 이름입니다</span>
         </label>
-        <label>
-          환경 *
-          <CustomSelect v-model="form.environment" :options="envOptions" />
-        </label>
-
         <label>
           IP 주소
           <input v-model="form.ip" placeholder="예: 10.0.0.10" />
@@ -29,7 +25,6 @@
               :value="server.id"
               v-model="form.memberServerIds"
             />
-            <span class="env-badge" :class="server.environment">{{ envLabel(server.environment) }}</span>
             <span class="check-name">{{ server.name }}</span>
             <span v-if="server.team" class="check-team">{{ server.team }}</span>
           </label>
@@ -44,7 +39,7 @@
 
         <div class="actions">
           <button type="button" class="btn-secondary" @click="$emit('close')">취소</button>
-          <button type="submit" class="btn-primary" :disabled="!form.name.trim()">
+          <button type="submit" class="btn-primary" :disabled="!form.name.trim() || isDuplicate">
             {{ isEdit ? '저장' : '추가' }}
           </button>
         </div>
@@ -55,25 +50,12 @@
 
 <script setup lang="ts">
 import { reactive, computed } from 'vue'
-import type { Server, L7Node, Environment } from '../types'
-import CustomSelect from './CustomSelect.vue'
-
-const ENV_LABELS: Record<string, string> = {
-  prod: 'Production',
-  staging: 'Staging',
-  dev: 'Develop',
-}
-function envLabel(env: string) { return ENV_LABELS[env] ?? env }
-
-const envOptions = [
-  { value: 'prod', label: 'Production' },
-  { value: 'staging', label: 'Staging' },
-  { value: 'dev', label: 'Develop' },
-]
+import type { Server, L7Node } from '../types'
 
 const props = defineProps<{
   node?: L7Node | null
   servers: Server[]
+  takenNames: Set<string>
 }>()
 
 const emit = defineEmits<{
@@ -82,10 +64,15 @@ const emit = defineEmits<{
 }>()
 
 const isEdit = computed(() => !!props.node)
+const isDuplicate = computed(() => {
+  const trimmed = form.name.trim()
+  if (!trimmed) return false
+  if (props.node?.name === trimmed) return false
+  return props.takenNames.has(trimmed)
+})
 
-const form = reactive<{ name: string; environment: Environment; ip: string; memberServerIds: string[]; description: string }>({
+const form = reactive<{ name: string; ip: string; memberServerIds: string[]; description: string }>({
   name: props.node?.name ?? '',
-  environment: props.node?.environment ?? 'prod',
   ip: props.node?.ip ?? '',
   memberServerIds: [...(props.node?.memberServerIds ?? [])],
   description: props.node?.description ?? '',
@@ -96,7 +83,6 @@ function onSubmit() {
   emit('submit', {
     nodeKind: 'l7',
     name: form.name.trim(),
-    environment: form.environment,
     ip: form.ip,
     memberServerIds: form.memberServerIds,
     description: form.description,
@@ -126,6 +112,8 @@ input, textarea {
   font-size: 13px; outline: none;
 }
 input:focus, textarea:focus { border-color: #7c3aed; }
+.input-error { border-color: #ef4444 !important; }
+.error-msg { color: #ef4444; font-size: 11px; font-weight: 500; }
 .section-label {
   font-size: 12px; font-weight: 600; color: #94a3b8;
 }
@@ -149,13 +137,6 @@ input:focus, textarea:focus { border-color: #7c3aed; }
 }
 .check-name { flex: 1; }
 .check-team { font-size: 11px; color: #475569; }
-.env-badge {
-  font-size: 10px; padding: 1px 5px; border-radius: 3px;
-  font-weight: 700; flex-shrink: 0;
-}
-.env-badge.prod { background: #1d4ed8; color: #bfdbfe; }
-.env-badge.staging { background: #b45309; color: #fef3c7; }
-.env-badge.dev { background: #065f46; color: #a7f3d0; }
 .empty-list { padding: 10px 12px; color: #475569; font-size: 12px; margin: 0; }
 .selected-count { font-size: 11px; color: #7c3aed; margin: -6px 0; }
 .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }

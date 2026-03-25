@@ -24,14 +24,6 @@
       <div class="toolbar">
         <span class="app-title">Server Dependencies</span>
         <div class="toolbar-right">
-          <div class="env-filters">
-            <button
-              v-for="env in envList"
-              :key="env.value"
-              :class="['env-filter', env.value, { active: selectedEnvs.includes(env.value) }]"
-              @click="toggleEnv(env.value)"
-            >{{ env.label }}</button>
-          </div>
           <button
             :class="['btn-readonly', { active: readOnly }]"
             @click="readOnly = !readOnly"
@@ -40,7 +32,8 @@
       </div>
       <div class="graph-wrap">
         <GraphCanvas
-          :nodes="allFilteredNodes"
+          ref="graphCanvasRef"
+          :nodes="allNodes"
           :links="filteredLinks"
           :impacted-nodes="impactedNodeIds"
           :impacted-links="impactedLinkIds"
@@ -73,6 +66,7 @@
       v-if="serverModal.visible"
       :server="serverModal.editing"
       :teams="existingTeams"
+      :taken-names="allNodeNames"
       @close="serverModal.visible = false"
       @submit="onServerModalSubmit"
     />
@@ -80,18 +74,21 @@
       v-if="l7Modal.visible"
       :node="l7Modal.editing"
       :servers="store.servers"
+      :taken-names="allNodeNames"
       @close="l7Modal.visible = false"
       @submit="onL7ModalSubmit"
     />
     <DBModal
       v-if="dbModal.visible"
       :node="dbModal.editing"
+      :taken-names="allNodeNames"
       @close="dbModal.visible = false"
       @submit="onDBModalSubmit"
     />
     <ExternalServiceModal
       v-if="externalModal.visible"
       :node="externalModal.editing"
+      :taken-names="allNodeNames"
       @close="externalModal.visible = false"
       @submit="onExternalModalSubmit"
     />
@@ -117,36 +114,15 @@ import DBModal from './components/DBModal.vue'
 import ExternalServiceModal from './components/ExternalServiceModal.vue'
 import DependencyModal from './components/DependencyModal.vue'
 import ImpactPanel from './components/ImpactPanel.vue'
-import type { Server, L7Node, DBNode, ExternalServiceNode, AnyNode, Dependency, D3Link, Environment } from './types'
+import type { Server, L7Node, DBNode, ExternalServiceNode, AnyNode, Dependency, D3Link } from './types'
 
 const store = useGraphStore()
 const selectedNode = ref<AnyNode | null>(null)
 const readOnly = ref(false)
+const graphCanvasRef = ref<InstanceType<typeof GraphCanvas> | null>(null)
 
-const envList = [
-  { value: 'prod' as Environment, label: 'Production' },
-  { value: 'staging' as Environment, label: 'Staging' },
-  { value: 'dev' as Environment, label: 'Develop' },
-]
-const selectedEnvs = ref<Environment[]>(['prod'])
-
-function toggleEnv(env: Environment) {
-  const idx = selectedEnvs.value.indexOf(env)
-  if (idx === -1) selectedEnvs.value = [...selectedEnvs.value, env]
-  else selectedEnvs.value = selectedEnvs.value.filter(e => e !== env)
-}
-
-// 전체 노드 (ID 조회용)
 const allNodes = computed<AnyNode[]>(() => [
   ...store.servers, ...store.l7Nodes, ...store.dbNodes, ...store.externalNodes,
-])
-
-// 환경 필터링된 노드
-const allFilteredNodes = computed<AnyNode[]>(() => [
-  ...store.servers.filter(s => selectedEnvs.value.includes(s.environment)),
-  ...store.l7Nodes.filter(n => selectedEnvs.value.includes(n.environment)),
-  ...store.dbNodes.filter(n => selectedEnvs.value.includes(n.environment)),
-  ...store.externalNodes.filter(n => selectedEnvs.value.includes(n.environment)),
 ])
 
 const d3Links = computed<D3Link[]>(() =>
@@ -154,7 +130,7 @@ const d3Links = computed<D3Link[]>(() =>
 )
 
 const filteredLinks = computed<D3Link[]>(() => {
-  const ids = new Set(allFilteredNodes.value.map(n => n.id))
+  const ids = new Set(allNodes.value.map(n => n.id))
   return d3Links.value.filter(l => ids.has(l.source as string) && ids.has(l.target as string))
 })
 
@@ -169,6 +145,13 @@ const impactedLinkIds = computed(() => {
 })
 
 const existingTeams = computed(() => [...new Set(store.servers.map(s => s.team).filter(Boolean))])
+
+const allNodeNames = computed(() => new Set([
+  ...store.servers.map(s => s.name),
+  ...store.l7Nodes.map(n => n.name),
+  ...store.dbNodes.map(n => n.name),
+  ...store.externalNodes.map(n => n.name),
+]))
 
 function onSelectNode(node: AnyNode) {
   selectedNode.value = selectedNode.value?.id === node.id ? null : node
@@ -252,15 +235,6 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
 }
 .app-title { font-size: 15px; font-weight: 700; color: #f1f5f9; letter-spacing: 0.02em; }
 .toolbar-right { display: flex; align-items: center; gap: 10px; }
-.env-filters { display: flex; gap: 5px; }
-.env-filter {
-  font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 4px;
-  border: 1px solid transparent; cursor: pointer; opacity: 0.35; transition: opacity 0.15s;
-}
-.env-filter.active { opacity: 1; }
-.env-filter.prod { background: #1d4ed8; color: #bfdbfe; border-color: #1d4ed8; }
-.env-filter.staging { background: #b45309; color: #fef3c7; border-color: #b45309; }
-.env-filter.dev { background: #065f46; color: #a7f3d0; border-color: #065f46; }
 .btn-readonly {
   font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
   border: 1px solid #334155; background: #1e293b; color: #94a3b8;

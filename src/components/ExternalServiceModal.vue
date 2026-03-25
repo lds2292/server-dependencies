@@ -3,12 +3,22 @@
     <div class="modal">
       <h3>{{ isEdit ? '외부서비스 수정' : '외부서비스 추가' }}</h3>
       <form @submit.prevent="onSubmit">
-        <label>서비스명 *<input v-model="form.name" required placeholder="예: Stripe API" /></label>
-        <label>환경 *<CustomSelect v-model="form.environment" :options="envOptions" /></label>
-
+        <label>
+          서비스명 *
+          <input v-model="form.name" required placeholder="예: Stripe API" :class="{ 'input-error': isDuplicate }" />
+          <span v-if="isDuplicate" class="error-msg">이미 사용 중인 이름입니다</span>
+        </label>
         <label class="checkbox-label">
           <input type="checkbox" v-model="form.hasFirewall" />
           방화벽 오픈 필요
+        </label>
+        <label v-if="form.hasFirewall">
+          방화벽 오픈요청 URL
+          <input
+            v-model="form.firewallUrl"
+            type="url"
+            placeholder="https://firewall.example.com/request/..."
+          />
         </label>
         <label class="checkbox-label">
           <input type="checkbox" v-model="form.hasWhitelist" />
@@ -36,7 +46,7 @@
 
         <div class="actions">
           <button type="button" class="btn-secondary" @click="$emit('close')">취소</button>
-          <button type="submit" class="btn-primary" :disabled="!form.name.trim()">{{ isEdit ? '저장' : '추가' }}</button>
+          <button type="submit" class="btn-primary" :disabled="!form.name.trim() || isDuplicate">{{ isEdit ? '저장' : '추가' }}</button>
         </div>
       </form>
     </div>
@@ -45,27 +55,26 @@
 
 <script setup lang="ts">
 import { reactive, computed } from 'vue'
-import type { ExternalServiceNode, ExternalContact, Environment } from '../types'
-import CustomSelect from './CustomSelect.vue'
+import type { ExternalServiceNode, ExternalContact } from '../types'
 
-const envOptions = [
-  { value: 'prod', label: 'Production' },
-  { value: 'staging', label: 'Staging' },
-  { value: 'dev', label: 'Develop' },
-]
-
-const props = defineProps<{ node?: ExternalServiceNode | null }>()
+const props = defineProps<{ node?: ExternalServiceNode | null; takenNames: Set<string> }>()
 const emit = defineEmits<{ close: []; submit: [data: Omit<ExternalServiceNode, 'id'>] }>()
 const isEdit = computed(() => !!props.node)
+const isDuplicate = computed(() => {
+  const trimmed = form.name.trim()
+  if (!trimmed) return false
+  if (props.node?.name === trimmed) return false
+  return props.takenNames.has(trimmed)
+})
 
 const form = reactive<{
-  name: string; environment: Environment
-  hasFirewall: boolean; hasWhitelist: boolean
+  name: string
+  hasFirewall: boolean; firewallUrl: string; hasWhitelist: boolean
   contacts: ExternalContact[]; description: string
 }>({
   name: props.node?.name ?? '',
-  environment: props.node?.environment ?? 'prod',
   hasFirewall: props.node?.hasFirewall ?? false,
+  firewallUrl: props.node?.firewallUrl ?? '',
   hasWhitelist: props.node?.hasWhitelist ?? false,
   contacts: props.node?.contacts ? props.node.contacts.map(c => ({ ...c })) : [],
   description: props.node?.description ?? '',
@@ -83,8 +92,8 @@ function onSubmit() {
   emit('submit', {
     nodeKind: 'external',
     name: form.name.trim(),
-    environment: form.environment,
     hasFirewall: form.hasFirewall,
+    firewallUrl: form.hasFirewall ? form.firewallUrl : '',
     hasWhitelist: form.hasWhitelist,
     contacts: form.contacts.filter(c => c.name.trim()),
     description: form.description,
@@ -100,6 +109,8 @@ form { display:flex;flex-direction:column;gap:14px; }
 label { display:flex;flex-direction:column;gap:5px;font-size:12px;color:#94a3b8;font-weight:600; }
 input,textarea { background:#0f172a;border:1px solid #334155;border-radius:6px;padding:8px 10px;color:#e2e8f0;font-size:13px;outline:none; }
 input:focus,textarea:focus { border-color:#16a34a; }
+.input-error { border-color:#ef4444!important; }
+.error-msg { color:#ef4444;font-size:11px;font-weight:500; }
 .checkbox-label { flex-direction:row!important;align-items:center;gap:8px;cursor:pointer; }
 .checkbox-label input[type="checkbox"] { width:15px;height:15px;padding:0;cursor:pointer;accent-color:#16a34a;flex-shrink:0; }
 .section-row { display:flex;align-items:center;justify-content:space-between; }

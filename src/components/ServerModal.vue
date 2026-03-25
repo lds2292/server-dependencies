@@ -5,14 +5,8 @@
       <form @submit.prevent="onSubmit">
         <label>
           이름 *
-          <input v-model="form.name" required placeholder="예: auth-service" />
-        </label>
-        <label>
-          환경 *
-          <CustomSelect
-            v-model="form.environment"
-            :options="envOptions"
-          />
+          <input v-model="form.name" required placeholder="예: auth-service" :class="{ 'input-error': isDuplicate }" />
+          <span v-if="isDuplicate" class="error-msg">이미 사용 중인 이름입니다</span>
         </label>
         <label>
           팀
@@ -48,7 +42,7 @@
         </label>
         <div class="actions">
           <button type="button" class="btn-secondary" @click="$emit('close')">취소</button>
-          <button type="submit" class="btn-primary">{{ isEdit ? '저장' : '추가' }}</button>
+          <button type="submit" class="btn-primary" :disabled="isDuplicate">{{ isEdit ? '저장' : '추가' }}</button>
         </div>
       </form>
     </div>
@@ -58,19 +52,15 @@
 <script setup lang="ts">
 import { reactive, computed } from 'vue'
 import type { Server } from '../types'
-import IpInput from './IpInput.vue'
-import CustomSelect from './CustomSelect.vue'
-import CustomCombobox from './CustomCombobox.vue'
 
-const envOptions = [
-  { value: 'prod', label: 'Production' },
-  { value: 'staging', label: 'Staging' },
-  { value: 'dev', label: 'Develop' },
-]
+
+import IpInput from './IpInput.vue'
+import CustomCombobox from './CustomCombobox.vue'
 
 const props = defineProps<{
   server?: Server | null
   teams: string[]
+  takenNames: Set<string>
 }>()
 
 const emit = defineEmits<{
@@ -79,10 +69,15 @@ const emit = defineEmits<{
 }>()
 
 const isEdit = computed(() => !!props.server)
+const isDuplicate = computed(() => {
+  const trimmed = form.name.trim()
+  if (!trimmed) return false
+  if (props.server?.name === trimmed) return false
+  return props.takenNames.has(trimmed)
+})
 
 const form = reactive<Omit<Server, 'id'>>({
   name: props.server?.name ?? '',
-  environment: props.server?.environment ?? 'prod',
   team: props.server?.team ?? '',
   internalIp: props.server?.internalIp ?? '',
   natIp: props.server?.natIp ?? '',
@@ -141,6 +136,8 @@ input, select, textarea {
   outline: none;
 }
 input:focus, select:focus, textarea:focus { border-color: #3b82f6; }
+.input-error { border-color: #ef4444 !important; }
+.error-msg { color: #ef4444; font-size: 11px; font-weight: 500; }
 .checkbox-label {
   flex-direction: row;
   align-items: center;

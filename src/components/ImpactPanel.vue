@@ -36,7 +36,10 @@
 
         <!-- 외부서비스 전용 -->
         <template v-else-if="selectedNode.nodeKind === 'external'">
-          <p v-if="(selectedNode as any).hasFirewall" class="detail-firewall">🔒 방화벽 오픈 필요</p>
+          <p v-if="(selectedNode as any).hasFirewall" class="detail-firewall">
+            🔒 방화벽 오픈 필요
+            <a v-if="(selectedNode as any).firewallUrl" :href="(selectedNode as any).firewallUrl" target="_blank" class="fw-link">요청 링크</a>
+          </p>
           <p v-if="(selectedNode as any).hasWhitelist" class="detail-firewall">📋 화이트리스트 요청 필요</p>
         </template>
 

@@ -15,8 +15,26 @@
         >
           <path d="M0,-5L10,0L0,5" :fill="m.fill" />
         </marker>
+        <!-- 그리드 패턴 -->
+        <pattern id="grid-minor" width="50" height="50" patternUnits="userSpaceOnUse">
+          <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(255,255,255,0.035)" stroke-width="0.5"/>
+        </pattern>
+        <pattern id="grid-major" width="250" height="250" patternUnits="userSpaceOnUse">
+          <rect width="250" height="250" fill="url(#grid-minor)"/>
+          <path d="M 250 0 L 0 0 0 250" fill="none" stroke="rgba(255,255,255,0.09)" stroke-width="1"/>
+        </pattern>
       </defs>
       <g ref="gRef">
+        <!-- 그리드 배경 -->
+        <rect v-if="showGrid" x="-50000" y="-50000" width="100000" height="100000" fill="url(#grid-major)" pointer-events="none"/>
+
+        <!-- 중심점 마커 -->
+        <g v-if="showGrid" pointer-events="none" opacity="0.55">
+          <line x1="-40" y1="0" x2="40" y2="0" stroke="#60a5fa" stroke-width="1.2"/>
+          <line x1="0" y1="-40" x2="0" y2="40" stroke="#60a5fa" stroke-width="1.2"/>
+          <circle cx="0" cy="0" r="4" fill="none" stroke="#60a5fa" stroke-width="1.2"/>
+        </g>
+
         <!-- L7 멤버 연결선 (의존성 라인보다 먼저 렌더링) -->
         <line
           v-for="ml in l7MemberLines"
@@ -68,15 +86,19 @@
           @click.stop="onNodeClick(node)"
           @contextmenu.prevent="onNodeContextMenu($event, node)"
         >
+          <title>{{ node.name }}</title>
           <rect
-            x="-65" y="-28" width="130" height="56" rx="6"
+            x="-86" y="-37" width="172" height="74" rx="6"
             :fill="nodeColor(node)"
             :stroke="nodeStroke(node)"
             :stroke-width="isHighlighted(node) ? 3 : 1.5"
           />
 
-          <!-- 타입 아이콘 (좌측 상단) -->
-          <g :transform="`translate(-58,-22)`" opacity="0.8" pointer-events="none">
+          <!-- 아이콘/텍스트 구분선 -->
+          <line x1="-60" y1="-31" x2="-60" y2="31" stroke="rgba(255,255,255,0.12)" stroke-width="1" pointer-events="none"/>
+
+          <!-- 타입 아이콘 (좌측 컬럼 수직 중앙) -->
+          <g transform="translate(-79,-6)" opacity="0.85" pointer-events="none">
             <!-- Server -->
             <template v-if="!node.nodeKind || node.nodeKind === 'server'">
               <rect x="0" y="0" width="11" height="8" rx="1.5" stroke="white" stroke-width="0.9" fill="none"/>
@@ -108,24 +130,24 @@
             </template>
           </g>
 
-          <!-- 노드 텍스트 -->
-          <text dy="-9" text-anchor="middle" class="node-label">{{ node.name }}</text>
+          <!-- 노드 텍스트 (우측 텍스트 영역 중앙: x=13) -->
+          <text x="13" dy="-9" text-anchor="middle" class="node-label">{{ truncate(node.name) }}</text>
 
           <template v-if="node.nodeKind === 'l7'">
-            <text dy="6" text-anchor="middle" class="node-sub">L7 Load Balancer</text>
-            <text dy="19" text-anchor="middle" class="node-meta">{{ (node as any).ip || '' }}{{ (node as any).ip && (node as any).memberServerIds?.length ? ' · ' : '' }}{{ (node as any).memberServerIds?.length ?? 0 }}개 서버</text>
+            <text x="13" dy="6" text-anchor="middle" class="node-sub">L7 Load Balancer</text>
+            <text x="13" dy="19" text-anchor="middle" class="node-meta">{{ (node as any).ip || '' }}{{ (node as any).ip && (node as any).memberServerIds?.length ? ' · ' : '' }}{{ (node as any).memberServerIds?.length ?? 0 }}개 서버</text>
           </template>
           <template v-else-if="node.nodeKind === 'db'">
-            <text dy="6" text-anchor="middle" class="node-sub">{{ (node as any).dbType || 'Database' }}</text>
-            <text dy="19" text-anchor="middle" class="node-meta">{{ (node as any).host || '-' }}{{ (node as any).port ? ':' + (node as any).port : '' }}</text>
+            <text x="13" dy="6" text-anchor="middle" class="node-sub">{{ (node as any).dbType || 'Database' }}</text>
+            <text x="13" dy="19" text-anchor="middle" class="node-meta">{{ (node as any).host || '-' }}{{ (node as any).port ? ':' + (node as any).port : '' }}</text>
           </template>
           <template v-else-if="node.nodeKind === 'external'">
-            <text dy="6" text-anchor="middle" class="node-sub">외부 서비스</text>
-            <text dy="19" text-anchor="middle" class="node-meta">담당자 {{ (node as any).contacts?.length ?? 0 }}명</text>
+            <text x="13" dy="6" text-anchor="middle" class="node-sub">외부 서비스</text>
+            <text x="13" dy="19" text-anchor="middle" class="node-meta">담당자 {{ (node as any).contacts?.length ?? 0 }}명</text>
           </template>
           <template v-else>
-            <text dy="6" text-anchor="middle" class="node-ip">{{ (node as any).internalIp || '-' }}</text>
-            <text dy="19" text-anchor="middle" class="node-meta">NAT: {{ (node as any).natIp || '-' }}</text>
+            <text x="13" dy="6" text-anchor="middle" class="node-ip">{{ (node as any).internalIp || '-' }}</text>
+            <text x="13" dy="19" text-anchor="middle" class="node-meta">NAT: {{ (node as any).natIp || '-' }}</text>
           </template>
         </g>
 
@@ -145,6 +167,76 @@
         </defs>
       </g>
     </svg>
+
+    <!-- 우측 상단 색상 범주 Legend -->
+    <div class="node-legend">
+      <div class="legend-item">
+        <span class="legend-dot" style="background:#1e3a8a;border-color:#475569"></span>Server
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot" style="background:#3b0764;border-color:#7c3aed"></span>L7
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot" style="background:#0c2040;border-color:#0369a1"></span>DB
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot" style="background:#052e16;border-color:#16a34a"></span>External
+      </div>
+    </div>
+
+    <!-- 왼쪽 상단 노드 트래킹 토글 -->
+    <button
+      class="canvas-btn tracking-btn"
+      :class="{ active: nodeTracking }"
+      @click="nodeTracking = !nodeTracking"
+      :title="nodeTracking ? '노드 트래킹 ON' : '노드 트래킹 OFF'"
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <circle cx="7" cy="7" r="3" stroke="currentColor" stroke-width="1.2"/>
+        <circle cx="7" cy="7" r="1.2" fill="currentColor"/>
+        <line x1="7" y1="0.5" x2="7" y2="3" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="7" y1="11" x2="7" y2="13.5" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="0.5" y1="7" x2="3" y2="7" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="11" y1="7" x2="13.5" y2="7" stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+      트래킹
+    </button>
+
+    <!-- 그리드 토글 버튼 -->
+    <div class="canvas-btns">
+      <button class="canvas-btn" @click="showGrid = !showGrid" :class="{ active: showGrid }" title="그리드 표시/숨김">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M0 4.67h14M0 9.33h14M4.67 0v14M9.33 0v14" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+        Grid
+      </button>
+      <button v-if="showGrid" class="canvas-btn" @click="goToCenter" title="중심으로 이동">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="2.5" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="7" y1="0" x2="7" y2="3.5" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="7" y1="10.5" x2="7" y2="14" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="0" y1="7" x2="3.5" y2="7" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="10.5" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+        중심
+      </button>
+    </div>
+
+    <!-- 하단 우측 줌 컨트롤 -->
+    <div class="zoom-controls">
+      <button class="zoom-btn" @click="changeZoom(-10)">−</button>
+      <input
+        class="zoom-input"
+        type="number"
+        :value="currentZoom"
+        min="50"
+        max="200"
+        @change="onZoomInput"
+        @keydown.enter.prevent="onZoomInput"
+      />
+      <span class="zoom-pct">%</span>
+      <button class="zoom-btn" @click="changeZoom(10)">+</button>
+    </div>
 
     <!-- 하단 힌트 -->
     <div v-if="!readOnly" class="mode-hint">일반 드래그: 노드 이동 &nbsp;|&nbsp; Ctrl + 드래그: 의존성 연결</div>
@@ -201,6 +293,11 @@ const container = ref<HTMLDivElement>()
 const svgRef = ref<SVGSVGElement>()
 const gRef = ref<SVGGElement>()
 
+const showGrid = ref(true)
+const currentZoom = ref(100)
+const nodeTracking = ref(true)
+
+
 const renderedNodes = ref<D3Node[]>([])
 const renderedLinks = ref<D3Link[]>([])
 
@@ -211,6 +308,26 @@ const markerDefs = [
 
 let simulation: d3.Simulation<D3Node, D3Link> | null = null
 let zoomSetup = false
+let zoomBehavior: d3.ZoomBehavior<SVGSVGElement, unknown> | null = null
+
+// ─── 위치 저장/복원 ──────────────────────────────────────
+const POSITION_KEY = 'server-dependencies-positions'
+
+function loadSavedPositions(): Record<string, { x: number; y: number }> {
+  try {
+    const raw = localStorage.getItem(POSITION_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch { /* ignore */ }
+  return {}
+}
+
+function savePositions() {
+  const positions: Record<string, { x: number; y: number }> = {}
+  renderedNodes.value.forEach(n => {
+    if (n.x != null && n.y != null) positions[n.id] = { x: n.x, y: n.y }
+  })
+  localStorage.setItem(POSITION_KEY, JSON.stringify(positions))
+}
 
 // 드래그 상태
 const arrowSource = ref<D3Node | null>(null)
@@ -220,13 +337,17 @@ const connectTarget = ref<D3Node | null>(null)
 // 컨텍스트 메뉴
 const contextMenu = ref({ visible: false, x: 0, y: 0, node: null as AnyNode | null })
 
+// ─── 텍스트 잘라내기 ─────────────────────────────────────
+function truncate(text: string, max = 12): string {
+  return text.length > max ? text.slice(0, max) + '…' : text
+}
+
 // ─── 색상 ───────────────────────────────────────────────
 function nodeColor(node: D3Node): string {
-  const env = (node as any).environment
-  if (node.nodeKind === 'l7') return env === 'prod' ? '#3b0764' : env === 'staging' ? '#4a1942' : '#1e1b4b'
+  if (node.nodeKind === 'l7') return '#3b0764'
   if (node.nodeKind === 'db') return '#0c2040'
   if (node.nodeKind === 'external') return '#052e16'
-  return env === 'prod' ? '#1e3a8a' : env === 'staging' ? '#7c2d12' : '#064e3b'
+  return '#1e3a8a'
 }
 
 function nodeStroke(node: D3Node): string {
@@ -261,7 +382,7 @@ const computedLinks = computed(() => {
     const len = Math.hypot(dx, dy)
     if (len < 1) return { ...link, x1: sx, y1: sy, x2: tx, y2: ty }
     const ux = dx / len, uy = dy / len
-    const hw = 65, hh = 28
+    const hw = 86, hh = 37
     const tEdge = Math.min(
       Math.abs(ux) > 0.001 ? hw / Math.abs(ux) : Infinity,
       Math.abs(uy) > 0.001 ? hh / Math.abs(uy) : Infinity
@@ -308,7 +429,7 @@ function getSvgPoint(event: MouseEvent): { x: number; y: number } {
 function findNodeAt(worldX: number, worldY: number, excludeId: string): D3Node | null {
   return renderedNodes.value.find(n => {
     if (n.id === excludeId) return false
-    return Math.abs(worldX - (n.x ?? 0)) < 65 && Math.abs(worldY - (n.y ?? 0)) < 28
+    return Math.abs(worldX - (n.x ?? 0)) < 86 && Math.abs(worldY - (n.y ?? 0)) < 37
   }) ?? null
 }
 
@@ -317,14 +438,42 @@ function buildSimulation() {
   const width = container.value?.clientWidth ?? 800
   const height = container.value?.clientHeight ?? 600
 
+  const savedPositions = loadSavedPositions()
   const nodeMap = new Map(props.nodes.map(n => [n.id, { ...n } as D3Node]))
-  // 기존 위치 복원
+
+  // 1순위: 인메모리 위치 복원 (같은 세션 내)
   renderedNodes.value.forEach(existing => {
     const n = nodeMap.get(existing.id)
     if (n) { n.x = existing.x; n.y = existing.y; n.fx = existing.fx; n.fy = existing.fy }
   })
 
+  // 2순위: localStorage 저장 위치 (새로고침 후)
+  nodeMap.forEach(n => {
+    if (n.x == null && savedPositions[n.id]) {
+      n.x = savedPositions[n.id].x
+      n.y = savedPositions[n.id].y
+      n.fx = n.x
+      n.fy = n.y
+    }
+  })
+
   const nodes: D3Node[] = Array.from(nodeMap.values())
+
+  // hasNewNodes: 저장 위치도 없는 진짜 신규 노드 여부
+  const hasNewNodes = nodes.some(n => n.x == null)
+
+  // 3순위: 신규 노드는 현재 뷰포트 중심에 배치
+  if (hasNewNodes) {
+    const viewportCenter = (() => {
+      if (!svgRef.value) return { x: width / 2, y: height / 2 }
+      const transform = d3.zoomTransform(svgRef.value)
+      const [cx, cy] = transform.invert([width / 2, height / 2])
+      return { x: cx, y: cy }
+    })()
+    nodes.forEach(n => {
+      if (n.x == null) { n.x = viewportCenter.x; n.y = viewportCenter.y }
+    })
+  }
   const links: D3Link[] = props.links.map(l => ({
     ...l,
     source: nodeMap.get(l.source as string) ?? l.source,
@@ -336,9 +485,6 @@ function buildSimulation() {
 
   simulation?.stop()
 
-  // 신규 노드(위치 없는 것)가 없으면 alpha 낮게 시작 → 기존 노드 흔들림 방지
-  const hasNewNodes = nodes.some(n => n.x == null)
-
   simulation = d3.forceSimulation<D3Node, D3Link>(nodes)
     .alpha(hasNewNodes ? 0.6 : 0.05)
     .alphaDecay(0.04)
@@ -346,7 +492,7 @@ function buildSimulation() {
     .force('link', d3.forceLink<D3Node, D3Link>(links).id(d => d.id).distance(200))
     .force('charge', d3.forceManyBody().strength(-400))
     .force('center', d3.forceCenter(width / 2, height / 2))
-    .force('collision', d3.forceCollide(80))
+    .force('collision', d3.forceCollide(106))
     .on('tick', () => {
       renderedNodes.value = [...nodes]
       renderedLinks.value = [...links]
@@ -358,6 +504,7 @@ function buildSimulation() {
         n.fy = n.y ?? 0
       })
       renderedNodes.value = [...nodes]
+      savePositions()
     })
 }
 
@@ -366,10 +513,23 @@ function setupZoom() {
   zoomSetup = true
   const svg = d3.select(svgRef.value)
   const g = d3.select(gRef.value)
-  svg.call(
-    d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.15, 4])
-      .on('zoom', e => g.attr('transform', e.transform.toString()))
+  zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+    .scaleExtent([0.5, 2])
+    .on('zoom', e => {
+      g.attr('transform', e.transform.toString())
+      currentZoom.value = Math.round(e.transform.k * 100)
+    })
+  svg.call(zoomBehavior)
+}
+
+function goToCenter() {
+  if (!svgRef.value || !zoomBehavior) return
+  const width = container.value?.clientWidth ?? 800
+  const height = container.value?.clientHeight ?? 600
+  const svg = d3.select(svgRef.value)
+  svg.transition().duration(500).call(
+    zoomBehavior.transform,
+    d3.zoomIdentity.translate(width / 2, height / 2)
   )
 }
 
@@ -392,6 +552,7 @@ function startNodeDrag(event: MouseEvent, node: D3Node) {
     window.removeEventListener('mousemove', handleMove)
     window.removeEventListener('mouseup', handleUp)
     simulation?.alphaTarget(0)
+    savePositions()
   }
   window.addEventListener('mousemove', handleMove)
   window.addEventListener('mouseup', handleUp)
@@ -431,6 +592,9 @@ function onNodeMouseDown(event: MouseEvent, node: D3Node) {
 }
 
 watch(() => [props.nodes, props.links], buildSimulation, { deep: true })
+watch(() => props.selectedId, (id) => {
+  if (nodeTracking.value && id) navigateTo(id)
+})
 onMounted(() => { buildSimulation(); setupZoom() })
 onUnmounted(() => simulation?.stop())
 
@@ -449,6 +613,38 @@ function onAddDep() { if (contextMenu.value.node) emit('addDependency', contextM
 function closeContextMenu() { contextMenu.value.visible = false }
 onMounted(() => document.addEventListener('click', closeContextMenu))
 onUnmounted(() => document.removeEventListener('click', closeContextMenu))
+
+// ─── 줌 컨트롤 ──────────────────────────────────────────
+function applyZoom(percent: number) {
+  if (!svgRef.value || !zoomBehavior) return
+  const clamped = Math.max(50, Math.min(200, percent))
+  const scale = clamped / 100
+  d3.select(svgRef.value).transition().duration(200).call(zoomBehavior.scaleTo, scale)
+}
+
+function changeZoom(delta: number) {
+  applyZoom(currentZoom.value + delta)
+}
+
+function onZoomInput(e: Event) {
+  const val = parseInt((e.target as HTMLInputElement).value)
+  if (!isNaN(val)) applyZoom(val)
+}
+
+// ─── 노드로 뷰포트 이동 ──────────────────────────────────
+function navigateTo(nodeId: string) {
+  const node = renderedNodes.value.find(n => n.id === nodeId)
+  if (!node || node.x == null || node.y == null || !svgRef.value || !zoomBehavior) return
+  const width = container.value?.clientWidth ?? 800
+  const height = container.value?.clientHeight ?? 600
+  const scale = d3.zoomTransform(svgRef.value).k
+  d3.select(svgRef.value).transition().duration(500).call(
+    zoomBehavior.transform,
+    d3.zoomIdentity.translate(width / 2 - node.x * scale, height / 2 - node.y * scale).scale(scale)
+  )
+}
+
+defineExpose({ navigateTo })
 </script>
 
 <style scoped>
@@ -500,4 +696,66 @@ onUnmounted(() => document.removeEventListener('click', closeContextMenu))
 .context-menu button.danger { color: #ef4444; }
 .context-menu button.disabled-item { color: #475569; cursor: not-allowed; font-style: italic; }
 .context-menu button.disabled-item:hover { background: none; }
+
+.node-legend {
+  position: absolute; top: 12px; right: 12px;
+  background: rgba(15, 23, 42, 0.85); border: 1px solid #334155;
+  border-radius: 12px; padding: 12px 15px;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none; z-index: 50;
+  backdrop-filter: blur(4px);
+}
+.legend-item {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 15px; color: #94a3b8; font-weight: 600; white-space: nowrap;
+}
+.legend-dot {
+  width: 15px; height: 15px; border-radius: 3px;
+  border: 2px solid; flex-shrink: 0;
+}
+.legend-divider {
+  height: 2px; background: #334155; margin: 3px 0;
+}
+
+.canvas-btns {
+  position: absolute; bottom: 12px; left: 12px;
+  display: flex; gap: 6px; z-index: 50;
+}
+.canvas-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(15, 23, 42, 0.85); border: 1px solid #334155;
+  border-radius: 20px; padding: 5px 12px;
+  font-size: 11px; color: #64748b; cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  backdrop-filter: blur(4px);
+}
+.canvas-btn:hover { color: #94a3b8; border-color: #475569; }
+.canvas-btn.active { color: #60a5fa; border-color: #3b82f6; }
+
+.tracking-btn {
+  position: absolute; top: 12px; left: 12px; z-index: 50;
+}
+
+.zoom-controls {
+  position: absolute; bottom: 12px; right: 12px;
+  display: flex; align-items: center; gap: 4px; z-index: 50;
+  background: rgba(15, 23, 42, 0.85); border: 1px solid #334155;
+  border-radius: 20px; padding: 4px 10px;
+  backdrop-filter: blur(4px);
+}
+.zoom-btn {
+  background: none; border: none; color: #64748b;
+  font-size: 16px; line-height: 1; cursor: pointer;
+  padding: 0 4px; transition: color 0.15s;
+}
+.zoom-btn:hover { color: #94a3b8; }
+.zoom-input {
+  width: 40px; background: none; border: none;
+  color: #94a3b8; font-size: 12px; font-weight: 700;
+  text-align: center; outline: none;
+  -moz-appearance: textfield;
+}
+.zoom-input::-webkit-inner-spin-button,
+.zoom-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.zoom-pct { color: #64748b; font-size: 11px; }
 </style>

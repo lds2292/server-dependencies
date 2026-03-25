@@ -1,11 +1,9 @@
-export type Environment = 'prod' | 'dev' | 'staging'
 export type DependencyType = 'http' | 'db' | 'queue' | 'other'
 
 export interface Server {
   id: string
   nodeKind?: 'server'
   name: string
-  environment: Environment
   team: string
   internalIp: string
   natIp: string
@@ -18,7 +16,6 @@ export interface L7Node {
   id: string
   nodeKind: 'l7'
   name: string
-  environment: Environment
   ip?: string
   memberServerIds: string[]
   description?: string
@@ -28,7 +25,6 @@ export interface DBNode {
   id: string
   nodeKind: 'db'
   name: string
-  environment: Environment
   dbType?: string
   host?: string
   port?: string
@@ -45,8 +41,8 @@ export interface ExternalServiceNode {
   id: string
   nodeKind: 'external'
   name: string
-  environment: Environment
   hasFirewall?: boolean
+  firewallUrl?: string
   hasWhitelist?: boolean
   contacts: ExternalContact[]
   description?: string

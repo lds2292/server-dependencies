@@ -52,6 +52,53 @@
       <input v-model="search" placeholder="노드 검색..." />
     </div>
 
+    <!-- 카테고리 필터 드롭다운 -->
+    <div class="kf-wrap" ref="kfWrapRef">
+      <button class="kf-trigger" :class="{ active: !allKindsChecked }" @click.stop="showKfMenu = !showKfMenu">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M1 3h10M3 6h6M5 9h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        필터
+        <span v-if="!allKindsChecked" class="kf-active-count">{{ activeKindCount }}/4</span>
+        <svg class="kf-chevron" :class="{ open: showKfMenu }" width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <div v-if="showKfMenu" class="kf-menu" @click.stop>
+        <label class="kf-menu-item kf-menu-all">
+          <input
+            type="checkbox"
+            :checked="allKindsChecked"
+            :indeterminate="someKindsChecked && !allKindsChecked"
+            @change="toggleAllKinds"
+          />
+          전체 선택
+        </label>
+        <div class="kf-divider"></div>
+        <label class="kf-menu-item">
+          <input type="checkbox" v-model="filterKinds.server" />
+          <span class="kf-dot kf-server">SRV</span>
+          서버
+        </label>
+        <label class="kf-menu-item">
+          <input type="checkbox" v-model="filterKinds.l7" />
+          <span class="kf-dot kf-l7">L7</span>
+          L7 로드밸런서
+        </label>
+        <label class="kf-menu-item">
+          <input type="checkbox" v-model="filterKinds.db" />
+          <span class="kf-dot kf-db">DB</span>
+          데이터베이스
+        </label>
+        <label class="kf-menu-item">
+          <input type="checkbox" v-model="filterKinds.external" />
+          <span class="kf-dot kf-ext">EXT</span>
+          외부 서비스
+        </label>
+      </div>
+    </div>
+
     <ul class="node-list">
       <li
         v-for="item in filteredItems"
@@ -63,9 +110,6 @@
         <div class="card-row1">
           <div class="badges">
             <span :class="['type-badge', item.nodeKind ?? 'server']">{{ typeLabel(item) }}</span>
-            <span v-if="(item as any).environment" :class="['env-badge', (item as any).environment]">
-              {{ envLabel((item as any).environment) }}
-            </span>
           </div>
           <div v-if="!readOnly" class="card-actions">
             <button title="수정" @click.stop="emit('edit', item)">✎</button>
@@ -94,8 +138,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { Server, L7Node, DBNode, ExternalServiceNode, AnyNode } from '../types'
 
-const ENV_LABELS: Record<string, string> = { prod: 'Production', staging: 'Staging', dev: 'Develop' }
-function envLabel(env: string) { return ENV_LABELS[env] ?? env }
 function typeLabel(node: AnyNode): string {
   if (node.nodeKind === 'l7') return 'L7'
   if (node.nodeKind === 'db') return 'DB'
@@ -146,6 +188,26 @@ const search = ref('')
 const showMenu = ref(false)
 const addWrapRef = ref<HTMLDivElement>()
 
+// ─── 카테고리 필터 ───────────────────────────────────────
+const filterKinds = ref({ server: true, l7: true, db: true, external: true })
+const showKfMenu = ref(false)
+const kfWrapRef = ref<HTMLDivElement>()
+
+const allKindsChecked = computed(() => Object.values(filterKinds.value).every(v => v))
+const someKindsChecked = computed(() => Object.values(filterKinds.value).some(v => v))
+const activeKindCount = computed(() => Object.values(filterKinds.value).filter(v => v).length)
+
+function toggleAllKinds() {
+  const val = !allKindsChecked.value
+  ;(Object.keys(filterKinds.value) as (keyof typeof filterKinds.value)[]).forEach(k => {
+    filterKinds.value[k] = val
+  })
+}
+
+function closeKfMenu(e: MouseEvent) {
+  if (!kfWrapRef.value?.contains(e.target as Node)) showKfMenu.value = false
+}
+
 const allItems = computed<AnyNode[]>(() => [
   ...props.servers,
   ...props.l7Nodes,
@@ -155,8 +217,10 @@ const allItems = computed<AnyNode[]>(() => [
 
 const filteredItems = computed(() => {
   const q = search.value.toLowerCase()
-  if (!q) return allItems.value
   return allItems.value.filter(item => {
+    const kind = (item.nodeKind ?? 'server') as keyof typeof filterKinds.value
+    if (!(filterKinds.value[kind] ?? true)) return false
+    if (!q) return true
     if (item.name.toLowerCase().includes(q)) return true
     if (item.nodeKind !== 'l7' && item.nodeKind !== 'db' && item.nodeKind !== 'external') {
       return (item as Server).team?.toLowerCase().includes(q)
@@ -169,8 +233,14 @@ function toggleMenu() { showMenu.value = !showMenu.value }
 function closeMenu(e: MouseEvent) {
   if (!addWrapRef.value?.contains(e.target as Node)) showMenu.value = false
 }
-onMounted(() => document.addEventListener('click', closeMenu))
-onUnmounted(() => document.removeEventListener('click', closeMenu))
+onMounted(() => {
+  document.addEventListener('click', closeMenu)
+  document.addEventListener('click', closeKfMenu)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', closeMenu)
+  document.removeEventListener('click', closeKfMenu)
+})
 
 function onImport(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
@@ -221,6 +291,50 @@ function onImport(e: Event) {
   width: 100%; background: #0f172a; border: 1px solid #334155;
   border-radius: 6px; padding: 6px 10px; color: #e2e8f0; font-size: 12px; box-sizing: border-box;
 }
+.kf-wrap {
+  position: relative; padding: 7px 12px; border-bottom: 1px solid #334155;
+}
+.kf-trigger {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; background: #0f172a; border: 1px solid #334155;
+  border-radius: 6px; padding: 6px 10px;
+  font-size: 12px; color: #64748b; cursor: pointer; text-align: left;
+  transition: border-color 0.15s, color 0.15s;
+}
+.kf-trigger:hover { border-color: #475569; color: #94a3b8; }
+.kf-trigger.active { border-color: #3b82f6; color: #60a5fa; }
+.kf-active-count {
+  margin-left: auto; background: #1d3a6e; color: #60a5fa;
+  border-radius: 10px; padding: 0 6px; font-size: 10px; font-weight: 700;
+}
+.kf-chevron { margin-left: auto; transition: transform 0.15s; color: #475569; }
+.kf-chevron.open { transform: rotate(180deg); }
+.kf-active-count + .kf-chevron { margin-left: 4px; }
+
+.kf-menu {
+  position: absolute; left: 12px; right: 12px; top: calc(100% - 4px);
+  background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+  padding: 6px 0; z-index: 300;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.kf-menu-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px; cursor: pointer; user-select: none;
+  font-size: 12px; color: #94a3b8; transition: background 0.1s;
+}
+.kf-menu-item:hover { background: #273549; color: #e2e8f0; }
+.kf-menu-all { font-weight: 700; color: #e2e8f0; }
+.kf-menu-item input[type="checkbox"] {
+  width: 13px; height: 13px; accent-color: #60a5fa; cursor: pointer; flex-shrink: 0;
+}
+.kf-divider { height: 1px; background: #334155; margin: 4px 0; }
+.kf-dot {
+  font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 800; letter-spacing: 0.03em; flex-shrink: 0;
+}
+.kf-server { background: #1e3a5f; color: #93c5fd; }
+.kf-l7    { background: #3b0764; color: #e9d5ff; }
+.kf-db    { background: #0c2040; color: #7dd3fc; }
+.kf-ext   { background: #052e16; color: #86efac; }
 .node-list {
   list-style: none; margin: 0; padding: 8px 0; flex: 1; overflow-y: auto;
 }
@@ -241,12 +355,6 @@ function onImport(e: Event) {
 .type-badge.l7 { background: #3b0764; color: #e9d5ff; }
 .type-badge.db { background: #0c2040; color: #7dd3fc; }
 .type-badge.external { background: #052e16; color: #86efac; }
-.env-badge {
-  font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 700;
-}
-.env-badge.prod { background: #1d4ed8; color: #bfdbfe; }
-.env-badge.staging { background: #b45309; color: #fef3c7; }
-.env-badge.dev { background: #065f46; color: #a7f3d0; }
 .card-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; }
 .node-card:hover .card-actions { opacity: 1; }
 .card-actions button {
