@@ -1,4 +1,4 @@
-export type DependencyType = 'http' | 'db' | 'queue' | 'websocket' | 'other'
+export type DependencyType = 'http' | 'tcp' | 'websocket' | 'other'
 
 export interface Server {
   id: string
@@ -8,7 +8,6 @@ export interface Server {
   internalIp: string
   natIp: string
   description: string
-  environment?: string
   hasFirewall?: boolean
   firewallUrl?: string
 }
@@ -18,15 +17,16 @@ export interface L7Node {
   nodeKind: 'l7'
   name: string
   ip?: string
+  natIp?: string
   memberServerIds: string[]
   description?: string
 }
 
-export interface DBNode {
+export interface InfraNode {
   id: string
-  nodeKind: 'db'
+  nodeKind: 'infra'
   name: string
-  dbType?: string
+  infraType?: string
   host?: string
   port?: string
   description?: string
@@ -49,7 +49,7 @@ export interface ExternalServiceNode {
   description?: string
 }
 
-export type AnyNode = Server | L7Node | DBNode | ExternalServiceNode
+export type AnyNode = Server | L7Node | InfraNode | ExternalServiceNode
 
 export function isL7(node: AnyNode): node is L7Node {
   return node.nodeKind === 'l7'
@@ -66,7 +66,7 @@ export interface Dependency {
 export interface GraphData {
   servers: Server[]
   l7Nodes?: L7Node[]
-  dbNodes?: DBNode[]
+  infraNodes?: InfraNode[]
   externalNodes?: ExternalServiceNode[]
   dependencies: Dependency[]
 }

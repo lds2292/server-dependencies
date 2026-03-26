@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import type { Server, L7Node, DBNode, ExternalServiceNode, AnyNode, Dependency, GraphData } from '../types'
+import type { Server, L7Node, InfraNode, ExternalServiceNode, AnyNode, Dependency, GraphData } from '../types'
 
 const STORAGE_KEY = 'server-dependencies-data'
 
@@ -8,29 +8,39 @@ function generateId(): string {
   return crypto.randomUUID()
 }
 
+function migrateDependencyTypes(data: GraphData): GraphData {
+  const typeMap: Record<string, string> = { db: 'tcp', queue: 'other' }
+  return {
+    ...data,
+    dependencies: data.dependencies.map(d =>
+      typeMap[d.type] ? { ...d, type: typeMap[d.type] as any } : d
+    ),
+  }
+}
+
 function loadFromStorage(): GraphData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as GraphData
+    if (raw) return migrateDependencyTypes(JSON.parse(raw) as GraphData)
   } catch { /* ignore */ }
-  return { servers: [], l7Nodes: [], dbNodes: [], externalNodes: [], dependencies: [] }
+  return { servers: [], l7Nodes: [], infraNodes: [], externalNodes: [], dependencies: [] }
 }
 
 export const useGraphStore = defineStore('graph', () => {
   const initial = loadFromStorage()
   const servers = ref<Server[]>(initial.servers)
   const l7Nodes = ref<L7Node[]>(initial.l7Nodes ?? [])
-  const dbNodes = ref<DBNode[]>(initial.dbNodes ?? [])
+  const infraNodes = ref<InfraNode[]>(initial.infraNodes ?? [])
   const externalNodes = ref<ExternalServiceNode[]>(initial.externalNodes ?? [])
   const dependencies = ref<Dependency[]>(initial.dependencies)
 
   watch(
-    [servers, l7Nodes, dbNodes, externalNodes, dependencies],
+    [servers, l7Nodes, infraNodes, externalNodes, dependencies],
     () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         servers: servers.value,
         l7Nodes: l7Nodes.value,
-        dbNodes: dbNodes.value,
+        infraNodes: infraNodes.value,
         externalNodes: externalNodes.value,
         dependencies: dependencies.value,
       }))
@@ -71,18 +81,18 @@ export const useGraphStore = defineStore('graph', () => {
     dependencies.value = dependencies.value.filter(d => d.source !== id && d.target !== id)
   }
 
-  // --- DB CRUD ---
-  function addDBNode(data: Omit<DBNode, 'id'>): DBNode {
-    const n: DBNode = { ...data, id: generateId() }
-    dbNodes.value.push(n)
+  // --- Infra CRUD ---
+  function addInfraNode(data: Omit<InfraNode, 'id'>): InfraNode {
+    const n: InfraNode = { ...data, id: generateId() }
+    infraNodes.value.push(n)
     return n
   }
-  function updateDBNode(id: string, data: Partial<Omit<DBNode, 'id'>>) {
-    const idx = dbNodes.value.findIndex(n => n.id === id)
-    if (idx !== -1) Object.assign(dbNodes.value[idx], data)
+  function updateInfraNode(id: string, data: Partial<Omit<InfraNode, 'id'>>) {
+    const idx = infraNodes.value.findIndex(n => n.id === id)
+    if (idx !== -1) Object.assign(infraNodes.value[idx], data)
   }
-  function deleteDBNode(id: string) {
-    dbNodes.value = dbNodes.value.filter(n => n.id !== id)
+  function deleteInfraNode(id: string) {
+    infraNodes.value = infraNodes.value.filter(n => n.id !== id)
     dependencies.value = dependencies.value.filter(d => d.source !== id && d.target !== id)
   }
 
@@ -116,7 +126,7 @@ export const useGraphStore = defineStore('graph', () => {
   function findNodeById(id: string): AnyNode | undefined {
     return servers.value.find(s => s.id === id)
       ?? l7Nodes.value.find(n => n.id === id)
-      ?? dbNodes.value.find(n => n.id === id)
+      ?? infraNodes.value.find(n => n.id === id)
       ?? externalNodes.value.find(n => n.id === id)
   }
 
@@ -135,10 +145,69 @@ export const useGraphStore = defineStore('graph', () => {
     return impacted
   }
 
+  function getCycleNodes(): Set<string> {
+    const allIds = [
+      ...servers.value.map(n => n.id),
+      ...l7Nodes.value.map(n => n.id),
+      ...infraNodes.value.map(n => n.id),
+      ...externalNodes.value.map(n => n.id),
+    ]
+    const adj = new Map<string, string[]>()
+    for (const id of allIds) adj.set(id, [])
+    for (const dep of dependencies.value) {
+      const neighbors = adj.get(dep.source)
+      if (neighbors) neighbors.push(dep.target)
+    }
+    const visited = new Set<string>()
+    const inStack = new Set<string>()
+    const stackPath: string[] = []
+    const cycleNodes = new Set<string>()
+    function dfs(nodeId: string): void {
+      visited.add(nodeId)
+      inStack.add(nodeId)
+      stackPath.push(nodeId)
+      for (const neighbor of (adj.get(nodeId) ?? [])) {
+        if (!visited.has(neighbor)) {
+          dfs(neighbor)
+        } else if (inStack.has(neighbor)) {
+          const idx = stackPath.indexOf(neighbor)
+          if (idx !== -1) {
+            for (let i = idx; i < stackPath.length; i++) cycleNodes.add(stackPath[i])
+          }
+        }
+      }
+      stackPath.pop()
+      inStack.delete(nodeId)
+    }
+    for (const id of allIds) {
+      if (!visited.has(id)) dfs(id)
+    }
+    return cycleNodes
+  }
+
+  function findPath(sourceId: string, targetId: string): string[] | null {
+    if (sourceId === targetId) return [sourceId]
+    const visited = new Set<string>([sourceId])
+    const queue: Array<[string, string[]]> = [[sourceId, [sourceId]]]
+    while (queue.length > 0) {
+      const [current, path] = queue.shift()!
+      for (const dep of dependencies.value) {
+        if (dep.source !== current) continue
+        const next = dep.target
+        if (next === targetId) return [...path, next]
+        if (!visited.has(next)) {
+          visited.add(next)
+          queue.push([next, [...path, next]])
+        }
+      }
+    }
+    return null
+  }
+
   function exportJSON() {
     const data: GraphData = {
       servers: servers.value, l7Nodes: l7Nodes.value,
-      dbNodes: dbNodes.value, externalNodes: externalNodes.value,
+      infraNodes: infraNodes.value, externalNodes: externalNodes.value,
       dependencies: dependencies.value,
     }
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -151,7 +220,7 @@ export const useGraphStore = defineStore('graph', () => {
   function loadData(data: GraphData) {
     servers.value = data.servers ?? []
     l7Nodes.value = data.l7Nodes ?? []
-    dbNodes.value = data.dbNodes ?? []
+    infraNodes.value = data.infraNodes ?? []
     externalNodes.value = data.externalNodes ?? []
     dependencies.value = data.dependencies ?? []
   }
@@ -161,10 +230,10 @@ export const useGraphStore = defineStore('graph', () => {
       const reader = new FileReader()
       reader.onload = e => {
         try {
-          const data = JSON.parse(e.target!.result as string) as GraphData
+          const data = migrateDependencyTypes(JSON.parse(e.target!.result as string) as GraphData)
           servers.value = data.servers ?? []
           l7Nodes.value = data.l7Nodes ?? []
-          dbNodes.value = data.dbNodes ?? []
+          infraNodes.value = data.infraNodes ?? []
           externalNodes.value = data.externalNodes ?? []
           dependencies.value = data.dependencies ?? []
           resolve()
@@ -176,12 +245,12 @@ export const useGraphStore = defineStore('graph', () => {
   }
 
   return {
-    servers, l7Nodes, dbNodes, externalNodes, dependencies,
+    servers, l7Nodes, infraNodes, externalNodes, dependencies,
     addServer, updateServer, deleteServer,
     addL7Node, updateL7Node, deleteL7Node,
-    addDBNode, updateDBNode, deleteDBNode,
+    addInfraNode, updateInfraNode, deleteInfraNode,
     addExternalNode, updateExternalNode, deleteExternalNode,
     addDependency, removeDependency,
-    findNodeById, getImpactedNodes, exportJSON, importJSON, loadData,
+    findNodeById, getImpactedNodes, getCycleNodes, findPath, exportJSON, importJSON, loadData,
   }
 })

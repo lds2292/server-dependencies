@@ -61,14 +61,15 @@
           :x1="link.x1" :y1="link.y1"
           :x2="link.x2" :y2="link.y2"
           :class="{
-            'link-outgoing': showAllFlow || outgoingLinks.has(link.id),
-            'link-impacted': !showAllFlow && impactedLinks.has(link.id),
-            'link-normal':   !showAllFlow && !impactedLinks.has(link.id) && !outgoingLinks.has(link.id),
+            'link-amber':    pathLinks.has(link.id),
+            'link-outgoing': !pathLinks.has(link.id) && (showAllFlow || outgoingLinks.has(link.id)),
+            'link-impacted': !pathLinks.has(link.id) && !showAllFlow && impactedLinks.has(link.id),
+            'link-normal':   !pathLinks.has(link.id) && !showAllFlow && !impactedLinks.has(link.id) && !outgoingLinks.has(link.id),
           }"
-          :stroke="!showAllFlow && impactedLinks.has(link.id) ? '#ef4444' : showAllFlow || outgoingLinks.has(link.id) ? '#22c55e' : '#94a3b8'"
-          :stroke-width="showAllFlow || impactedLinks.has(link.id) || outgoingLinks.has(link.id) ? 2.5 : 1.5"
-          :opacity="!showAllFlow && selectedId && !impactedLinks.has(link.id) && !outgoingLinks.has(link.id) ? 0.15 : 1"
-          :marker-end="`url(#${!showAllFlow && impactedLinks.has(link.id) ? 'arrow-red' : showAllFlow || outgoingLinks.has(link.id) ? 'arrow-green' : 'arrow-default'})`"
+          :stroke="linkStroke(link)"
+          :stroke-width="pathLinks.has(link.id) ? 3 : showAllFlow || impactedLinks.has(link.id) || outgoingLinks.has(link.id) ? 2.5 : 1.5"
+          :opacity="linkOpacity(link)"
+          :marker-end="`url(#${linkMarker(link)})`"
         />
 
         <!-- 드래그 미리보기 화살표 -->
@@ -93,10 +94,13 @@
             'connect-source': arrowSource?.id === node.id,
             'connect-target': connectTarget?.id === node.id,
           }"
-          :filter="selectedId === node.id ? 'url(#glow-blue)' : impactedNodes.has(node.id) ? 'url(#glow-red)' : undefined"
+          :filter="nodeFilter(node)"
+          :opacity="nodeOpacity(node)"
           @mousedown.stop="onNodeMouseDown($event, node)"
           @click.stop="onNodeClick(node)"
           @contextmenu.prevent="onNodeContextMenu($event, node)"
+          @mouseenter="hoveredNodeId = (props.pathMode && node.nodeKind === 'l7') ? null : node.id"
+          @mouseleave="hoveredNodeId = null"
         >
           <title>{{ node.name }}</title>
           <rect
@@ -180,6 +184,12 @@
             <text x="21" dy="6" text-anchor="middle" class="node-ip">{{ (node as any).internalIp || '-' }}</text>
             <text x="21" dy="19" text-anchor="middle" class="node-meta">NAT: {{ (node as any).natIp || '-' }}</text>
           </template>
+
+          <!-- 순환 의존성 경고 배지 -->
+          <g v-if="cycleNodes.has(node.id)" class="cycle-badge" pointer-events="none">
+            <circle cx="80" cy="-30" r="8" fill="#dc2626" stroke="#0f172a" stroke-width="1.5"/>
+            <text x="80" y="-26" text-anchor="middle" font-size="10" font-weight="900" fill="white">!</text>
+          </g>
         </g>
 
         <!-- glow 필터 (defs 내에 정의) -->
@@ -189,6 +199,10 @@
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
           <filter id="glow-red" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow-amber" x="-40%" y="-40%" width="180%" height="180%">
             <feGaussianBlur stdDeviation="3" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
@@ -315,6 +329,25 @@
         </svg>
         중심
       </button>
+      <button class="canvas-btn" @click="exportGraph('png')" title="PNG로 내보내기">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <rect x="1" y="1" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.1"/>
+          <polyline points="1,8 4,5 6.5,8 9,6 13,9" stroke="currentColor" stroke-width="1.1" fill="none" stroke-linejoin="round"/>
+          <circle cx="10.5" cy="3.5" r="1.2" fill="currentColor" opacity="0.7"/>
+          <line x1="7" y1="13" x2="7" y2="11" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          <polyline points="4.5,11.5 7,13.5 9.5,11.5" stroke="currentColor" stroke-width="1.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        PNG
+      </button>
+      <button class="canvas-btn" @click="exportGraph('svg')" title="SVG로 내보내기">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <polyline points="1,5 4,2 7,5" stroke="currentColor" stroke-width="1.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="4" y1="2" x2="4" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          <polyline points="7,9 10,12 13,9" stroke="currentColor" stroke-width="1.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="10" y1="5" x2="10" y2="12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        SVG
+      </button>
     </div>
 
     <!-- 미니맵 -->
@@ -389,6 +422,18 @@
     <div v-if="!readOnly" class="mode-hint">일반 드래그: 노드 이동 &nbsp;|&nbsp; Ctrl + 드래그: 의존성 연결</div>
     <div v-else class="mode-hint readonly-hint">읽기 전용 모드 — 노드 이동만 가능</div>
 
+    <!-- 순환 의존성 경고 배너 -->
+    <div v-if="cycleNodes.size > 0 && !pathMode && pathNodes.size === 0" class="cycle-warning-banner">
+      순환 의존성 감지: {{ cycleNodes.size }}개 노드
+    </div>
+
+    <!-- 경로 탐색 모드 배너 -->
+    <div v-if="pathMode && pathNodes.size === 0" class="path-mode-banner">
+      출발: <span class="path-source-name">{{ pathSourceName }}</span>
+      &mdash; 도착 노드를 클릭하세요
+      <button class="path-cancel-btn" @click="emit('cancelPathMode')">취소 (Esc)</button>
+    </div>
+
     <!-- 연결 힌트 -->
     <div v-if="connectTarget && arrowSource" class="drop-hint">
       <span class="hint-source">{{ arrowSource.name }}</span> →
@@ -454,12 +499,15 @@
     <!-- 컨텍스트 메뉴 -->
     <div v-if="contextMenu.visible" class="context-menu"
       :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }" @click.stop>
+      <button class="path-item" :class="{ 'path-item-disabled': contextMenu.node?.nodeKind === 'l7' }" :disabled="contextMenu.node?.nodeKind === 'l7'" @click="onStartPath">경로 탐색</button>
       <template v-if="!readOnly">
+        <div class="context-divider"></div>
         <button @click="onEditNode">수정</button>
         <button @click="onAddDep">의존성 추가</button>
         <button class="danger" @click="onDeleteNode">삭제</button>
       </template>
       <template v-else>
+        <div class="context-divider"></div>
         <button class="disabled-item" disabled>읽기 전용 모드</button>
       </template>
     </div>
@@ -479,6 +527,11 @@ const props = defineProps<{
   outgoingLinks: Set<string>
   selectedId: string | null
   readOnly: boolean
+  pathNodes: Set<string>
+  pathLinks: Set<string>
+  pathSourceName: string
+  pathMode: boolean
+  cycleNodes: Set<string>
 }>()
 
 const emit = defineEmits<{
@@ -489,6 +542,8 @@ const emit = defineEmits<{
   addDependency: [source: AnyNode]
   quickConnect: [source: AnyNode, target: AnyNode]
   addNodeAt: [nodeKind: 'server' | 'l7' | 'infra' | 'external']
+  startPathFrom: [node: AnyNode]
+  cancelPathMode: []
 }>()
 
 const container = ref<HTMLDivElement>()
@@ -513,6 +568,7 @@ const markerDefs = [
   { id: 'arrow-default', fill: '#94a3b8' },
   { id: 'arrow-red',     fill: '#ef4444' },
   { id: 'arrow-green',   fill: '#22c55e' },
+  { id: 'arrow-amber',   fill: '#f59e0b' },
 ]
 
 let simulation: d3.Simulation<D3Node, D3Link> | null = null
@@ -539,6 +595,7 @@ function savePositions() {
 }
 
 // 드래그 상태
+const hoveredNodeId = ref<string | null>(null)
 const arrowSource = ref<D3Node | null>(null)
 const arrowPreview = ref<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
 const connectTarget = ref<D3Node | null>(null)
@@ -564,7 +621,11 @@ const addNodeMenu = ref({ visible: false, x: 0, y: 0 })
 let pendingNodePosition: { x: number; y: number } | null = null
 
 function onCanvasClick() {
-  if (props.selectedId) emit('deselect')
+  if (props.pathMode || props.pathNodes.size > 0) {
+    emit('cancelPathMode')
+  } else if (props.selectedId) {
+    emit('deselect')
+  }
   contextMenu.value.visible = false
 }
 
@@ -616,7 +677,50 @@ function nodeColor(node: D3Node): string {
   return '#1e3a8a'
 }
 
+function linkStroke(link: { id: string }): string {
+  if (props.pathLinks.has(link.id)) return '#f59e0b'
+  if (!showAllFlow.value && props.impactedLinks.has(link.id)) return '#ef4444'
+  if (showAllFlow.value || props.outgoingLinks.has(link.id)) return '#22c55e'
+  return '#94a3b8'
+}
+
+function linkOpacity(link: { id: string }): number {
+  if (props.pathMode || props.pathLinks.size > 0)
+    return props.pathLinks.has(link.id) ? 1 : 0.1
+  if (!showAllFlow.value && props.selectedId &&
+      !props.impactedLinks.has(link.id) && !props.outgoingLinks.has(link.id)) return 0.15
+  return 1
+}
+
+function linkMarker(link: { id: string }): string {
+  if (props.pathLinks.has(link.id)) return 'arrow-amber'
+  if (!showAllFlow.value && props.impactedLinks.has(link.id)) return 'arrow-red'
+  if (showAllFlow.value || props.outgoingLinks.has(link.id)) return 'arrow-green'
+  return 'arrow-default'
+}
+
+function nodeFilter(node: D3Node): string | undefined {
+  if (props.pathNodes.has(node.id)) return 'url(#glow-amber)'
+  if (props.pathMode && hoveredNodeId.value === node.id) return 'url(#glow-amber)'
+  if (props.selectedId === node.id) return 'url(#glow-blue)'
+  if (props.cycleNodes.has(node.id)) return 'url(#glow-red)'
+  if (props.impactedNodes.has(node.id)) return 'url(#glow-red)'
+  return undefined
+}
+
+function nodeOpacity(node: D3Node): number {
+  if (props.pathMode || props.pathNodes.size > 0) {
+    if (props.pathNodes.has(node.id)) return 1
+    if (props.pathMode && hoveredNodeId.value === node.id) return 1
+    return 0.15
+  }
+  return 1
+}
+
 function nodeStroke(node: D3Node): string {
+  if (props.pathNodes.has(node.id)) return '#f59e0b'
+  if (props.pathMode && hoveredNodeId.value === node.id) return '#f59e0b'
+  if (props.cycleNodes.has(node.id)) return '#dc2626'
   if (blockedTarget.value?.id === node.id) return '#ef4444'
   if (connectTarget.value?.id === node.id) return '#22c55e'
   if (arrowSource.value?.id === node.id) return '#60a5fa'
@@ -634,7 +738,9 @@ function nodeStroke(node: D3Node): string {
 }
 
 function isHighlighted(node: D3Node): boolean {
-  return props.selectedId === node.id || props.impactedNodes.has(node.id)
+  return props.pathNodes.has(node.id)
+    || props.selectedId === node.id || props.impactedNodes.has(node.id)
+    || props.cycleNodes.has(node.id)
     || connectTarget.value?.id === node.id || arrowSource.value?.id === node.id
     || blockedTarget.value?.id === node.id
 }
@@ -900,6 +1006,7 @@ function onNodeContextMenu(event: MouseEvent, node: AnyNode) {
 function onEditNode() { if (contextMenu.value.node) emit('editNode', contextMenu.value.node); contextMenu.value.visible = false }
 function onDeleteNode() { if (contextMenu.value.node) emit('deleteNode', contextMenu.value.node); contextMenu.value.visible = false }
 function onAddDep() { if (contextMenu.value.node) emit('addDependency', contextMenu.value.node); contextMenu.value.visible = false }
+function onStartPath() { if (contextMenu.value.node) emit('startPathFrom', contextMenu.value.node); contextMenu.value.visible = false }
 
 function closeContextMenu() {
   contextMenu.value.visible = false
@@ -1079,6 +1186,91 @@ function searchSelectDelta(delta: number) {
 function searchConfirm() {
   const node = searchResults.value[searchActiveIndex.value]
   if (node) navigateToNode(node)
+}
+
+// ─── 내보내기 ─────────────────────────────────────────────
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+async function exportGraph(format: 'svg' | 'png') {
+  if (!svgRef.value) return
+  const nodes = renderedNodes.value
+  if (nodes.length === 0) return
+
+  const pad = 80
+  const halfW = 94, halfH = 38
+  const xs = nodes.map(n => n.x ?? 0)
+  const ys = nodes.map(n => n.y ?? 0)
+  const minX = Math.min(...xs) - halfW - pad
+  const maxX = Math.max(...xs) + halfW + pad
+  const minY = Math.min(...ys) - halfH - pad
+  const maxY = Math.max(...ys) + halfH + pad
+  const vw = maxX - minX
+  const vh = maxY - minY
+
+  const clone = svgRef.value.cloneNode(true) as SVGSVGElement
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+  clone.setAttribute('width', String(vw))
+  clone.setAttribute('height', String(vh))
+  clone.setAttribute('viewBox', `${minX} ${minY} ${vw} ${vh}`)
+
+  // gRef의 d3 transform 제거 (world coord = SVG coord)
+  const innerG = Array.from(clone.childNodes).find(
+    (n): n is Element => n.nodeType === 1 && (n as Element).tagName === 'g'
+  ) as SVGGElement | undefined
+  innerG?.removeAttribute('transform')
+
+  // 배경
+  const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+  bg.setAttribute('x', String(minX))
+  bg.setAttribute('y', String(minY))
+  bg.setAttribute('width', String(vw))
+  bg.setAttribute('height', String(vh))
+  bg.setAttribute('fill', '#0f172a')
+  clone.insertBefore(bg, clone.firstChild)
+
+  // 스코프된 CSS 텍스트 클래스 인라인
+  const style = document.createElementNS('http://www.w3.org/2000/svg', 'style')
+  style.textContent = [
+    `text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }`,
+    `.node-label { font-size: 12px; fill: #fff; font-weight: 700; }`,
+    `.node-ip    { font-size: 10px; fill: rgba(255,255,255,0.75); }`,
+    `.node-sub   { font-size: 9px;  fill: rgba(255,255,255,0.65); font-weight: 600; letter-spacing: 0.02em; }`,
+    `.node-meta  { font-size: 9.5px; fill: rgba(255,255,255,0.5); }`,
+  ].join('\n')
+  clone.insertBefore(style, clone.firstChild)
+
+  const svgStr = new XMLSerializer().serializeToString(clone)
+
+  if (format === 'svg') {
+    downloadBlob(new Blob([svgStr], { type: 'image/svg+xml' }), 'graph.svg')
+    return
+  }
+
+  // PNG: SVG → canvas
+  const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const img = new Image()
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve()
+    img.onerror = () => reject(new Error('SVG 로드 실패'))
+    img.src = url
+  })
+  const scale = 2
+  const canvas = document.createElement('canvas')
+  canvas.width = vw * scale
+  canvas.height = vh * scale
+  const ctx = canvas.getContext('2d')!
+  ctx.scale(scale, scale)
+  ctx.drawImage(img, 0, 0, vw, vh)
+  URL.revokeObjectURL(url)
+  canvas.toBlob(b => { if (b) downloadBlob(b, 'graph.png') }, 'image/png')
 }
 
 // ─── 줌 컨트롤 ──────────────────────────────────────────
@@ -1419,5 +1611,41 @@ defineExpose({ navigateTo, toggleTracking })
   background: rgba(15, 23, 42, 0.96); border: 1px solid #334155;
   border-radius: 8px; margin-top: 4px; text-align: center;
   backdrop-filter: blur(6px);
+}
+
+/* 경로 탐색 */
+.link-amber {
+  stroke-dasharray: 12 5;
+  animation: flow-dash 0.45s linear infinite;
+  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.8));
+}
+.path-mode-banner {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  background: #1c1007; border: 1px solid #f59e0b; border-radius: 20px;
+  padding: 6px 16px; font-size: 13px; color: #fcd34d;
+  z-index: 60; white-space: nowrap;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
+}
+.path-source-name { color: #f59e0b; font-weight: 700; }
+.path-cancel-btn {
+  background: none; border: 1px solid #92400e; border-radius: 12px;
+  color: #d97706; font-size: 11px; font-weight: 600; padding: 2px 10px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.path-cancel-btn:hover { border-color: #f59e0b; color: #fcd34d; }
+.context-menu .context-divider { height: 1px; background: #334155; margin: 3px 0; }
+.context-menu button.path-item { color: #fbbf24; }
+.context-menu button.path-item:hover { background: rgba(245, 158, 11, 0.1); }
+.context-menu button.path-item-disabled { color: #475569; cursor: not-allowed; }
+.context-menu button.path-item-disabled:hover { background: none; }
+
+/* 순환 의존성 */
+.cycle-warning-banner {
+  position: absolute; top: 12px; right: 16px;
+  background: #1c0a0a; border: 1px solid #dc2626; border-radius: 20px;
+  padding: 5px 14px; font-size: 12px; font-weight: 600; color: #fca5a5;
+  z-index: 60; white-space: nowrap;
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.2);
 }
 </style>

@@ -12,6 +12,10 @@
           IP 주소
           <input v-model="form.ip" placeholder="예: 10.0.0.10" />
         </label>
+        <label>
+          NAT IP
+          <input v-model="form.natIp" placeholder="예: 203.0.113.10" />
+        </label>
 
         <div class="section-label">구성 서버 선택</div>
         <div class="server-filter-wrap">
@@ -98,9 +102,10 @@ const filteredServers = computed(() => {
   )
 })
 
-const form = reactive<{ name: string; ip: string; memberServerIds: string[]; description: string }>({
+const form = reactive<{ name: string; ip: string; natIp: string; memberServerIds: string[]; description: string }>({
   name: props.node?.name ?? '',
   ip: props.node?.ip ?? '',
+  natIp: props.node?.natIp ?? '',
   memberServerIds: [...(props.node?.memberServerIds ?? [])],
   description: props.node?.description ?? '',
 })
@@ -111,6 +116,7 @@ function onSubmit() {
     nodeKind: 'l7',
     name: form.name.trim(),
     ip: form.ip,
+    natIp: form.natIp,
     memberServerIds: form.memberServerIds,
     description: form.description,
   })

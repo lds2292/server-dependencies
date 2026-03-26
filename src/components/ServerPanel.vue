@@ -25,14 +25,14 @@
             </svg>
             L7
           </button>
-          <button @click="emit('addDB'); showMenu=false">
+          <button @click="emit('addInfra'); showMenu=false">
             <svg width="13" height="13" viewBox="0 0 11 10" fill="none" class="menu-icon">
               <ellipse cx="5.5" cy="2" rx="5" ry="2" stroke="currentColor" stroke-width="0.9"/>
               <line x1="0.5" y1="2" x2="0.5" y2="8" stroke="currentColor" stroke-width="0.9"/>
               <line x1="10.5" y1="2" x2="10.5" y2="8" stroke="currentColor" stroke-width="0.9"/>
               <ellipse cx="5.5" cy="8" rx="5" ry="2" stroke="currentColor" stroke-width="0.9"/>
             </svg>
-            DB
+            인프라
           </button>
           <button @click="emit('addExternal'); showMenu=false">
             <svg width="13" height="13" viewBox="0 0 11 11" fill="none" class="menu-icon">
@@ -87,9 +87,9 @@
           L7 로드밸런서
         </label>
         <label class="kf-menu-item">
-          <input type="checkbox" v-model="filterKinds.db" />
-          <span class="kf-dot kf-db">DB</span>
-          데이터베이스
+          <input type="checkbox" v-model="filterKinds.infra" />
+          <span class="kf-dot kf-infra">INFRA</span>
+          인프라
         </label>
         <label class="kf-menu-item">
           <input type="checkbox" v-model="filterKinds.external" />
@@ -136,11 +136,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import type { Server, L7Node, DBNode, ExternalServiceNode, AnyNode } from '../types'
+import type { Server, L7Node, InfraNode, ExternalServiceNode, AnyNode } from '../types'
 
 function typeLabel(node: AnyNode): string {
   if (node.nodeKind === 'l7') return 'L7'
-  if (node.nodeKind === 'db') return 'DB'
+  if (node.nodeKind === 'infra') return 'INFRA'
   if (node.nodeKind === 'external') return 'EXT'
   return 'SRV'
 }
@@ -150,10 +150,10 @@ function subText(node: AnyNode): string {
     const cnt = (node as L7Node).memberServerIds?.length ?? 0
     return [ip, `${cnt}개 서버`].filter(Boolean).join(' / ')
   }
-  if (node.nodeKind === 'db') {
-    const n = node as DBNode
+  if (node.nodeKind === 'infra') {
+    const n = node as InfraNode
     const conn = [n.host, n.port ? `:${n.port}` : ''].filter(Boolean).join('')
-    return [n.dbType, conn].filter(Boolean).join(' · ')
+    return [n.infraType, conn].filter(Boolean).join(' · ')
   }
   if (node.nodeKind === 'external') {
     const cnt = (node as ExternalServiceNode).contacts?.length ?? 0
@@ -166,7 +166,7 @@ function subText(node: AnyNode): string {
 const props = defineProps<{
   servers: Server[]
   l7Nodes: L7Node[]
-  dbNodes: DBNode[]
+  infraNodes: InfraNode[]
   externalNodes: ExternalServiceNode[]
   selectedId: string | null
   readOnly: boolean
@@ -176,7 +176,7 @@ const emit = defineEmits<{
   select: [node: AnyNode]
   addServer: []
   addL7: []
-  addDB: []
+  addInfra: []
   addExternal: []
   edit: [node: AnyNode]
   delete: [node: AnyNode]
@@ -189,7 +189,7 @@ const showMenu = ref(false)
 const addWrapRef = ref<HTMLDivElement>()
 
 // ─── 카테고리 필터 ───────────────────────────────────────
-const filterKinds = ref({ server: true, l7: true, db: true, external: true })
+const filterKinds = ref({ server: true, l7: true, infra: true, external: true })
 const showKfMenu = ref(false)
 const kfWrapRef = ref<HTMLDivElement>()
 
@@ -211,7 +211,7 @@ function closeKfMenu(e: MouseEvent) {
 const allItems = computed<AnyNode[]>(() => [
   ...props.servers,
   ...props.l7Nodes,
-  ...props.dbNodes,
+  ...props.infraNodes,
   ...props.externalNodes,
 ])
 
@@ -222,7 +222,7 @@ const filteredItems = computed(() => {
     if (!(filterKinds.value[kind] ?? true)) return false
     if (!q) return true
     if (item.name.toLowerCase().includes(q)) return true
-    if (item.nodeKind !== 'l7' && item.nodeKind !== 'db' && item.nodeKind !== 'external') {
+    if (item.nodeKind !== 'l7' && item.nodeKind !== 'infra' && item.nodeKind !== 'external') {
       return (item as Server).team?.toLowerCase().includes(q)
     }
     return false
@@ -333,7 +333,7 @@ function onImport(e: Event) {
 }
 .kf-server { background: #1e3a5f; color: #93c5fd; }
 .kf-l7    { background: #3b0764; color: #e9d5ff; }
-.kf-db    { background: #0c2040; color: #7dd3fc; }
+.kf-infra { background: #0c2040; color: #7dd3fc; }
 .kf-ext   { background: #052e16; color: #86efac; }
 .node-list {
   list-style: none; margin: 0; padding: 8px 0; flex: 1; overflow-y: auto;
@@ -353,7 +353,7 @@ function onImport(e: Event) {
 }
 .type-badge.server, .type-badge.undefined { background: #1e3a5f; color: #93c5fd; }
 .type-badge.l7 { background: #3b0764; color: #e9d5ff; }
-.type-badge.db { background: #0c2040; color: #7dd3fc; }
+.type-badge.infra { background: #0c2040; color: #7dd3fc; }
 .type-badge.external { background: #052e16; color: #86efac; }
 .card-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; }
 .node-card:hover .card-actions { opacity: 1; }

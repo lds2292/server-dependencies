@@ -26,7 +26,7 @@
           이미 동일한 의존성이 존재합니다.
         </p>
         <p v-else-if="isDbToServerBlocked" class="error">
-          DB 노드는 서버 노드에 의존성을 추가할 수 없습니다.
+          인프라 노드는 서버 노드에 의존성을 추가할 수 없습니다.
         </p>
         <label>
           연결 유형
@@ -71,17 +71,17 @@ const emit = defineEmits<{
 const nodeOptions = computed(() =>
   props.nodes.map(n => ({
     value: n.id,
-    label: n.nodeKind === 'l7' ? `[L7] ${n.name}` : (n.nodeKind === 'db' ? `[DB] ${n.name}` : n.name),
+    label: n.nodeKind === 'l7' ? `[L7] ${n.name}` : (n.nodeKind === 'infra' ? `[INFRA] ${n.name}` : n.name),
   }))
 )
 
 const sourceNode = computed(() => props.nodes.find(n => n.id === form.source))
 
 const targetOptions = computed(() => {
-  if (sourceNode.value?.nodeKind === 'db') {
+  if (sourceNode.value?.nodeKind === 'infra') {
     return props.nodes
-      .filter(n => n.nodeKind === 'db')
-      .map(n => ({ value: n.id, label: `[DB] ${n.name}` }))
+      .filter(n => n.nodeKind === 'infra')
+      .map(n => ({ value: n.id, label: `[INFRA] ${n.name}` }))
   }
   return nodeOptions.value
 })
@@ -89,30 +89,29 @@ const targetOptions = computed(() => {
 const isDbToServerBlocked = computed(() => {
   if (!form.source || !form.target) return false
   const target = props.nodes.find(n => n.id === form.target)
-  return sourceNode.value?.nodeKind === 'db' && (!target?.nodeKind || target.nodeKind === 'server')
+  return sourceNode.value?.nodeKind === 'infra' && (!target?.nodeKind || target.nodeKind === 'server')
 })
 
 const typeOptions = [
   { value: 'http', label: 'HTTP' },
+  { value: 'tcp', label: 'TCP/IP' },
   { value: 'websocket', label: 'WebSocket' },
-  { value: 'db', label: 'DB' },
-  { value: 'queue', label: 'Queue' },
   { value: 'other', label: 'Other' },
 ]
 
 function defaultTypeForTarget(targetId: string): DependencyType {
   const target = props.nodes.find(n => n.id === targetId)
   if (!target) return 'http'
-  return target.nodeKind === 'db' ? 'db' : 'http'
+  return target.nodeKind === 'infra' ? 'tcp' : 'http'
 }
 
 function resolveInitialTarget(): string {
   const targetId = props.defaultTarget ?? ''
   if (!targetId) return ''
   const src = props.nodes.find(n => n.id === (props.defaultSource ?? ''))
-  if (src?.nodeKind === 'db') {
+  if (src?.nodeKind === 'infra') {
     const tgt = props.nodes.find(n => n.id === targetId)
-    if (tgt?.nodeKind !== 'db') return ''
+    if (tgt?.nodeKind !== 'infra') return ''
   }
   return targetId
 }

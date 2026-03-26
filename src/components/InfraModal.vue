@@ -1,19 +1,19 @@
 <template>
   <div class="modal-backdrop" @click.self="$emit('close')">
     <div class="modal">
-      <h3>{{ isEdit ? 'DB 노드 수정' : 'DB 노드 추가' }}</h3>
+      <h3>{{ isEdit ? '인프라 노드 수정' : '인프라 노드 추가' }}</h3>
       <form @submit.prevent="onSubmit">
         <label>
           이름 *
           <input v-model="form.name" required placeholder="예: user-db-prod" :class="{ 'input-error': isDuplicate }" />
           <span v-if="isDuplicate" class="error-msg">이미 사용 중인 이름입니다</span>
         </label>
-        <label>DB 유형
-          <CustomSelect v-model="form.dbType" :options="dbTypeOptions" />
+        <label>인프라 유형
+          <CustomSelect v-model="form.infraType" :options="infraTypeOptions" />
         </label>
         <label>Host<input v-model="form.host" placeholder="예: db.internal.com" /></label>
         <label>Port<input v-model="form.port" placeholder="예: 5432" /></label>
-        <label>설명<textarea v-model="form.description" rows="2" placeholder="DB 설명..." /></label>
+        <label>설명<textarea v-model="form.description" rows="2" placeholder="인프라 설명..." /></label>
         <div class="actions">
           <button type="button" class="btn-secondary" @click="$emit('close')">취소</button>
           <button type="submit" class="btn-primary" :disabled="!form.name.trim() || isDuplicate">{{ isEdit ? '저장' : '추가' }}</button>
@@ -25,31 +25,37 @@
 
 <script setup lang="ts">
 import { reactive, computed, watch } from 'vue'
-import type { DBNode } from '../types'
+import type { InfraNode } from '../types'
 import CustomSelect from './CustomSelect.vue'
 
-const dbTypeOptions = [
+const infraTypeOptions = [
   { value: 'MySQL', label: 'MySQL' },
   { value: 'PostgreSQL', label: 'PostgreSQL' },
   { value: 'MongoDB', label: 'MongoDB' },
   { value: 'Redis', label: 'Redis' },
   { value: 'Oracle', label: 'Oracle' },
   { value: 'MSSQL', label: 'MSSQL' },
+  { value: 'RabbitMQ', label: 'RabbitMQ' },
+  { value: 'Kafka', label: 'Kafka' },
+  { value: 'SQS', label: 'SQS' },
   { value: 'Other', label: 'Other' },
 ]
 
-const DB_DEFAULT_PORTS: Record<string, string> = {
+const INFRA_DEFAULT_PORTS: Record<string, string> = {
   MySQL: '3306',
   PostgreSQL: '5432',
   MongoDB: '27017',
   Redis: '6379',
   Oracle: '1521',
   MSSQL: '1433',
+  RabbitMQ: '5672',
+  Kafka: '9092',
+  SQS: '',
   Other: '',
 }
 
-const props = defineProps<{ node?: DBNode | null; takenNames: Set<string> }>()
-const emit = defineEmits<{ close: []; submit: [data: Omit<DBNode, 'id'>] }>()
+const props = defineProps<{ node?: InfraNode | null; takenNames: Set<string> }>()
+const emit = defineEmits<{ close: []; submit: [data: Omit<InfraNode, 'id'>] }>()
 const isEdit = computed(() => !!props.node)
 const isDuplicate = computed(() => {
   const trimmed = form.name.trim()
@@ -58,28 +64,28 @@ const isDuplicate = computed(() => {
   return props.takenNames.has(trimmed)
 })
 
-const knownPorts = new Set(Object.values(DB_DEFAULT_PORTS).filter(Boolean))
+const knownPorts = new Set(Object.values(INFRA_DEFAULT_PORTS).filter(Boolean))
 
-const form = reactive<{ name: string; dbType: string; host: string; port: string; description: string }>({
+const form = reactive<{ name: string; infraType: string; host: string; port: string; description: string }>({
   name: props.node?.name ?? '',
-  dbType: props.node?.dbType ?? 'MySQL',
+  infraType: props.node?.infraType ?? 'MySQL',
   host: props.node?.host ?? '',
-  port: props.node?.port ?? (isEdit.value ? '' : DB_DEFAULT_PORTS['MySQL']),
+  port: props.node?.port ?? (isEdit.value ? '' : INFRA_DEFAULT_PORTS['MySQL']),
   description: props.node?.description ?? '',
 })
 
-watch(() => form.dbType, (newType) => {
+watch(() => form.infraType, (newType) => {
   if (!isEdit.value || !form.port || knownPorts.has(form.port)) {
-    form.port = DB_DEFAULT_PORTS[newType] ?? ''
+    form.port = INFRA_DEFAULT_PORTS[newType] ?? ''
   }
 })
 
 function onSubmit() {
   if (!form.name.trim()) return
   emit('submit', {
-    nodeKind: 'db',
+    nodeKind: 'infra',
     name: form.name.trim(),
-    dbType: form.dbType,
+    infraType: form.infraType,
     host: form.host,
     port: form.port,
     description: form.description,

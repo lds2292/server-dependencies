@@ -4,9 +4,6 @@
       <div class="node-detail">
         <div class="detail-header">
           <span :class="['type-badge', selectedNode.nodeKind ?? 'server']">{{ typeLabel(selectedNode) }}</span>
-          <span v-if="(selectedNode as any).environment" :class="['env-badge', (selectedNode as any).environment]">
-            {{ envLabel((selectedNode as any).environment) }}
-          </span>
           <span class="detail-name">{{ selectedNode.name }}</span>
         </div>
 
@@ -24,11 +21,12 @@
         <!-- L7 전용 -->
         <template v-else-if="selectedNode.nodeKind === 'l7'">
           <p v-if="(selectedNode as any).ip" class="detail-row mono">IP: {{ (selectedNode as any).ip }}</p>
+          <p v-if="(selectedNode as any).natIp" class="detail-row mono">NAT IP: {{ (selectedNode as any).natIp }}</p>
         </template>
 
         <!-- DB 전용 -->
-        <template v-else-if="selectedNode.nodeKind === 'db'">
-          <p class="detail-row">유형: {{ (selectedNode as any).dbType || '-' }}</p>
+        <template v-else-if="selectedNode.nodeKind === 'infra'">
+          <p class="detail-row">유형: {{ (selectedNode as any).infraType || '-' }}</p>
           <p v-if="(selectedNode as any).host" class="detail-row mono">
             {{ (selectedNode as any).host }}{{ (selectedNode as any).port ? ':' + (selectedNode as any).port : '' }}
           </p>
@@ -50,8 +48,7 @@
       <div v-if="selectedNode.nodeKind === 'l7'" class="section">
         <h4>구성 서버 <span class="count">{{ memberServers.length }}</span></h4>
         <ul>
-          <li v-for="s in memberServers" :key="s.id">
-            <span v-if="s.environment" :class="['env-badge', s.environment]">{{ envLabel(s.environment) }}</span>
+          <li v-for="s in memberServers" :key="s.id" class="nav-item" @click="$emit('navigateTo', s.id)">
             {{ s.name }}
             <span class="sub-text">{{ s.team }}</span>
           </li>
@@ -75,10 +72,10 @@
       <div class="section">
         <h4>의존하는 노드 <span class="count">{{ outgoing.length }}</span></h4>
         <ul>
-          <li v-for="d in outgoing" :key="d.id">
+          <li v-for="d in outgoing" :key="d.id" class="nav-item" @click="$emit('navigateTo', d.target)">
             <span :class="['dep-type', d.type]">{{ d.type }}</span>
             {{ getNodeName(d.target) }}
-            <button v-if="!readOnly" class="del-dep" @click="$emit('removeDependency', d.id)">✕</button>
+            <button v-if="!readOnly" class="del-dep" @click.stop="$emit('removeDependency', d.id)">✕</button>
           </li>
           <li v-if="outgoing.length === 0" class="empty">없음</li>
         </ul>
@@ -87,10 +84,10 @@
       <div class="section">
         <h4>의존받는 노드 <span class="count">{{ incoming.length }}</span></h4>
         <ul>
-          <li v-for="d in incoming" :key="d.id">
+          <li v-for="d in incoming" :key="d.id" class="nav-item" @click="$emit('navigateTo', d.source)">
             <span :class="['dep-type', d.type]">{{ d.type }}</span>
             {{ getNodeName(d.source) }}
-            <button v-if="!readOnly" class="del-dep" @click="$emit('removeDependency', d.id)">✕</button>
+            <button v-if="!readOnly" class="del-dep" @click.stop="$emit('removeDependency', d.id)">✕</button>
           </li>
           <li v-if="incoming.length === 0" class="empty">없음</li>
         </ul>
@@ -100,7 +97,7 @@
         <h4>장애 영향 범위 <span class="count impact">{{ impactedList.length }}</span></h4>
         <p class="impact-desc">이 노드 장애 시 영향받는 노드</p>
         <ul>
-          <li v-for="n in impactedList" :key="n.id" class="impact-item">
+          <li v-for="n in impactedList" :key="n.id" class="impact-item nav-item" @click="$emit('navigateTo', n.id)">
             <span :class="['type-badge', n.nodeKind ?? 'server']">{{ typeLabel(n) }}</span>
             {{ n.name }}
           </li>
@@ -124,11 +121,9 @@
 import { computed } from 'vue'
 import type { Server, AnyNode, Dependency } from '../types'
 
-const ENV_LABELS: Record<string, string> = { prod: 'Production', staging: 'Staging', dev: 'Develop' }
-function envLabel(env: string) { return ENV_LABELS[env] ?? env }
 function typeLabel(node: AnyNode): string {
   if (node.nodeKind === 'l7') return 'L7'
-  if (node.nodeKind === 'db') return 'DB'
+  if (node.nodeKind === 'infra') return 'INFRA'
   if (node.nodeKind === 'external') return 'EXT'
   return 'SRV'
 }
@@ -145,6 +140,7 @@ defineEmits<{
   removeDependency: [id: string]
   addDependency: [node: AnyNode]
   clearSelection: []
+  navigateTo: [id: string]
 }>()
 
 const outgoing = computed(() => props.dependencies.filter(d => d.source === props.selectedNode?.id))
@@ -159,7 +155,7 @@ const memberServers = computed<Server[]>(() => {
 function getNodeName(id: string) {
   const n = props.allNodes.find(n => n.id === id)
   if (!n) return id
-  const prefix = n.nodeKind === 'l7' ? '[L7] ' : n.nodeKind === 'db' ? '[DB] ' : n.nodeKind === 'external' ? '[EXT] ' : ''
+  const prefix = n.nodeKind === 'l7' ? '[L7] ' : n.nodeKind === 'infra' ? '[INFRA] ' : n.nodeKind === 'external' ? '[EXT] ' : ''
   return prefix + n.name
 }
 </script>
@@ -207,8 +203,8 @@ li:hover { background: #273549; }
   font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 700; flex-shrink: 0;
 }
 .dep-type.http { background: #1e3a5f; color: #93c5fd; }
-.dep-type.db { background: #1e1b4b; color: #a5b4fc; }
-.dep-type.queue { background: #1c1917; color: #d6d3d1; }
+.dep-type.tcp { background: #1e1b4b; color: #a5b4fc; }
+.dep-type.websocket { background: #14290a; color: #86efac; }
 .dep-type.other { background: #1c1917; color: #9ca3af; }
 .del-dep {
   margin-left: auto; background: none; border: none; color: #475569;
@@ -218,17 +214,14 @@ li:hover .del-dep { opacity: 1; }
 .del-dep:hover { color: #ef4444; background: #3f1f1f; }
 .impact-item { color: #fca5a5; }
 .empty { color: #475569; font-size: 12px; padding: 2px 5px; }
+.nav-item { cursor: pointer; }
 .type-badge {
   font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 800; flex-shrink: 0;
 }
 .type-badge.server, .type-badge.undefined { background: #1e3a5f; color: #93c5fd; }
 .type-badge.l7 { background: #3b0764; color: #e9d5ff; }
-.type-badge.db { background: #0c2040; color: #7dd3fc; }
+.type-badge.infra { background: #0c2040; color: #7dd3fc; }
 .type-badge.external { background: #052e16; color: #86efac; }
-.env-badge { font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 700; flex-shrink: 0; }
-.env-badge.prod { background: #1d4ed8; color: #bfdbfe; }
-.env-badge.staging { background: #b45309; color: #fef3c7; }
-.env-badge.dev { background: #065f46; color: #a7f3d0; }
 .panel-actions {
   padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; margin-top: auto;
 }
