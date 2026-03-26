@@ -1,8 +1,14 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { Server, L7Node, InfraNode, ExternalServiceNode, AnyNode, Dependency, GraphData } from '../types'
 
 const STORAGE_KEY = 'server-dependencies-data'
+const POSITIONS_KEY = 'server-dependencies-positions'
+
+type Snapshot = {
+  data: GraphData
+  positions: Record<string, { x: number; y: number }>
+}
 
 function generateId(): string {
   return crypto.randomUUID()
@@ -34,6 +40,67 @@ export const useGraphStore = defineStore('graph', () => {
   const externalNodes = ref<ExternalServiceNode[]>(initial.externalNodes ?? [])
   const dependencies = ref<Dependency[]>(initial.dependencies)
 
+  // --- Undo / Redo ---
+  const MAX_HISTORY = 100
+  const undoStack = ref<Snapshot[]>([])
+  const redoStack = ref<Snapshot[]>([])
+  let batchActive = false
+
+  const canUndo = computed(() => undoStack.value.length > 0)
+  const canRedo = computed(() => redoStack.value.length > 0)
+
+  function currentSnapshot(): Snapshot {
+    return {
+      data: {
+        servers: JSON.parse(JSON.stringify(servers.value)),
+        l7Nodes: JSON.parse(JSON.stringify(l7Nodes.value)),
+        infraNodes: JSON.parse(JSON.stringify(infraNodes.value)),
+        externalNodes: JSON.parse(JSON.stringify(externalNodes.value)),
+        dependencies: JSON.parse(JSON.stringify(dependencies.value)),
+      },
+      positions: JSON.parse(localStorage.getItem(POSITIONS_KEY) || '{}'),
+    }
+  }
+
+  function saveSnapshot() {
+    if (batchActive) return
+    undoStack.value.push(currentSnapshot())
+    if (undoStack.value.length > MAX_HISTORY) undoStack.value.shift()
+    redoStack.value = []
+  }
+
+  function restoreSnapshot(snap: Snapshot) {
+    localStorage.setItem(POSITIONS_KEY, JSON.stringify(snap.positions))
+    servers.value = snap.data.servers ?? []
+    l7Nodes.value = snap.data.l7Nodes ?? []
+    infraNodes.value = snap.data.infraNodes ?? []
+    externalNodes.value = snap.data.externalNodes ?? []
+    dependencies.value = snap.data.dependencies ?? []
+  }
+
+  function undo(): boolean {
+    if (undoStack.value.length === 0) return false
+    redoStack.value.push(currentSnapshot())
+    restoreSnapshot(undoStack.value.pop()!)
+    return true
+  }
+
+  function redo(): boolean {
+    if (redoStack.value.length === 0) return false
+    undoStack.value.push(currentSnapshot())
+    restoreSnapshot(redoStack.value.pop()!)
+    return true
+  }
+
+  function beginBatch() {
+    saveSnapshot()
+    batchActive = true
+  }
+
+  function endBatch() {
+    batchActive = false
+  }
+
   watch(
     [servers, l7Nodes, infraNodes, externalNodes, dependencies],
     () => {
@@ -50,15 +117,18 @@ export const useGraphStore = defineStore('graph', () => {
 
   // --- Server CRUD ---
   function addServer(data: Omit<Server, 'id'>): Server {
+    saveSnapshot()
     const s: Server = { ...data, id: generateId() }
     servers.value.push(s)
     return s
   }
   function updateServer(id: string, data: Partial<Omit<Server, 'id'>>) {
+    saveSnapshot()
     const idx = servers.value.findIndex(s => s.id === id)
     if (idx !== -1) Object.assign(servers.value[idx], data)
   }
   function deleteServer(id: string) {
+    saveSnapshot()
     servers.value = servers.value.filter(s => s.id !== id)
     l7Nodes.value = l7Nodes.value.map(n => ({
       ...n, memberServerIds: n.memberServerIds.filter(mid => mid !== id),
@@ -68,45 +138,54 @@ export const useGraphStore = defineStore('graph', () => {
 
   // --- L7 CRUD ---
   function addL7Node(data: Omit<L7Node, 'id'>): L7Node {
+    saveSnapshot()
     const n: L7Node = { ...data, id: generateId() }
     l7Nodes.value.push(n)
     return n
   }
   function updateL7Node(id: string, data: Partial<Omit<L7Node, 'id'>>) {
+    saveSnapshot()
     const idx = l7Nodes.value.findIndex(n => n.id === id)
     if (idx !== -1) Object.assign(l7Nodes.value[idx], data)
   }
   function deleteL7Node(id: string) {
+    saveSnapshot()
     l7Nodes.value = l7Nodes.value.filter(n => n.id !== id)
     dependencies.value = dependencies.value.filter(d => d.source !== id && d.target !== id)
   }
 
   // --- Infra CRUD ---
   function addInfraNode(data: Omit<InfraNode, 'id'>): InfraNode {
+    saveSnapshot()
     const n: InfraNode = { ...data, id: generateId() }
     infraNodes.value.push(n)
     return n
   }
   function updateInfraNode(id: string, data: Partial<Omit<InfraNode, 'id'>>) {
+    saveSnapshot()
     const idx = infraNodes.value.findIndex(n => n.id === id)
     if (idx !== -1) Object.assign(infraNodes.value[idx], data)
   }
   function deleteInfraNode(id: string) {
+    saveSnapshot()
     infraNodes.value = infraNodes.value.filter(n => n.id !== id)
     dependencies.value = dependencies.value.filter(d => d.source !== id && d.target !== id)
   }
 
   // --- External CRUD ---
   function addExternalNode(data: Omit<ExternalServiceNode, 'id'>): ExternalServiceNode {
+    saveSnapshot()
     const n: ExternalServiceNode = { ...data, id: generateId() }
     externalNodes.value.push(n)
     return n
   }
   function updateExternalNode(id: string, data: Partial<Omit<ExternalServiceNode, 'id'>>) {
+    saveSnapshot()
     const idx = externalNodes.value.findIndex(n => n.id === id)
     if (idx !== -1) Object.assign(externalNodes.value[idx], data)
   }
   function deleteExternalNode(id: string) {
+    saveSnapshot()
     externalNodes.value = externalNodes.value.filter(n => n.id !== id)
     dependencies.value = dependencies.value.filter(d => d.source !== id && d.target !== id)
   }
@@ -115,11 +194,13 @@ export const useGraphStore = defineStore('graph', () => {
   function addDependency(data: Omit<Dependency, 'id'>): Dependency | null {
     const exists = dependencies.value.some(d => d.source === data.source && d.target === data.target)
     if (exists) return null
+    saveSnapshot()
     const dep: Dependency = { ...data, id: generateId() }
     dependencies.value.push(dep)
     return dep
   }
   function removeDependency(id: string) {
+    saveSnapshot()
     dependencies.value = dependencies.value.filter(d => d.id !== id)
   }
 
@@ -218,6 +299,7 @@ export const useGraphStore = defineStore('graph', () => {
   }
 
   function loadData(data: GraphData) {
+    saveSnapshot()
     servers.value = data.servers ?? []
     l7Nodes.value = data.l7Nodes ?? []
     infraNodes.value = data.infraNodes ?? []
@@ -231,6 +313,7 @@ export const useGraphStore = defineStore('graph', () => {
       reader.onload = e => {
         try {
           const data = migrateDependencyTypes(JSON.parse(e.target!.result as string) as GraphData)
+          saveSnapshot()
           servers.value = data.servers ?? []
           l7Nodes.value = data.l7Nodes ?? []
           infraNodes.value = data.infraNodes ?? []
@@ -252,5 +335,6 @@ export const useGraphStore = defineStore('graph', () => {
     addExternalNode, updateExternalNode, deleteExternalNode,
     addDependency, removeDependency,
     findNodeById, getImpactedNodes, getCycleNodes, findPath, exportJSON, importJSON, loadData,
+    undo, redo, beginBatch, endBatch, canUndo, canRedo,
   }
 })

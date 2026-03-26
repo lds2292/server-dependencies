@@ -1,6 +1,12 @@
 <template>
   <div ref="container" class="graph-container">
-    <svg ref="svgRef" class="graph-svg" @dblclick="onCanvasDblClick" @click="onCanvasClick">
+    <svg ref="svgRef" class="graph-svg"
+      :style="{ cursor: spaceHeld ? 'grab' : 'default' }"
+      @mousedown="onCanvasSvgMouseDown"
+      @dblclick="onCanvasDblClick"
+      @click="onCanvasClick"
+      @contextmenu.prevent
+    >
       <defs>
         <marker
           v-for="m in markerDefs"
@@ -84,6 +90,20 @@
           pointer-events="none"
         />
 
+        <!-- 박스 선택 영역 -->
+        <rect
+          v-if="boxSelect"
+          :x="Math.min(boxSelect.startX, boxSelect.endX)"
+          :y="Math.min(boxSelect.startY, boxSelect.endY)"
+          :width="Math.abs(boxSelect.endX - boxSelect.startX)"
+          :height="Math.abs(boxSelect.endY - boxSelect.startY)"
+          fill="rgba(96, 165, 250, 0.08)"
+          stroke="#60a5fa"
+          stroke-width="1"
+          stroke-dasharray="5,3"
+          pointer-events="none"
+        />
+
         <!-- 노드 -->
         <g
           v-for="node in renderedNodes"
@@ -95,6 +115,7 @@
             impacted: impactedNodes.has(node.id),
             'connect-source': arrowSource?.id === node.id,
             'connect-target': connectTarget?.id === node.id,
+            'multi-selected': multiSelectedIds.has(node.id),
           }"
           :filter="nodeFilter(node)"
           :opacity="nodeOpacity(node)"
@@ -501,16 +522,24 @@
     <!-- 컨텍스트 메뉴 -->
     <div v-if="contextMenu.visible" class="context-menu"
       :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }" @click.stop>
-      <button class="path-item" :class="{ 'path-item-disabled': contextMenu.node?.nodeKind === 'l7' }" :disabled="contextMenu.node?.nodeKind === 'l7'" @click="onStartPath">경로 탐색</button>
-      <template v-if="!readOnly">
+      <template v-if="multiSelectedIds.size > 1 && contextMenu.node && multiSelectedIds.has(contextMenu.node.id)">
+        <div class="context-multi-label">{{ multiSelectedIds.size }}개 선택됨</div>
         <div class="context-divider"></div>
-        <button @click="onEditNode">수정</button>
-        <button @click="onAddDep">의존성 추가</button>
-        <button class="danger" @click="onDeleteNode">삭제</button>
+        <button v-if="!readOnly" class="danger" @click="onDeleteMultiNodes">삭제</button>
+        <button v-else class="disabled-item" disabled>읽기 전용 모드</button>
       </template>
       <template v-else>
-        <div class="context-divider"></div>
-        <button class="disabled-item" disabled>읽기 전용 모드</button>
+        <button class="path-item" :class="{ 'path-item-disabled': contextMenu.node?.nodeKind === 'l7' }" :disabled="contextMenu.node?.nodeKind === 'l7'" @click="onStartPath">경로 탐색</button>
+        <template v-if="!readOnly">
+          <div class="context-divider"></div>
+          <button @click="onEditNode">수정</button>
+          <button @click="onAddDep">의존성 추가</button>
+          <button class="danger" @click="onDeleteNode">삭제</button>
+        </template>
+        <template v-else>
+          <div class="context-divider"></div>
+          <button class="disabled-item" disabled>읽기 전용 모드</button>
+        </template>
       </template>
     </div>
   </div>
@@ -541,6 +570,7 @@ const emit = defineEmits<{
   deselect: []
   editNode: [node: AnyNode]
   deleteNode: [node: AnyNode]
+  deleteNodes: [nodeIds: string[]]
   addDependency: [source: AnyNode]
   quickConnect: [source: AnyNode, target: AnyNode]
   addNodeAt: [nodeKind: 'server' | 'l7' | 'infra' | 'external']
@@ -599,6 +629,9 @@ function savePositions() {
 // 드래그 상태
 const hoveredNodeId = ref<string | null>(null)
 const arrowSource = ref<D3Node | null>(null)
+const spaceHeld = ref(false)
+const multiSelectedIds = ref<Set<string>>(new Set())
+const boxSelect = ref<{ startX: number; startY: number; endX: number; endY: number } | null>(null)
 const arrowPreview = ref<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
 const connectTarget = ref<D3Node | null>(null)
 const blockedTarget = ref<D3Node | null>(null)
@@ -623,12 +656,17 @@ const addNodeMenu = ref({ visible: false, x: 0, y: 0 })
 let pendingNodePosition: { x: number; y: number } | null = null
 
 function onCanvasClick() {
+  if (boxSelectDone) {
+    boxSelectDone = false
+    return
+  }
   if (props.pathMode || props.pathNodes.size > 0) {
     emit('cancelPathMode')
   } else if (props.selectedId) {
     emit('deselect')
   }
   contextMenu.value.visible = false
+  multiSelectedIds.value = new Set()
 }
 
 function onCanvasDblClick(event: MouseEvent) {
@@ -899,6 +937,11 @@ function setupZoom() {
   const g = d3.select(gRef.value)
   zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
     .scaleExtent([0.5, 2])
+    .filter((event: Event) => {
+      if (event instanceof WheelEvent) return true
+      if (event instanceof MouseEvent) return spaceHeld.value
+      return false
+    })
     .on('zoom', e => {
       g.attr('transform', e.transform.toString())
       currentZoom.value = Math.round(e.transform.k * 100)
@@ -924,25 +967,62 @@ function goToCenter() {
 function startNodeDrag(event: MouseEvent, node: D3Node) {
   event.preventDefault()
   const startWorld = getSvgPoint(event)
-  const startX = node.x ?? 0, startY = node.y ?? 0
-  node.fx = startX; node.fy = startY
-  simulation?.alphaTarget(0.3).restart()
+  const isMultiDrag = multiSelectedIds.value.size > 1 && multiSelectedIds.value.has(node.id)
 
-  const handleMove = (e: MouseEvent) => {
-    const { x, y } = getSvgPoint(e)
-    node.fx = startX + (x - startWorld.x)
-    node.fy = startY + (y - startWorld.y)
-    node.x = node.fx; node.y = node.fy
-    renderedNodes.value = [...renderedNodes.value]
+  if (isMultiDrag) {
+    const startPositions = new Map(
+      renderedNodes.value
+        .filter(n => multiSelectedIds.value.has(n.id))
+        .map(n => [n.id, { x: n.x ?? 0, y: n.y ?? 0 }])
+    )
+    renderedNodes.value.forEach(n => {
+      if (multiSelectedIds.value.has(n.id)) { n.fx = n.x ?? 0; n.fy = n.y ?? 0 }
+    })
+    simulation?.alphaTarget(0.3).restart()
+
+    const handleMove = (e: MouseEvent) => {
+      const { x, y } = getSvgPoint(e)
+      const dx = x - startWorld.x, dy = y - startWorld.y
+      nodeDragMoved = true
+      renderedNodes.value.forEach(n => {
+        if (multiSelectedIds.value.has(n.id)) {
+          const sp = startPositions.get(n.id)!
+          n.fx = sp.x + dx; n.fy = sp.y + dy
+          n.x = n.fx; n.y = n.fy
+        }
+      })
+      renderedNodes.value = [...renderedNodes.value]
+    }
+    const handleUp = () => {
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
+      simulation?.alphaTarget(0)
+      savePositions()
+    }
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp)
+  } else {
+    const startX = node.x ?? 0, startY = node.y ?? 0
+    node.fx = startX; node.fy = startY
+    simulation?.alphaTarget(0.3).restart()
+
+    const handleMove = (e: MouseEvent) => {
+      const { x, y } = getSvgPoint(e)
+      nodeDragMoved = true
+      node.fx = startX + (x - startWorld.x)
+      node.fy = startY + (y - startWorld.y)
+      node.x = node.fx; node.y = node.fy
+      renderedNodes.value = [...renderedNodes.value]
+    }
+    const handleUp = () => {
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
+      simulation?.alphaTarget(0)
+      savePositions()
+    }
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp)
   }
-  const handleUp = () => {
-    window.removeEventListener('mousemove', handleMove)
-    window.removeEventListener('mouseup', handleUp)
-    simulation?.alphaTarget(0)
-    savePositions()
-  }
-  window.addEventListener('mousemove', handleMove)
-  window.addEventListener('mouseup', handleUp)
 }
 
 // ─── 화살표 드래그 (의존성 연결) ─────────────────────────
@@ -984,6 +1064,41 @@ function startArrowDrag(event: MouseEvent, node: D3Node) {
   window.addEventListener('mouseup', handleUp)
 }
 
+let boxSelectDone = false
+let nodeDragMoved = false
+
+function onCanvasSvgMouseDown(event: MouseEvent) {
+  if (event.button !== 0) return
+  if (spaceHeld.value) return
+  const startWorld = getSvgPoint(event)
+  boxSelect.value = { startX: startWorld.x, startY: startWorld.y, endX: startWorld.x, endY: startWorld.y }
+
+  const handleMove = (e: MouseEvent) => {
+    const { x, y } = getSvgPoint(e)
+    boxSelect.value = { ...boxSelect.value!, endX: x, endY: y }
+  }
+  const handleUp = () => {
+    window.removeEventListener('mousemove', handleMove)
+    window.removeEventListener('mouseup', handleUp)
+    if (boxSelect.value) {
+      const { startX, startY, endX, endY } = boxSelect.value
+      if (Math.abs(endX - startX) > 5 || Math.abs(endY - startY) > 5) {
+        const minX = Math.min(startX, endX), maxX = Math.max(startX, endX)
+        const minY = Math.min(startY, endY), maxY = Math.max(startY, endY)
+        const selected = renderedNodes.value.filter(n => {
+          const nx = n.x ?? 0, ny = n.y ?? 0
+          return nx >= minX && nx <= maxX && ny >= minY && ny <= maxY
+        })
+        multiSelectedIds.value = new Set(selected.map(n => n.id))
+        boxSelectDone = true
+      }
+      boxSelect.value = null
+    }
+  }
+  window.addEventListener('mousemove', handleMove)
+  window.addEventListener('mouseup', handleUp)
+}
+
 function onNodeMouseDown(event: MouseEvent, node: D3Node) {
   contextMenu.value.visible = false
   if (!props.readOnly && (event.ctrlKey || event.metaKey)) startArrowDrag(event, node)
@@ -994,12 +1109,34 @@ watch(() => [props.nodes, props.links], buildSimulation, { deep: true })
 watch(() => props.selectedId, (id) => {
   if (nodeTracking.value && id) navigateTo(id)
 })
-onMounted(() => { setupZoom(); buildSimulation() })
-onUnmounted(() => simulation?.stop())
+
+function onKeyDown(e: KeyboardEvent) {
+  if (e.code === 'Space' && !e.repeat) {
+    e.preventDefault()
+    spaceHeld.value = true
+  }
+}
+function onKeyUp(e: KeyboardEvent) {
+  if (e.code === 'Space') spaceHeld.value = false
+}
+
+onMounted(() => {
+  setupZoom()
+  buildSimulation()
+  document.addEventListener('keydown', onKeyDown)
+  document.addEventListener('keyup', onKeyUp)
+})
+onUnmounted(() => {
+  simulation?.stop()
+  document.removeEventListener('keydown', onKeyDown)
+  document.removeEventListener('keyup', onKeyUp)
+})
 
 function onNodeClick(node: AnyNode) {
   if (arrowPreview.value) return
+  if (nodeDragMoved) { nodeDragMoved = false; return }
   contextMenu.value.visible = false
+  multiSelectedIds.value = new Set()
   emit('nodeClick', node)
 }
 function onNodeContextMenu(event: MouseEvent, node: AnyNode) {
@@ -1007,6 +1144,10 @@ function onNodeContextMenu(event: MouseEvent, node: AnyNode) {
 }
 function onEditNode() { if (contextMenu.value.node) emit('editNode', contextMenu.value.node); contextMenu.value.visible = false }
 function onDeleteNode() { if (contextMenu.value.node) emit('deleteNode', contextMenu.value.node); contextMenu.value.visible = false }
+function onDeleteMultiNodes() {
+  emit('deleteNodes', Array.from(multiSelectedIds.value))
+  contextMenu.value.visible = false
+}
 function onAddDep() { if (contextMenu.value.node) emit('addDependency', contextMenu.value.node); contextMenu.value.visible = false }
 function onStartPath() { if (contextMenu.value.node) emit('startPathFrom', contextMenu.value.node); contextMenu.value.visible = false }
 
@@ -1309,7 +1450,7 @@ function toggleTracking() {
   nodeTracking.value = !nodeTracking.value
 }
 
-defineExpose({ navigateTo, toggleTracking })
+defineExpose({ navigateTo, toggleTracking, multiSelectedIds })
 </script>
 
 <style scoped>
@@ -1637,10 +1778,22 @@ defineExpose({ navigateTo, toggleTracking })
 }
 .path-cancel-btn:hover { border-color: #f59e0b; color: #fcd34d; }
 .context-menu .context-divider { height: 1px; background: #334155; margin: 3px 0; }
+.context-multi-label {
+  padding: 4px 10px 2px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+  color: #60a5fa; text-transform: uppercase;
+}
 .context-menu button.path-item { color: #fbbf24; }
 .context-menu button.path-item:hover { background: rgba(245, 158, 11, 0.1); }
 .context-menu button.path-item-disabled { color: #475569; cursor: not-allowed; }
 .context-menu button.path-item-disabled:hover { background: none; }
+
+/* 다중 선택 */
+.graph-node.multi-selected > rect:first-of-type {
+  stroke: #60a5fa;
+  stroke-width: 2;
+  stroke-dasharray: 5 3;
+}
 
 /* 순환 의존성 */
 .cycle-warning-banner {

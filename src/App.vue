@@ -22,7 +22,10 @@
 
     <main class="main-area">
       <div class="toolbar">
-        <span class="app-title">Server Dependencies</span>
+        <div class="title-group">
+          <span class="app-title">Server Dependencies</span>
+          <button class="btn-help" @click="showHelp = true" title="사용 방법">?</button>
+        </div>
         <div class="toolbar-right">
           <button class="btn-sample" @click="onSampleClick">Sample</button>
           <button
@@ -52,6 +55,7 @@
           @deselect="selectedNode = null"
           @edit-node="onEditNode"
           @delete-node="onDeleteNode"
+          @delete-nodes="onDeleteNodes"
           @add-dependency="openAddDepModal"
           @quick-connect="onQuickConnect"
           @add-node-at="onAddNodeAt"
@@ -97,6 +101,8 @@
           </div>
           <div class="shortcuts-section-title">전역</div>
           <div class="shortcuts-grid">
+            <div class="shortcut-row"><kbd>Cmd+Z</kbd><span>실행 취소</span></div>
+            <div class="shortcut-row"><kbd>Cmd+Shift+Z</kbd><span>다시 실행</span></div>
             <div class="shortcut-row"><kbd>E</kbd><span>Edit / Read Only 전환</span></div>
             <div class="shortcut-row"><kbd>F</kbd><span>노드 트래킹 ON/OFF</span></div>
             <div class="shortcut-row"><kbd>Delete</kbd><span>선택 노드 삭제</span></div>
@@ -113,6 +119,108 @@
           <div class="shortcuts-section-title">미니맵</div>
           <div class="shortcuts-grid">
             <div class="shortcut-row"><kbd>클릭 / 드래그</kbd><span>해당 위치로 이동</span></div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 도움말 팝업 -->
+    <transition name="shortcuts-fade">
+      <div v-if="showHelp" class="shortcuts-overlay" @click.self="showHelp = false">
+        <div class="help-modal">
+          <div class="shortcuts-header">
+            <span class="shortcuts-title">사용 방법</span>
+            <button class="shortcuts-close" @click="showHelp = false">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <line x1="1" y1="1" x2="11" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="11" y1="1" x2="1" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="help-body">
+            <div class="help-col">
+              <div class="shortcuts-section-title">노드 종류</div>
+              <div class="help-node-list">
+                <div class="help-node-item">
+                  <span class="help-node-badge server">SRV</span>
+                  <div>
+                    <div class="help-node-name">서버</div>
+                    <div class="help-node-desc">API, 웹, 배치 등 일반 서버</div>
+                  </div>
+                </div>
+                <div class="help-node-item">
+                  <span class="help-node-badge l7">L7</span>
+                  <div>
+                    <div class="help-node-name">L7 로드밸런서</div>
+                    <div class="help-node-desc">여러 서버를 묶는 로드밸런서</div>
+                  </div>
+                </div>
+                <div class="help-node-item">
+                  <span class="help-node-badge infra">DB</span>
+                  <div>
+                    <div class="help-node-name">인프라</div>
+                    <div class="help-node-desc">DB, 캐시, 메시지큐 등</div>
+                  </div>
+                </div>
+                <div class="help-node-item">
+                  <span class="help-node-badge ext">EXT</span>
+                  <div>
+                    <div class="help-node-name">외부 서비스</div>
+                    <div class="help-node-desc">외부 API, SaaS 등 외부 의존</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="shortcuts-section-title">의존성 분석</div>
+              <div class="help-desc-list">
+                <div class="help-desc-item">
+                  <span class="help-dot red"></span>
+                  노드 선택 시 해당 노드에 의존하는 서버를 빨간색으로 표시 (영향 범위)
+                </div>
+                <div class="help-desc-item">
+                  <span class="help-dot green"></span>
+                  선택 노드에서 나가는 의존성을 초록색으로 표시
+                </div>
+                <div class="help-desc-item">
+                  <span class="help-dot amber"></span>
+                  우클릭 > 경로 탐색으로 두 노드 간 의존 경로를 추적
+                </div>
+              </div>
+            </div>
+
+            <div class="help-divider"></div>
+
+            <div class="help-col">
+              <div class="shortcuts-section-title">그래프 조작</div>
+              <div class="shortcuts-grid">
+                <div class="shortcut-row"><kbd>드래그 (빈 공간)</kbd><span>다중 노드 박스 선택</span></div>
+                <div class="shortcut-row"><kbd>Space</kbd><span>+ 드래그로 캔버스 이동</span></div>
+                <div class="shortcut-row"><kbd>Ctrl</kbd><span>+ 노드 드래그로 의존성 연결</span></div>
+                <div class="shortcut-row"><kbd>더블클릭</kbd><span>빈 공간에 노드 추가</span></div>
+                <div class="shortcut-row"><kbd>우클릭</kbd><span>노드 컨텍스트 메뉴</span></div>
+                <div class="shortcut-row"><kbd>휠</kbd><span>줌 인 / 아웃</span></div>
+                <div class="shortcut-row"><kbd>미니맵 클릭</kbd><span>해당 위치로 이동</span></div>
+              </div>
+
+              <div class="shortcuts-section-title">키보드 단축키</div>
+              <div class="shortcuts-grid">
+                <div class="shortcut-row"><kbd>Cmd+Z</kbd><span>실행 취소 (Undo)</span></div>
+                <div class="shortcut-row"><kbd>Cmd+Shift+Z</kbd><span>다시 실행 (Redo)</span></div>
+                <div class="shortcut-row"><kbd>E</kbd><span>Edit / Read Only 전환</span></div>
+                <div class="shortcut-row"><kbd>F</kbd><span>노드 트래킹 ON / OFF</span></div>
+                <div class="shortcut-row"><kbd>Delete</kbd><span>선택 노드 삭제</span></div>
+                <div class="shortcut-row"><kbd>?</kbd><span>단축키 목록 열기</span></div>
+                <div class="shortcut-row"><kbd>Esc</kbd><span>선택 해제 / 팝업 닫기</span></div>
+              </div>
+
+              <div class="shortcuts-section-title">사이드바</div>
+              <div class="shortcuts-grid">
+                <div class="shortcut-row"><kbd>+ 버튼</kbd><span>노드 추가</span></div>
+                <div class="shortcut-row"><kbd>JSON 내보내기</kbd><span>현재 그래프 저장</span></div>
+                <div class="shortcut-row"><kbd>JSON 불러오기</kbd><span>저장된 그래프 복원</span></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -170,6 +278,30 @@
           <div class="delete-dialog-actions">
             <button class="delete-btn-cancel" @click="sampleConfirm = false">취소</button>
             <button class="delete-btn-confirm" style="background:#0f2044;border-color:#3b82f6;color:#93c5fd" @click="loadSample">불러오기</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 다중 노드 삭제 확인 다이얼로그 -->
+    <transition name="toast-fade">
+      <div v-if="deleteMultiConfirm.visible" class="delete-overlay" @click.self="cancelDeleteMulti">
+        <div class="delete-dialog">
+          <div class="delete-dialog-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M12 9v4M12 17h.01" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="#ef4444" stroke-width="1.5" fill="none"/>
+            </svg>
+          </div>
+          <div class="delete-dialog-body">
+            <div class="delete-dialog-title">노드 {{ deleteMultiConfirm.nodeIds.length }}개 삭제</div>
+            <div class="delete-dialog-desc">
+              선택된 <strong style="color:#f1f5f9">{{ deleteMultiConfirm.nodeIds.length }}개</strong>의 노드를 삭제합니다.<br/>연결된 의존성도 함께 제거됩니다.
+            </div>
+          </div>
+          <div class="delete-dialog-actions">
+            <button class="delete-btn-cancel" @click="cancelDeleteMulti">취소</button>
+            <button class="delete-btn-confirm" @click="confirmDeleteMulti">삭제</button>
           </div>
         </div>
       </div>
@@ -234,6 +366,7 @@ const store = useGraphStore()
 const selectedNode = ref<AnyNode | null>(null)
 const readOnly = ref(false)
 const showShortcuts = ref(false)
+const showHelp = ref(false)
 const detailPanelOpen = ref(true)
 const pathSource = ref<AnyNode | null>(null)
 const pathMode = ref(false)
@@ -332,6 +465,7 @@ function onEditNode(node: AnyNode) {
 }
 // ─── 노드 삭제 확인 다이얼로그 ───────────────────────────
 const deleteConfirm = ref<{ visible: boolean; node: AnyNode | null }>({ visible: false, node: null })
+const deleteMultiConfirm = ref<{ visible: boolean; nodeIds: string[] }>({ visible: false, nodeIds: [] })
 
 function onDeleteNode(node: AnyNode) {
   deleteConfirm.value = { visible: true, node }
@@ -350,6 +484,31 @@ function confirmDelete() {
 
 function cancelDelete() {
   deleteConfirm.value = { visible: false, node: null }
+}
+
+function onDeleteNodes(nodeIds: string[]) {
+  deleteMultiConfirm.value = { visible: true, nodeIds }
+}
+
+function confirmDeleteMulti() {
+  store.beginBatch()
+  for (const id of deleteMultiConfirm.value.nodeIds) {
+    const node = allNodes.value.find(n => n.id === id)
+    if (!node) continue
+    if (node.nodeKind === 'l7') store.deleteL7Node(id)
+    else if (node.nodeKind === 'infra') store.deleteInfraNode(id)
+    else if (node.nodeKind === 'external') store.deleteExternalNode(id)
+    else store.deleteServer(id)
+  }
+  store.endBatch()
+  if (selectedNode.value && deleteMultiConfirm.value.nodeIds.includes(selectedNode.value.id)) {
+    selectedNode.value = null
+  }
+  deleteMultiConfirm.value = { visible: false, nodeIds: [] }
+}
+
+function cancelDeleteMulti() {
+  deleteMultiConfirm.value = { visible: false, nodeIds: [] }
 }
 
 function nodeKindLabel(node: AnyNode): string {
@@ -487,14 +646,30 @@ function handleKeyDown(e: KeyboardEvent) {
   if (e.key === '?') { showShortcuts.value = !showShortcuts.value; return }
   const tag = (e.target as HTMLElement).tagName
   if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return
+  const meta = e.metaKey || e.ctrlKey
+  if (meta && e.key === 'z' && !e.shiftKey) {
+    e.preventDefault()
+    if (store.undo()) showToast('실행 취소')
+    return
+  }
+  if (meta && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+    e.preventDefault()
+    if (store.redo()) showToast('다시 실행')
+    return
+  }
   if (e.key === 'e' || e.key === 'E') {
     readOnly.value = !readOnly.value
   }
   if (e.key === 'f' || e.key === 'F') {
     graphCanvasRef.value?.toggleTracking()
   }
-  if (e.key === 'Delete' && selectedNode.value && !readOnly.value) {
-    onDeleteNode(selectedNode.value)
+  if (e.key === 'Delete' && !readOnly.value) {
+    const multiIds = graphCanvasRef.value?.multiSelectedIds
+    if (multiIds && multiIds.size > 1) {
+      onDeleteNodes(Array.from(multiIds))
+    } else if (selectedNode.value) {
+      onDeleteNode(selectedNode.value)
+    }
   }
 }
 onMounted(() => window.addEventListener('keydown', handleKeyDown))
@@ -698,4 +873,52 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
 .shortcuts-fade-enter-active { transition: opacity 0.15s; }
 .shortcuts-fade-leave-active { transition: opacity 0.15s; }
 .shortcuts-fade-enter-from, .shortcuts-fade-leave-to { opacity: 0; }
+
+/* 타이틀 + 도움말 버튼 */
+.title-group { display: flex; align-items: center; gap: 8px; }
+.btn-help {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 1px solid #334155; background: #1e293b;
+  color: #64748b; font-size: 11px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; flex-shrink: 0; line-height: 1;
+}
+.btn-help:hover { border-color: #60a5fa; color: #60a5fa; background: #0f2044; }
+
+/* 도움말 모달 */
+.help-modal {
+  background: #1e293b; border: 1px solid #334155;
+  border-radius: 14px; padding: 24px 28px;
+  width: 700px; max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 60px); overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.help-body { display: flex; gap: 0; }
+.help-col { flex: 1; min-width: 0; }
+.help-divider {
+  width: 1px; background: #293548; margin: 0 24px; flex-shrink: 0;
+}
+.help-node-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
+.help-node-item { display: flex; align-items: flex-start; gap: 10px; }
+.help-node-badge {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.05em;
+  padding: 3px 6px; border-radius: 4px; flex-shrink: 0; margin-top: 1px;
+}
+.help-node-badge.server { background: #1e3a8a; color: #93c5fd; border: 1px solid #1d4ed8; }
+.help-node-badge.l7    { background: #3b0764; color: #d8b4fe; border: 1px solid #7c3aed; }
+.help-node-badge.infra { background: #f0f9ff; color: #0369a1; border: 1px solid #7dd3fc; }
+.help-node-badge.ext   { background: #052e16; color: #86efac; border: 1px solid #16a34a; }
+.help-node-name { font-size: 12px; font-weight: 600; color: #e2e8f0; margin-bottom: 2px; }
+.help-node-desc { font-size: 11px; color: #64748b; line-height: 1.4; }
+.help-desc-list { display: flex; flex-direction: column; gap: 7px; }
+.help-desc-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 12px; color: #94a3b8; line-height: 1.5;
+}
+.help-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px;
+}
+.help-dot.red   { background: #ef4444; }
+.help-dot.green { background: #22c55e; }
+.help-dot.amber { background: #f59e0b; }
 </style>
