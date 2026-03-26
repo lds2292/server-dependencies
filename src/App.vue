@@ -4,14 +4,14 @@
       <ServerPanel
         :servers="store.servers"
         :l7-nodes="store.l7Nodes"
-        :db-nodes="store.dbNodes"
+        :infra-nodes="store.infraNodes"
         :external-nodes="store.externalNodes"
         :selected-id="selectedNode?.id ?? null"
         :read-only="readOnly"
         @select="onSelectNode"
         @add-server="openAddServerModal"
         @add-l7="openAddL7Modal"
-        @add-d-b="openAddDBModal"
+        @add-infra="openAddInfraModal"
         @add-external="openAddExternalModal"
         @edit="onEditNode"
         @delete="onDeleteNode"
@@ -44,6 +44,7 @@
           :selected-id="selectedNode?.id ?? null"
           :read-only="readOnly"
           @node-click="onSelectNode"
+          @deselect="selectedNode = null"
           @edit-node="onEditNode"
           @delete-node="onDeleteNode"
           @add-dependency="openAddDepModal"
@@ -83,12 +84,12 @@
       @close="l7Modal.visible = false"
       @submit="onL7ModalSubmit"
     />
-    <DBModal
-      v-if="dbModal.visible"
-      :node="dbModal.editing"
+    <InfraModal
+      v-if="infraModal.visible"
+      :node="infraModal.editing"
       :taken-names="allNodeNames"
-      @close="dbModal.visible = false"
-      @submit="onDBModalSubmit"
+      @close="infraModal.visible = false"
+      @submit="onInfraModalSubmit"
     />
     <ExternalServiceModal
       v-if="externalModal.visible"
@@ -172,11 +173,11 @@ import GraphCanvas from './components/GraphCanvas.vue'
 import ServerPanel from './components/ServerPanel.vue'
 import ServerModal from './components/ServerModal.vue'
 import L7Modal from './components/L7Modal.vue'
-import DBModal from './components/DBModal.vue'
+import InfraModal from './components/InfraModal.vue'
 import ExternalServiceModal from './components/ExternalServiceModal.vue'
 import DependencyModal from './components/DependencyModal.vue'
 import ImpactPanel from './components/ImpactPanel.vue'
-import type { Server, L7Node, DBNode, ExternalServiceNode, AnyNode, Dependency, D3Link } from './types'
+import type { Server, L7Node, InfraNode, ExternalServiceNode, AnyNode, Dependency, D3Link } from './types'
 
 const store = useGraphStore()
 const selectedNode = ref<AnyNode | null>(null)
@@ -184,7 +185,7 @@ const readOnly = ref(false)
 const graphCanvasRef = ref<InstanceType<typeof GraphCanvas> | null>(null)
 
 const allNodes = computed<AnyNode[]>(() => [
-  ...store.servers, ...store.l7Nodes, ...store.dbNodes, ...store.externalNodes,
+  ...store.servers, ...store.l7Nodes, ...store.infraNodes, ...store.externalNodes,
 ])
 
 const d3Links = computed<D3Link[]>(() =>
@@ -217,7 +218,7 @@ const existingTeams = computed(() => [...new Set(store.servers.map(s => s.team).
 const allNodeNames = computed(() => new Set([
   ...store.servers.map(s => s.name),
   ...store.l7Nodes.map(n => n.name),
-  ...store.dbNodes.map(n => n.name),
+  ...store.infraNodes.map(n => n.name),
   ...store.externalNodes.map(n => n.name),
 ]))
 
@@ -226,7 +227,7 @@ function onSelectNode(node: AnyNode) {
 }
 function onEditNode(node: AnyNode) {
   if (node.nodeKind === 'l7') openEditL7Modal(node as L7Node)
-  else if (node.nodeKind === 'db') openEditDBModal(node as DBNode)
+  else if (node.nodeKind === 'infra') openEditInfraModal(node as InfraNode)
   else if (node.nodeKind === 'external') openEditExternalModal(node as ExternalServiceNode)
   else openEditServerModal(node as Server)
 }
@@ -241,7 +242,7 @@ function confirmDelete() {
   const node = deleteConfirm.value.node
   if (!node) return
   if (node.nodeKind === 'l7') store.deleteL7Node(node.id)
-  else if (node.nodeKind === 'db') store.deleteDBNode(node.id)
+  else if (node.nodeKind === 'infra') store.deleteInfraNode(node.id)
   else if (node.nodeKind === 'external') store.deleteExternalNode(node.id)
   else store.deleteServer(node.id)
   if (selectedNode.value?.id === node.id) selectedNode.value = null
@@ -254,7 +255,7 @@ function cancelDelete() {
 
 function nodeKindLabel(node: AnyNode): string {
   if (node.nodeKind === 'l7') return 'L7 로드밸런서'
-  if (node.nodeKind === 'db') return 'DB'
+  if (node.nodeKind === 'infra') return '인프라'
   if (node.nodeKind === 'external') return '외부 서비스'
   return '서버'
 }
@@ -279,14 +280,14 @@ function onL7ModalSubmit(data: Omit<L7Node, 'id'>) {
   l7Modal.value.visible = false
 }
 
-// DB Modal
-const dbModal = ref<{ visible: boolean; editing: DBNode | null }>({ visible: false, editing: null })
-function openAddDBModal() { dbModal.value = { visible: true, editing: null } }
-function openEditDBModal(n: DBNode) { dbModal.value = { visible: true, editing: n } }
-function onDBModalSubmit(data: Omit<DBNode, 'id'>) {
-  if (dbModal.value.editing) store.updateDBNode(dbModal.value.editing.id, data)
-  else store.addDBNode(data)
-  dbModal.value.visible = false
+// Infra Modal
+const infraModal = ref<{ visible: boolean; editing: InfraNode | null }>({ visible: false, editing: null })
+function openAddInfraModal() { infraModal.value = { visible: true, editing: null } }
+function openEditInfraModal(n: InfraNode) { infraModal.value = { visible: true, editing: n } }
+function onInfraModalSubmit(data: Omit<InfraNode, 'id'>) {
+  if (infraModal.value.editing) store.updateInfraNode(infraModal.value.editing.id, data)
+  else store.addInfraNode(data)
+  infraModal.value.visible = false
 }
 
 // External Modal
@@ -310,9 +311,9 @@ function showToast(msg: string) {
 
 // Dependency Modal
 const depModal = ref<{ visible: boolean; defaultSource: string; defaultTarget: string }>({ visible: false, defaultSource: '', defaultTarget: '' })
-function onAddNodeAt(nodeKind: 'server' | 'l7' | 'db' | 'external') {
+function onAddNodeAt(nodeKind: 'server' | 'l7' | 'infra' | 'external') {
   if (nodeKind === 'l7') openAddL7Modal()
-  else if (nodeKind === 'db') openAddDBModal()
+  else if (nodeKind === 'infra') openAddInfraModal()
   else if (nodeKind === 'external') openAddExternalModal()
   else openAddServerModal()
 }
@@ -335,7 +336,7 @@ function onDepModalSubmit(data: Omit<Dependency, 'id'>) {
 // ─── 샘플 데이터 ─────────────────────────────────────────
 const sampleConfirm = ref(false)
 const hasData = computed(() =>
-  store.servers.length + store.l7Nodes.length + store.dbNodes.length + store.externalNodes.length > 0
+  store.servers.length + store.l7Nodes.length + store.infraNodes.length + store.externalNodes.length > 0
 )
 
 function onSampleClick() {

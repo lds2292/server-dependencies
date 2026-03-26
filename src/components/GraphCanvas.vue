@@ -1,6 +1,6 @@
 <template>
   <div ref="container" class="graph-container">
-    <svg ref="svgRef" class="graph-svg" @dblclick="onCanvasDblClick">
+    <svg ref="svgRef" class="graph-svg" @dblclick="onCanvasDblClick" @click="onCanvasClick">
       <defs>
         <marker
           v-for="m in markerDefs"
@@ -107,7 +107,7 @@
           />
 
           <!-- 아이콘/텍스트 구분선 -->
-          <line x1="-60" y1="-31" x2="-60" y2="31" :stroke="node.nodeKind === 'db' ? 'rgba(3,105,161,0.18)' : 'rgba(255,255,255,0.12)'" stroke-width="1" pointer-events="none"/>
+          <line x1="-60" y1="-31" x2="-60" y2="31" :stroke="node.nodeKind === 'infra' ? 'rgba(3,105,161,0.18)' : 'rgba(255,255,255,0.12)'" stroke-width="1" pointer-events="none"/>
 
           <!-- 타입 아이콘 (좌측 컬럼 수직 중앙) -->
           <g transform="translate(-79,-6)" opacity="0.85" pointer-events="none">
@@ -126,11 +126,30 @@
               <line x1="2.5" y1="3.5" x2="8.5" y2="3.5" stroke="white" stroke-width="0.8"/>
             </template>
             <!-- DB -->
-            <template v-else-if="node.nodeKind === 'db'">
-              <ellipse cx="5.5" cy="1.8" rx="5" ry="1.8" stroke="#0369a1" stroke-width="0.9" fill="none"/>
-              <line x1="0.5" y1="1.8" x2="0.5" y2="7.5" stroke="#0369a1" stroke-width="0.9"/>
-              <line x1="10.5" y1="1.8" x2="10.5" y2="7.5" stroke="#0369a1" stroke-width="0.9"/>
-              <ellipse cx="5.5" cy="7.5" rx="5" ry="1.8" stroke="#0369a1" stroke-width="0.9" fill="none"/>
+            <template v-else-if="node.nodeKind === 'infra'">
+              <!-- v-for 트릭으로 getInfraIconInfo 결과를 로컬 변수처럼 사용 -->
+              <template v-for="dbIcon in [getInfraIconInfo((node as any).infraType)]" :key="'dbi'">
+                <!-- 알려진 DB: 컬러 배지 -->
+                <template v-if="dbIcon">
+                  <circle cx="8" cy="5" r="7" :fill="dbIcon.color" opacity="0.92"/>
+                  <text
+                    x="8" y="7.2"
+                    text-anchor="middle"
+                    :fill="dbIcon.textColor"
+                    font-size="6"
+                    font-weight="800"
+                    style="font-family: 'Courier New', Courier, monospace; letter-spacing: 0.3px"
+                    pointer-events="none"
+                  >{{ dbIcon.abbr }}</text>
+                </template>
+                <!-- 알 수 없는 DB: 기존 실린더 유지 -->
+                <template v-else>
+                  <ellipse cx="5.5" cy="1.8" rx="5" ry="1.8" stroke="#0369a1" stroke-width="0.9" fill="none"/>
+                  <line x1="0.5" y1="1.8" x2="0.5" y2="7.5" stroke="#0369a1" stroke-width="0.9"/>
+                  <line x1="10.5" y1="1.8" x2="10.5" y2="7.5" stroke="#0369a1" stroke-width="0.9"/>
+                  <ellipse cx="5.5" cy="7.5" rx="5" ry="1.8" stroke="#0369a1" stroke-width="0.9" fill="none"/>
+                </template>
+              </template>
             </template>
             <!-- External -->
             <template v-else-if="node.nodeKind === 'external'">
@@ -143,14 +162,14 @@
           </g>
 
           <!-- 노드 텍스트 (우측 텍스트 영역 중앙: x=13) -->
-          <text x="21" dy="-9" text-anchor="middle" class="node-label" :style="node.nodeKind === 'db' ? 'fill:#0f172a' : ''">{{ truncate(node.name) }}</text>
+          <text x="21" dy="-9" text-anchor="middle" class="node-label" :style="node.nodeKind === 'infra' ? 'fill:#0f172a' : ''">{{ truncate(node.name) }}</text>
 
           <template v-if="node.nodeKind === 'l7'">
-            <text x="21" dy="6" text-anchor="middle" class="node-sub">L7 Load Balancer</text>
-            <text x="21" dy="19" text-anchor="middle" class="node-meta">{{ (node as any).ip || '' }}{{ (node as any).ip && (node as any).memberServerIds?.length ? ' · ' : '' }}{{ (node as any).memberServerIds?.length ?? 0 }}개 서버</text>
+            <text x="21" dy="6" text-anchor="middle" class="node-sub">{{ (node as any).ip || '' }}{{ (node as any).ip && (node as any).natIp ? ' / ' : '' }}{{ (node as any).natIp || '' }}{{ !((node as any).ip) && !((node as any).natIp) ? 'L7 Load Balancer' : '' }}</text>
+            <text x="21" dy="19" text-anchor="middle" class="node-meta">{{ (node as any).memberServerIds?.length ?? 0 }}개 서버</text>
           </template>
-          <template v-else-if="node.nodeKind === 'db'">
-            <text x="21" dy="6" text-anchor="middle" class="node-sub" style="fill:rgba(15,23,42,0.65)">{{ (node as any).dbType || 'Database' }}</text>
+          <template v-else-if="node.nodeKind === 'infra'">
+            <text x="21" dy="6" text-anchor="middle" class="node-sub" style="fill:rgba(15,23,42,0.65)">{{ (node as any).infraType || 'Infra' }}</text>
             <text x="21" dy="19" text-anchor="middle" class="node-meta" style="fill:rgba(15,23,42,0.5)">{{ (node as any).host || '-' }}{{ (node as any).port ? ':' + (node as any).port : '' }}</text>
           </template>
           <template v-else-if="node.nodeKind === 'external'">
@@ -180,6 +199,51 @@
       </g>
     </svg>
 
+    <!-- 상단 중앙 검색 -->
+    <div class="search-bar" @keydown.escape="searchQuery = ''; searchFocused = false">
+      <div class="search-input-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="5.5" cy="5.5" r="4" stroke="#94a3b8" stroke-width="1.3"/>
+          <line x1="8.5" y1="8.5" x2="13" y2="13" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        <input
+          v-model="searchQuery"
+          class="search-input"
+          placeholder="노드 / IP 검색..."
+          autocomplete="off"
+          spellcheck="false"
+          @focus="searchFocused = true"
+          @blur="onSearchBlur"
+          @keydown.down.prevent="searchSelectDelta(1)"
+          @keydown.up.prevent="searchSelectDelta(-1)"
+          @keydown.enter.prevent="searchConfirm"
+        />
+        <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''; searchFocused = false">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <line x1="1" y1="1" x2="9" y2="9" stroke="#94a3b8" stroke-width="1.4" stroke-linecap="round"/>
+            <line x1="9" y1="1" x2="1" y2="9" stroke="#94a3b8" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <ul v-if="searchFocused && searchResults.length > 0" class="search-dropdown">
+        <li
+          v-for="(node, i) in searchResults"
+          :key="node.id"
+          class="search-result-item"
+          :class="{ active: i === searchActiveIndex }"
+          @mousedown.prevent="navigateToNode(node)"
+          @mouseenter="searchActiveIndex = i"
+        >
+          <span class="search-result-kind" :style="{ color: searchNodeColor(node) }">{{ searchNodeKindLabel(node) }}</span>
+          <span class="search-result-name">{{ node.name }}</span>
+          <span class="search-result-ip">{{ searchNodeIp(node) }}</span>
+        </li>
+      </ul>
+      <div v-else-if="searchFocused && searchQuery.trim() && searchResults.length === 0" class="search-no-result">
+        결과 없음
+      </div>
+    </div>
+
     <!-- 우측 상단 색상 범주 Legend -->
     <div class="node-legend">
       <div class="legend-item">
@@ -189,7 +253,7 @@
         <span class="legend-dot" style="background:#3b0764;border-color:#7c3aed"></span>L7
       </div>
       <div class="legend-item">
-        <span class="legend-dot" style="background:#f0f9ff;border-color:#7dd3fc"></span>DB
+        <span class="legend-dot" style="background:#f0f9ff;border-color:#7dd3fc"></span>INFRA
       </div>
       <div class="legend-item">
         <span class="legend-dot" style="background:#052e16;border-color:#16a34a"></span>External
@@ -255,7 +319,12 @@
 
     <!-- 미니맵 -->
     <div v-if="minimapNodes.length > 0" class="minimap">
-      <svg class="minimap-svg" :viewBox="`0 0 ${MINIMAP_W} ${MINIMAP_H}`" :width="MINIMAP_W" :height="MINIMAP_H" overflow="hidden">
+      <svg class="minimap-svg" :viewBox="`0 0 ${MINIMAP_W} ${MINIMAP_H}`" :width="MINIMAP_W" :height="MINIMAP_H" overflow="hidden"
+        @mousedown.prevent="onMinimapMouseDown"
+        @mousemove="onMinimapMouseMove"
+        @mouseup="onMinimapMouseUp"
+        @mouseleave="onMinimapMouseUp"
+      >
         <defs>
           <clipPath id="minimap-clip">
             <rect x="0" y="0" :width="MINIMAP_W" :height="MINIMAP_H"/>
@@ -361,14 +430,14 @@
         </svg>
         L7 로드밸런서
       </button>
-      <button @click="onAddNodeMenuSelect('db')">
+      <button @click="onAddNodeMenuSelect('infra')">
         <svg class="menu-icon" viewBox="0 0 11 10" fill="none">
           <ellipse cx="5.5" cy="1.8" rx="5" ry="1.8" stroke="#7dd3fc" stroke-width="0.9"/>
           <line x1="0.5" y1="1.8" x2="0.5" y2="8" stroke="#7dd3fc" stroke-width="0.9"/>
           <line x1="10.5" y1="1.8" x2="10.5" y2="8" stroke="#7dd3fc" stroke-width="0.9"/>
           <ellipse cx="5.5" cy="8" rx="5" ry="1.8" stroke="#7dd3fc" stroke-width="0.9"/>
         </svg>
-        DB
+        인프라
       </button>
       <button @click="onAddNodeMenuSelect('external')">
         <svg class="menu-icon" viewBox="0 0 11 11" fill="none">
@@ -414,11 +483,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   nodeClick: [node: AnyNode]
+  deselect: []
   editNode: [node: AnyNode]
   deleteNode: [node: AnyNode]
   addDependency: [source: AnyNode]
   quickConnect: [source: AnyNode, target: AnyNode]
-  addNodeAt: [nodeKind: 'server' | 'l7' | 'db' | 'external']
+  addNodeAt: [nodeKind: 'server' | 'l7' | 'infra' | 'external']
 }>()
 
 const container = ref<HTMLDivElement>()
@@ -476,7 +546,7 @@ const blockedTarget = ref<D3Node | null>(null)
 const connectBlockedMsg = ref('')
 
 function isConnectionBlocked(source: D3Node, target: D3Node): boolean {
-  return source.nodeKind === 'db' && (!target.nodeKind || target.nodeKind === 'server')
+  return source.nodeKind === 'infra' && (!target.nodeKind || target.nodeKind === 'server')
 }
 
 let blockMsgTimer: ReturnType<typeof setTimeout> | null = null
@@ -493,6 +563,11 @@ const contextMenu = ref({ visible: false, x: 0, y: 0, node: null as AnyNode | nu
 const addNodeMenu = ref({ visible: false, x: 0, y: 0 })
 let pendingNodePosition: { x: number; y: number } | null = null
 
+function onCanvasClick() {
+  if (props.selectedId) emit('deselect')
+  contextMenu.value.visible = false
+}
+
 function onCanvasDblClick(event: MouseEvent) {
   if (props.readOnly) return
   const { x, y } = getSvgPoint(event)
@@ -502,11 +577,31 @@ function onCanvasDblClick(event: MouseEvent) {
   pendingNodePosition = { x, y }
 }
 
-function onAddNodeMenuSelect(nodeKind: 'server' | 'l7' | 'db' | 'external') {
+function onAddNodeMenuSelect(nodeKind: 'server' | 'l7' | 'infra' | 'external') {
   addNodeMenu.value.visible = false
   emit('addNodeAt', nodeKind)
 }
 
+
+// ─── DB 타입별 배지 정보 ─────────────────────────────────
+function getInfraIconInfo(infraType?: string): { abbr: string; color: string; textColor: string } | null {
+  if (!infraType) return null
+  const t = infraType.toLowerCase()
+  if (t.includes('postgres'))                           return { abbr: 'PG', color: '#1d4ed8', textColor: '#fff' }
+  if (t.includes('mysql'))                              return { abbr: 'MY', color: '#e97c00', textColor: '#fff' }
+  if (t.includes('mariadb'))                            return { abbr: 'MA', color: '#b45309', textColor: '#fff' }
+  if (t.includes('redis'))                              return { abbr: 'RD', color: '#dc2626', textColor: '#fff' }
+  if (t.includes('mongo'))                              return { abbr: 'MG', color: '#15803d', textColor: '#fff' }
+  if (t.includes('oracle'))                             return { abbr: 'OR', color: '#c2410c', textColor: '#fff' }
+  if (t.includes('sqlite'))                             return { abbr: 'SL', color: '#0369a1', textColor: '#fff' }
+  if (t.includes('cassandra'))                          return { abbr: 'CA', color: '#6d28d9', textColor: '#fff' }
+  if (t.includes('elastic'))                            return { abbr: 'ES', color: '#d97706', textColor: '#fff' }
+  if (t.includes('dynamo'))                             return { abbr: 'DY', color: '#b45309', textColor: '#fff' }
+  if (t.includes('mssql') || t.includes('sqlserver') || t.includes('sql server')) return { abbr: 'MS', color: '#0284c7', textColor: '#fff' }
+  if (t.includes('influx'))                             return { abbr: 'IF', color: '#0891b2', textColor: '#fff' }
+  if (t.includes('clickhouse'))                         return { abbr: 'CH', color: '#ea580c', textColor: '#fff' }
+  return null
+}
 
 // ─── 텍스트 잘라내기 ─────────────────────────────────────
 function truncate(text: string, max = 20): string {
@@ -516,7 +611,7 @@ function truncate(text: string, max = 20): string {
 // ─── 색상 ───────────────────────────────────────────────
 function nodeColor(node: D3Node): string {
   if (node.nodeKind === 'l7') return '#3b0764'
-  if (node.nodeKind === 'db') return '#f0f9ff'
+  if (node.nodeKind === 'infra') return '#f0f9ff'
   if (node.nodeKind === 'external') return '#052e16'
   return '#1e3a8a'
 }
@@ -527,13 +622,13 @@ function nodeStroke(node: D3Node): string {
   if (arrowSource.value?.id === node.id) return '#60a5fa'
   if (props.selectedId === node.id) {
     if (node.nodeKind === 'l7') return '#a78bfa'
-    if (node.nodeKind === 'db') return '#0284c7'
+    if (node.nodeKind === 'infra') return '#0284c7'
     if (node.nodeKind === 'external') return '#4ade80'
     return '#2563eb'
   }
   if (props.impactedNodes.has(node.id)) return '#ef4444'
   if (node.nodeKind === 'l7') return '#7c3aed'
-  if (node.nodeKind === 'db') return '#7dd3fc'
+  if (node.nodeKind === 'infra') return '#7dd3fc'
   if (node.nodeKind === 'external') return '#16a34a'
   return '#475569'
 }
@@ -768,7 +863,7 @@ function startArrowDrag(event: MouseEvent, node: D3Node) {
     window.removeEventListener('mousemove', handleMove)
     window.removeEventListener('mouseup', handleUp)
     if (isDragging && blockedTarget.value) {
-      showBlockedMsg(`DB 노드는 서버 노드에 의존성을 추가할 수 없습니다`)
+      showBlockedMsg(`인프라 노드는 서버 노드에 의존성을 추가할 수 없습니다`)
     } else if (isDragging && connectTarget.value) {
       emit('quickConnect', node, connectTarget.value)
     }
@@ -860,9 +955,130 @@ const minimapViewport = computed(() => {
 
 function minimapNodeColor(node: { nodeKind?: string }): string {
   if (node.nodeKind === 'l7') return '#a78bfa'
-  if (node.nodeKind === 'db') return '#7dd3fc'
+  if (node.nodeKind === 'infra') return '#7dd3fc'
   if (node.nodeKind === 'external') return '#4ade80'
   return '#60a5fa'
+}
+
+// ─── 미니맵 드래그 ───────────────────────────────────────
+const minimapDragging = ref(false)
+
+function minimapSvgPoint(event: MouseEvent): { mx: number; my: number } | null {
+  const svgEl = event.currentTarget as SVGSVGElement
+  if (!svgEl) return null
+  const rect = svgEl.getBoundingClientRect()
+  return {
+    mx: ((event.clientX - rect.left) / rect.width) * MINIMAP_W,
+    my: ((event.clientY - rect.top) / rect.height) * MINIMAP_H,
+  }
+}
+
+function panToMinimapPoint(mx: number, my: number) {
+  const layout = minimapLayout.value
+  if (!layout || !svgRef.value || !zoomBehavior) return
+  const wx = (mx - layout.cx) / layout.scale
+  const wy = (my - layout.cy) / layout.scale
+  const w = container.value?.clientWidth ?? 800
+  const h = container.value?.clientHeight ?? 600
+  const k = currentTransform.value.k
+  const tx = w / 2 - wx * k
+  const ty = h / 2 - wy * k
+  d3.select(svgRef.value).call(
+    zoomBehavior.transform,
+    d3.zoomIdentity.translate(tx, ty).scale(k)
+  )
+}
+
+function onMinimapMouseDown(event: MouseEvent) {
+  minimapDragging.value = true
+  const pt = minimapSvgPoint(event)
+  if (pt) panToMinimapPoint(pt.mx, pt.my)
+}
+
+function onMinimapMouseMove(event: MouseEvent) {
+  if (!minimapDragging.value) return
+  const pt = minimapSvgPoint(event)
+  if (pt) panToMinimapPoint(pt.mx, pt.my)
+}
+
+function onMinimapMouseUp() {
+  minimapDragging.value = false
+}
+
+// ─── 검색 ────────────────────────────────────────────────
+const searchQuery = ref('')
+const searchFocused = ref(false)
+const searchActiveIndex = ref(0)
+
+const searchResults = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return []
+  return renderedNodes.value.filter(node => {
+    if (node.name.toLowerCase().includes(q)) return true
+    if ('internalIp' in node && (node as any).internalIp?.toLowerCase().includes(q)) return true
+    if ('natIp' in node && (node as any).natIp?.toLowerCase().includes(q)) return true
+    if ('ip' in node && (node as any).ip?.toLowerCase().includes(q)) return true
+    if ('host' in node && (node as any).host?.toLowerCase().includes(q)) return true
+    return false
+  }).slice(0, 8)
+})
+
+watch(searchResults, () => { searchActiveIndex.value = 0 })
+
+function searchNodeKindLabel(node: D3Node): string {
+  if (node.nodeKind === 'l7') return 'L7'
+  if (node.nodeKind === 'infra') return 'INFRA'
+  if (node.nodeKind === 'external') return 'EXT'
+  return 'SRV'
+}
+
+function searchNodeColor(node: D3Node): string {
+  if (node.nodeKind === 'l7') return '#a78bfa'
+  if (node.nodeKind === 'infra') return '#7dd3fc'
+  if (node.nodeKind === 'external') return '#4ade80'
+  return '#60a5fa'
+}
+
+function searchNodeIp(node: D3Node): string {
+  const parts: string[] = []
+  if ('internalIp' in node && (node as any).internalIp) parts.push((node as any).internalIp)
+  if ('natIp' in node && (node as any).natIp) parts.push((node as any).natIp)
+  if ('ip' in node && (node as any).ip) parts.push((node as any).ip)
+  if ('host' in node && (node as any).host) parts.push((node as any).host)
+  return parts.join(' / ')
+}
+
+function navigateToNode(node: D3Node) {
+  if (!svgRef.value || !zoomBehavior) return
+  const wx = node.x ?? 0
+  const wy = node.y ?? 0
+  const w = container.value?.clientWidth ?? 800
+  const h = container.value?.clientHeight ?? 600
+  const k = currentTransform.value.k
+  const tx = w / 2 - wx * k
+  const ty = h / 2 - wy * k
+  d3.select(svgRef.value).transition().duration(350).call(
+    zoomBehavior.transform,
+    d3.zoomIdentity.translate(tx, ty).scale(k)
+  )
+  emit('nodeClick', node)
+  searchQuery.value = ''
+  searchFocused.value = false
+}
+
+function onSearchBlur() {
+  setTimeout(() => { searchFocused.value = false }, 150)
+}
+
+function searchSelectDelta(delta: number) {
+  const len = searchResults.value.length
+  if (!len) return
+  searchActiveIndex.value = (searchActiveIndex.value + delta + len) % len
+}
+
+function searchConfirm() {
+  const node = searchResults.value[searchActiveIndex.value]
+  if (node) navigateToNode(node)
 }
 
 // ─── 줌 컨트롤 ──────────────────────────────────────────
@@ -1140,7 +1356,68 @@ defineExpose({ navigateTo, toggleTracking })
   background: rgba(15, 23, 42, 0.88); border: 1px solid #334155;
   border-radius: 8px; overflow: hidden;
   backdrop-filter: blur(4px);
-  pointer-events: none;
 }
-.minimap-svg { display: block; }
+.minimap-svg { display: block; cursor: crosshair; }
+
+/* 검색 바 */
+.search-bar {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  z-index: 60; width: 280px;
+}
+.search-input-wrap {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(15, 23, 42, 0.92); border: 1px solid #334155;
+  border-radius: 8px; padding: 0 10px; height: 34px;
+  backdrop-filter: blur(6px);
+  transition: border-color 0.15s;
+}
+.search-input-wrap:focus-within {
+  border-color: #60a5fa;
+}
+.search-icon { flex-shrink: 0; }
+.search-input {
+  flex: 1; background: none; border: none; outline: none;
+  color: #e2e8f0; font-size: 13px;
+  min-width: 0;
+}
+.search-input::placeholder { color: #475569; }
+.search-clear {
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: pointer; padding: 2px;
+  flex-shrink: 0; opacity: 0.7;
+}
+.search-clear:hover { opacity: 1; }
+.search-dropdown {
+  list-style: none; margin: 4px 0 0; padding: 4px 0;
+  background: rgba(15, 23, 42, 0.96); border: 1px solid #334155;
+  border-radius: 8px; backdrop-filter: blur(6px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  max-height: 280px; overflow-y: auto;
+}
+.search-result-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px; cursor: pointer;
+  transition: background 0.1s;
+}
+.search-result-item:hover, .search-result-item.active {
+  background: rgba(96, 165, 250, 0.1);
+}
+.search-result-kind {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+  min-width: 30px; flex-shrink: 0;
+}
+.search-result-name {
+  flex: 1; font-size: 13px; color: #e2e8f0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.search-result-ip {
+  font-size: 11px; color: #64748b;
+  white-space: nowrap; flex-shrink: 0;
+}
+.search-no-result {
+  padding: 10px 14px; font-size: 12px; color: #475569;
+  background: rgba(15, 23, 42, 0.96); border: 1px solid #334155;
+  border-radius: 8px; margin-top: 4px; text-align: center;
+  backdrop-filter: blur(6px);
+}
 </style>
