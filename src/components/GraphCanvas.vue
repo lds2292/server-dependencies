@@ -36,7 +36,9 @@
         </g>
 
         <!-- L7 멤버 연결선 (의존성 라인보다 먼저 렌더링) -->
-        <g v-for="ml in l7MemberLines" :key="ml.key" pointer-events="none">
+        <g v-for="ml in l7MemberLines" :key="ml.key" pointer-events="none"
+          :opacity="(pathMode || pathNodes.size > 0) ? 0.1 : 1"
+        >
           <!-- 글로우 레이어 -->
           <line
             :x1="ml.x1" :y1="ml.y1" :x2="ml.x2" :y2="ml.y2"
@@ -181,8 +183,8 @@
             <text x="21" dy="19" text-anchor="middle" class="node-meta">담당자 {{ (node as any).contacts?.length ?? 0 }}명</text>
           </template>
           <template v-else>
-            <text x="21" dy="6" text-anchor="middle" class="node-ip">{{ (node as any).internalIp || '-' }}</text>
-            <text x="21" dy="19" text-anchor="middle" class="node-meta">NAT: {{ (node as any).natIp || '-' }}</text>
+            <text x="21" dy="6" text-anchor="middle" class="node-ip">{{ (node as any).internalIps?.[0] || '-' }}{{ (node as any).internalIps?.length > 1 ? ` +${(node as any).internalIps.length - 1}` : '' }}</text>
+            <text x="21" dy="19" text-anchor="middle" class="node-meta">NAT: {{ (node as any).natIps?.[0] || '-' }}{{ (node as any).natIps?.length > 1 ? ` +${(node as any).natIps.length - 1}` : '' }}</text>
           </template>
 
           <!-- 순환 의존성 경고 배지 -->
@@ -1122,8 +1124,8 @@ const searchResults = computed(() => {
   if (!q) return []
   return renderedNodes.value.filter(node => {
     if (node.name.toLowerCase().includes(q)) return true
-    if ('internalIp' in node && (node as any).internalIp?.toLowerCase().includes(q)) return true
-    if ('natIp' in node && (node as any).natIp?.toLowerCase().includes(q)) return true
+    if ((node as any).internalIps?.some((ip: string) => ip.toLowerCase().includes(q))) return true
+    if ((node as any).natIps?.some((ip: string) => ip.toLowerCase().includes(q))) return true
     if ('ip' in node && (node as any).ip?.toLowerCase().includes(q)) return true
     if ('host' in node && (node as any).host?.toLowerCase().includes(q)) return true
     return false
@@ -1148,8 +1150,8 @@ function searchNodeColor(node: D3Node): string {
 
 function searchNodeIp(node: D3Node): string {
   const parts: string[] = []
-  if ('internalIp' in node && (node as any).internalIp) parts.push((node as any).internalIp)
-  if ('natIp' in node && (node as any).natIp) parts.push((node as any).natIp)
+  if ((node as any).internalIps?.length) parts.push(...(node as any).internalIps)
+  if ((node as any).natIps?.length) parts.push(...(node as any).natIps)
   if ('ip' in node && (node as any).ip) parts.push((node as any).ip)
   if ('host' in node && (node as any).host) parts.push((node as any).host)
   return parts.join(' / ')

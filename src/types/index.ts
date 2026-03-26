@@ -5,8 +5,8 @@ export interface Server {
   nodeKind?: 'server'
   name: string
   team: string
-  internalIp: string
-  natIp: string
+  internalIps: string[]
+  natIps: string[]
   description: string
   hasFirewall?: boolean
   firewallUrl?: string

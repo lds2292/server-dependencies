@@ -2,13 +2,13 @@ import type { GraphData } from '../types'
 
 export const sampleData: GraphData = {
   servers: [
-    { id: 'sample-s1', nodeKind: 'server', name: 'api-server-1', team: 'Backend', internalIp: '10.0.1.11', natIp: '203.0.113.11', description: 'API 서버 인스턴스 1' },
-    { id: 'sample-s2', nodeKind: 'server', name: 'api-server-2', team: 'Backend', internalIp: '10.0.1.12', natIp: '203.0.113.12', description: 'API 서버 인스턴스 2' },
-    { id: 'sample-s3', nodeKind: 'server', name: 'web-server-1', team: 'Frontend', internalIp: '10.0.2.11', natIp: '203.0.113.21', description: '웹 서버 인스턴스 1' },
-    { id: 'sample-s4', nodeKind: 'server', name: 'web-server-2', team: 'Frontend', internalIp: '10.0.2.12', natIp: '203.0.113.22', description: '웹 서버 인스턴스 2' },
-    { id: 'sample-s5', nodeKind: 'server', name: 'auth-server', team: 'Platform', internalIp: '10.0.3.11', natIp: '203.0.113.31', description: '인증/인가 서버' },
-    { id: 'sample-s6', nodeKind: 'server', name: 'batch-server', team: 'Backend', internalIp: '10.0.1.21', natIp: '203.0.113.41', description: '배치 처리 서버' },
-    { id: 'sample-s7', nodeKind: 'server', name: 'notification-server', team: 'Platform', internalIp: '10.0.3.21', natIp: '203.0.113.51', description: '알림 발송 서버' },
+    { id: 'sample-s1', nodeKind: 'server', name: 'api-server-1', team: 'Backend', internalIps: ['10.0.1.11', '10.0.2.11'], natIps: ['203.0.113.11'], description: 'API 서버 인스턴스 1' },
+    { id: 'sample-s2', nodeKind: 'server', name: 'api-server-2', team: 'Backend', internalIps: ['10.0.1.12'], natIps: ['203.0.113.12'], description: 'API 서버 인스턴스 2' },
+    { id: 'sample-s3', nodeKind: 'server', name: 'web-server-1', team: 'Frontend', internalIps: ['10.0.2.11'], natIps: ['203.0.113.21', '203.0.113.22'], description: '웹 서버 인스턴스 1' },
+    { id: 'sample-s4', nodeKind: 'server', name: 'web-server-2', team: 'Frontend', internalIps: ['10.0.2.12'], natIps: ['203.0.113.22'], description: '웹 서버 인스턴스 2' },
+    { id: 'sample-s5', nodeKind: 'server', name: 'auth-server', team: 'Platform', internalIps: ['10.0.3.11'], natIps: ['203.0.113.31'], description: '인증/인가 서버' },
+    { id: 'sample-s6', nodeKind: 'server', name: 'batch-server', team: 'Backend', internalIps: ['10.0.1.21'], natIps: [], description: '배치 처리 서버' },
+    { id: 'sample-s7', nodeKind: 'server', name: 'notification-server', team: 'Platform', internalIps: ['10.0.3.21'], natIps: ['203.0.113.51'], description: '알림 발송 서버' },
   ],
   l7Nodes: [
     { id: 'sample-l1', nodeKind: 'l7', name: 'api-lb', ip: '10.0.0.10', memberServerIds: ['sample-s1', 'sample-s2'], description: 'API 서버 L7 로드밸런서' },

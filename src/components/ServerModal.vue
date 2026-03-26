@@ -16,14 +16,22 @@
             placeholder="팀 이름 입력 또는 선택"
           />
         </label>
-        <label>
-          내부 IP
-          <IpInput v-model="form.internalIp" />
-        </label>
-        <label>
-          NAT IP
-          <IpInput v-model="form.natIp" />
-        </label>
+        <div class="ip-section">
+          <span class="ip-section-label">내부 IP</span>
+          <div v-for="(_, i) in form.internalIps" :key="i" class="ip-row">
+            <IpInput v-model="form.internalIps[i]" />
+            <button type="button" class="btn-ip-remove" @click="form.internalIps.splice(i, 1)">✕</button>
+          </div>
+          <button type="button" class="btn-ip-add" @click="form.internalIps.push('')">+ 추가</button>
+        </div>
+        <div class="ip-section">
+          <span class="ip-section-label">NAT IP</span>
+          <div v-for="(_, i) in form.natIps" :key="i" class="ip-row">
+            <IpInput v-model="form.natIps[i]" />
+            <button type="button" class="btn-ip-remove" @click="form.natIps.splice(i, 1)">✕</button>
+          </div>
+          <button type="button" class="btn-ip-add" @click="form.natIps.push('')">+ 추가</button>
+        </div>
         <label>
           설명
           <textarea v-model="form.description" rows="3" placeholder="서버 설명..." />
@@ -76,11 +84,11 @@ const isDuplicate = computed(() => {
   return props.takenNames.has(trimmed)
 })
 
-const form = reactive<Omit<Server, 'id'>>({
+const form = reactive<Omit<Server, 'id'> & { internalIps: string[]; natIps: string[] }>({
   name: props.server?.name ?? '',
   team: props.server?.team ?? '',
-  internalIp: props.server?.internalIp ?? '',
-  natIp: props.server?.natIp ?? '',
+  internalIps: props.server?.internalIps ? [...props.server.internalIps] : [],
+  natIps: props.server?.natIps ? [...props.server.natIps] : [],
   description: props.server?.description ?? '',
   hasFirewall: props.server?.hasFirewall ?? false,
   firewallUrl: props.server?.firewallUrl ?? '',
@@ -153,6 +161,20 @@ input:focus, select:focus, textarea:focus { border-color: #3b82f6; }
 }
 /* datalist 드롭다운 스타일 */
 input[list] { cursor: pointer; }
+.ip-section { display: flex; flex-direction: column; gap: 6px; }
+.ip-section-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+.ip-row { display: flex; align-items: center; gap: 6px; }
+.btn-ip-remove {
+  background: none; border: none; color: #475569; cursor: pointer;
+  font-size: 12px; padding: 4px 6px; border-radius: 4px; flex-shrink: 0;
+}
+.btn-ip-remove:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+.btn-ip-add {
+  background: none; border: 1px dashed #334155; border-radius: 5px;
+  color: #64748b; font-size: 11px; padding: 4px 10px; cursor: pointer;
+  align-self: flex-start;
+}
+.btn-ip-add:hover { border-color: #60a5fa; color: #93c5fd; }
 .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 .btn-primary {
   background: #2563eb; color: #fff; border: none;

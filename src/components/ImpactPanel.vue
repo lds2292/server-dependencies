@@ -10,8 +10,16 @@
         <!-- 서버 전용 -->
         <template v-if="!selectedNode.nodeKind || selectedNode.nodeKind === 'server'">
           <p class="detail-row">팀: {{ (selectedNode as any).team || '-' }}</p>
-          <p class="detail-row mono">내부 IP: {{ (selectedNode as any).internalIp || '-' }}</p>
-          <p class="detail-row mono">NAT IP: {{ (selectedNode as any).natIp || '-' }}</p>
+          <div class="ip-group">
+            <span class="ip-label">내부 IP</span>
+            <span v-for="ip in (selectedNode as any).internalIps" :key="ip" class="detail-row mono ip-chip">{{ ip }}</span>
+            <span v-if="!(selectedNode as any).internalIps?.length" class="detail-row mono">-</span>
+          </div>
+          <div class="ip-group">
+            <span class="ip-label">NAT IP</span>
+            <span v-for="ip in (selectedNode as any).natIps" :key="ip" class="detail-row mono ip-chip">{{ ip }}</span>
+            <span v-if="!(selectedNode as any).natIps?.length" class="detail-row mono">-</span>
+          </div>
           <p v-if="(selectedNode as any).hasFirewall" class="detail-firewall">
             🔒 방화벽 오픈 필요
             <a v-if="(selectedNode as any).firewallUrl" :href="(selectedNode as any).firewallUrl" target="_blank" class="fw-link">요청 링크</a>
@@ -41,7 +49,12 @@
           <p v-if="(selectedNode as any).hasWhitelist" class="detail-firewall">📋 화이트리스트 요청 필요</p>
         </template>
 
-        <p v-if="selectedNode.description" class="detail-desc">{{ selectedNode.description }}</p>
+      </div>
+
+      <!-- 설명 -->
+      <div v-if="selectedNode.description" class="section">
+        <h4>설명</h4>
+        <p class="desc-text">{{ selectedNode.description }}</p>
       </div>
 
       <!-- L7 구성 서버 -->
@@ -176,7 +189,7 @@ function getNodeName(id: string) {
 .detail-name { font-size: 15px; font-weight: 700; color: #f1f5f9; }
 .detail-row { margin: 3px 0; font-size: 12px; color: #64748b; }
 .detail-row.mono { font-family: 'Menlo', 'Consolas', monospace; color: #7dd3fc; }
-.detail-desc { margin: 4px 0; font-size: 12px; color: #64748b; font-style: italic; }
+.desc-text { font-size: 12px; color: #94a3b8; line-height: 1.6; margin: 0; word-break: break-word; }
 .detail-firewall { margin: 3px 0; font-size: 12px; color: #fbbf24; display: flex; align-items: center; gap: 6px; }
 .fw-link { color: #60a5fa; text-decoration: underline; font-size: 11px; }
 .section { padding: 10px 14px; border-bottom: 1px solid #334155; }
@@ -215,6 +228,9 @@ li:hover .del-dep { opacity: 1; }
 .impact-item { color: #fca5a5; }
 .empty { color: #475569; font-size: 12px; padding: 2px 5px; }
 .nav-item { cursor: pointer; }
+.ip-group { display: flex; flex-direction: column; gap: 2px; margin: 2px 0; }
+.ip-label { font-size: 11px; color: #475569; font-weight: 600; }
+.ip-chip { font-size: 12px; color: #7dd3fc; font-family: 'Menlo', 'Consolas', monospace; padding-left: 6px; }
 .type-badge {
   font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 800; flex-shrink: 0;
 }

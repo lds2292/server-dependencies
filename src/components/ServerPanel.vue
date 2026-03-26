@@ -160,7 +160,11 @@ function subText(node: AnyNode): string {
     return `담당자 ${cnt}명`
   }
   const s = node as Server
-  return [s.internalIp, s.natIp].filter(Boolean).join(' / ')
+  const first = s.internalIps?.[0] ?? ''
+  const natFirst = s.natIps?.[0] ?? ''
+  const extra = (s.internalIps?.length ?? 0) + (s.natIps?.length ?? 0) - (first ? 1 : 0) - (natFirst ? 1 : 0)
+  const base = [first, natFirst].filter(Boolean).join(' / ')
+  return extra > 0 ? `${base} 외 ${extra}개` : base
 }
 
 const props = defineProps<{
