@@ -1,13 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import type { Server, L7Node, InfraNode, ExternalServiceNode, AnyNode, Dependency, GraphData } from '../types'
-
-const STORAGE_KEY = 'server-dependencies-data'
-const POSITIONS_KEY = 'server-dependencies-positions'
+import { graphApi, type PositionMap } from '../api/graphApi'
 
 type Snapshot = {
   data: GraphData
-  positions: Record<string, { x: number; y: number }>
+  positions: PositionMap
 }
 
 function generateId(): string {
@@ -19,26 +17,19 @@ function migrateDependencyTypes(data: GraphData): GraphData {
   return {
     ...data,
     dependencies: data.dependencies.map(d =>
-      typeMap[d.type] ? { ...d, type: typeMap[d.type] as any } : d
+      typeMap[d.type] ? { ...d, type: typeMap[d.type] as 'http' | 'tcp' | 'websocket' | 'other' } : d
     ),
   }
 }
 
-function loadFromStorage(): GraphData {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return migrateDependencyTypes(JSON.parse(raw) as GraphData)
-  } catch { /* ignore */ }
-  return { servers: [], l7Nodes: [], infraNodes: [], externalNodes: [], dependencies: [] }
-}
-
 export const useGraphStore = defineStore('graph', () => {
-  const initial = loadFromStorage()
-  const servers = ref<Server[]>(initial.servers)
-  const l7Nodes = ref<L7Node[]>(initial.l7Nodes ?? [])
-  const infraNodes = ref<InfraNode[]>(initial.infraNodes ?? [])
-  const externalNodes = ref<ExternalServiceNode[]>(initial.externalNodes ?? [])
-  const dependencies = ref<Dependency[]>(initial.dependencies)
+  const currentProjectId = ref<string | null>(null)
+  const servers = ref<Server[]>([])
+  const l7Nodes = ref<L7Node[]>([])
+  const infraNodes = ref<InfraNode[]>([])
+  const externalNodes = ref<ExternalServiceNode[]>([])
+  const dependencies = ref<Dependency[]>([])
+  const currentPositions = ref<PositionMap>({})
 
   // --- Undo / Redo ---
   const MAX_HISTORY = 100
@@ -58,7 +49,7 @@ export const useGraphStore = defineStore('graph', () => {
         externalNodes: JSON.parse(JSON.stringify(externalNodes.value)),
         dependencies: JSON.parse(JSON.stringify(dependencies.value)),
       },
-      positions: JSON.parse(localStorage.getItem(POSITIONS_KEY) || '{}'),
+      positions: JSON.parse(JSON.stringify(currentPositions.value)),
     }
   }
 
@@ -70,7 +61,7 @@ export const useGraphStore = defineStore('graph', () => {
   }
 
   function restoreSnapshot(snap: Snapshot) {
-    localStorage.setItem(POSITIONS_KEY, JSON.stringify(snap.positions))
+    currentPositions.value = snap.positions
     servers.value = snap.data.servers ?? []
     l7Nodes.value = snap.data.l7Nodes ?? []
     infraNodes.value = snap.data.infraNodes ?? []
@@ -101,19 +92,59 @@ export const useGraphStore = defineStore('graph', () => {
     batchActive = false
   }
 
+  // --- API 저장 (debounced) ---
+  let saveTimer: ReturnType<typeof setTimeout> | null = null
+
+  function scheduleSave() {
+    if (!currentProjectId.value) return
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => { saveGraph() }, 1500)
+  }
+
+  async function saveGraph(): Promise<void> {
+    if (!currentProjectId.value) return
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
+    await graphApi.saveGraph(currentProjectId.value, {
+      servers: servers.value,
+      l7Nodes: l7Nodes.value,
+      infraNodes: infraNodes.value,
+      externalNodes: externalNodes.value,
+      dependencies: dependencies.value,
+    })
+  }
+
+  async function savePositions(positions: PositionMap): Promise<void> {
+    currentPositions.value = positions
+    if (!currentProjectId.value) return
+    await graphApi.savePositions(currentProjectId.value, positions)
+  }
+
+  function getPositions(): PositionMap {
+    return currentPositions.value
+  }
+
   watch(
     [servers, l7Nodes, infraNodes, externalNodes, dependencies],
-    () => {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        servers: servers.value,
-        l7Nodes: l7Nodes.value,
-        infraNodes: infraNodes.value,
-        externalNodes: externalNodes.value,
-        dependencies: dependencies.value,
-      }))
-    },
+    () => { scheduleSave() },
     { deep: true }
   )
+
+  // --- 프로젝트 로드 ---
+  async function setProject(projectId: string): Promise<void> {
+    currentProjectId.value = projectId
+    const [graphRes, posRes] = await Promise.all([
+      graphApi.getGraph(projectId),
+      graphApi.getPositions(projectId),
+    ])
+    servers.value = graphRes.data.servers ?? []
+    l7Nodes.value = graphRes.data.l7Nodes ?? []
+    infraNodes.value = graphRes.data.infraNodes ?? []
+    externalNodes.value = graphRes.data.externalNodes ?? []
+    dependencies.value = graphRes.data.dependencies ?? []
+    currentPositions.value = posRes.data
+    undoStack.value = []
+    redoStack.value = []
+  }
 
   // --- Server CRUD ---
   function addServer(data: Omit<Server, 'id'>): Server {
@@ -328,7 +359,7 @@ export const useGraphStore = defineStore('graph', () => {
   }
 
   return {
-    servers, l7Nodes, infraNodes, externalNodes, dependencies,
+    servers, l7Nodes, infraNodes, externalNodes, dependencies, currentProjectId,
     addServer, updateServer, deleteServer,
     addL7Node, updateL7Node, deleteL7Node,
     addInfraNode, updateInfraNode, deleteInfraNode,
@@ -336,5 +367,6 @@ export const useGraphStore = defineStore('graph', () => {
     addDependency, removeDependency,
     findNodeById, getImpactedNodes, getCycleNodes, findPath, exportJSON, importJSON, loadData,
     undo, redo, beginBatch, endBatch, canUndo, canRedo,
+    setProject, saveGraph, savePositions, getPositions,
   }
 })

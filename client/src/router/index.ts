@@ -1,0 +1,29 @@
+import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    { path: '/', name: 'hero', component: () => import('../views/HeroView.vue') },
+    { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
+    { path: '/register', name: 'register', component: () => import('../views/RegisterView.vue') },
+    { path: '/projects', name: 'projects', component: () => import('../views/ProjectsView.vue'), meta: { requiresAuth: true } },
+    { path: '/projects/:id', name: 'project', component: () => import('../views/ProjectView.vue'), meta: { requiresAuth: true } },
+  ],
+})
+
+router.beforeEach(async to => {
+  const auth = useAuthStore()
+  await auth.initializeSession()
+
+  if (to.meta.requiresAuth && !auth.isLoggedIn) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  const publicOnly = ['hero', 'login', 'register']
+  if (publicOnly.includes(to.name as string) && auth.isLoggedIn) {
+    return { name: 'projects' }
+  }
+})
+
+export default router

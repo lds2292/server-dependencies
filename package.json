@@ -1,24 +1,14 @@
 {
-  "name": "server-dependencies",
+  "name": "server-dependencies-root",
   "version": "1.0.0",
-  "description": "Server dependency management and visualization",
-  "type": "module",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "scripts": {
-    "dev": "vite --host",
-    "build": "vue-tsc && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "vue": "^3.4.0",
-    "pinia": "^2.1.7",
-    "d3": "^7.9.0"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^5.0.0",
-    "typescript": "^5.5.3",
-    "vite": "^5.0.0",
-    "vue-tsc": "^2.0.0",
-    "@types/d3": "^7.4.3"
-  },
-  "private": true
+    "dev:client": "npm run dev --workspace=client",
+    "dev:server": "npm run dev --workspace=server",
+    "build": "npm run build --workspaces"
+  }
 }

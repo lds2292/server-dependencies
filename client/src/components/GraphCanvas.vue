@@ -549,6 +549,9 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import * as d3 from 'd3'
 import type { AnyNode, D3Node, D3Link } from '../types'
+import { useGraphStore } from '../stores/graph'
+
+const graphStore = useGraphStore()
 
 const props = defineProps<{
   nodes: AnyNode[]
@@ -608,14 +611,8 @@ let zoomSetup = false
 let zoomBehavior: d3.ZoomBehavior<SVGSVGElement, unknown> | null = null
 
 // ─── 위치 저장/복원 ──────────────────────────────────────
-const POSITION_KEY = 'server-dependencies-positions'
-
 function loadSavedPositions(): Record<string, { x: number; y: number }> {
-  try {
-    const raw = localStorage.getItem(POSITION_KEY)
-    if (raw) return JSON.parse(raw)
-  } catch { /* ignore */ }
-  return {}
+  return graphStore.getPositions()
 }
 
 function savePositions() {
@@ -623,7 +620,7 @@ function savePositions() {
   renderedNodes.value.forEach(n => {
     if (n.x != null && n.y != null) positions[n.id] = { x: n.x, y: n.y }
   })
-  localStorage.setItem(POSITION_KEY, JSON.stringify(positions))
+  graphStore.savePositions(positions)
 }
 
 // 드래그 상태

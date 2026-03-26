@@ -23,7 +23,8 @@
     <main class="main-area">
       <div class="toolbar">
         <div class="title-group">
-          <span class="app-title">Server Dependencies</span>
+          <router-link to="/projects" class="btn-back">← 목록</router-link>
+          <span class="app-title">{{ projectStore.currentProject?.name ?? 'Server Dependencies' }}</span>
           <button class="btn-help" @click="showHelp = true" title="사용 방법">?</button>
         </div>
         <div class="toolbar-right">
@@ -34,6 +35,7 @@
             :data-tooltip="readOnly ? '편집 모드로 전환' : '읽기 전용으로 전환'"
             data-shortcut="E"
           >{{ readOnly ? 'Read Only' : 'Edit' }}</button>
+          <button class="btn-logout" @click="authStore.logout().then(() => router.push({ name: 'login' }))">로그아웃</button>
         </div>
       </div>
       <div class="graph-wrap">
@@ -349,18 +351,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useGraphStore } from './stores/graph'
-import { sampleData } from './data/sampleData'
-import GraphCanvas from './components/GraphCanvas.vue'
-import ServerPanel from './components/ServerPanel.vue'
-import ServerModal from './components/ServerModal.vue'
-import L7Modal from './components/L7Modal.vue'
-import InfraModal from './components/InfraModal.vue'
-import ExternalServiceModal from './components/ExternalServiceModal.vue'
-import DependencyModal from './components/DependencyModal.vue'
-import ImpactPanel from './components/ImpactPanel.vue'
-import type { Server, L7Node, InfraNode, ExternalServiceNode, AnyNode, Dependency, D3Link } from './types'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useGraphStore } from '../stores/graph'
+import { useProjectStore } from '../stores/project'
+import { useAuthStore } from '../stores/auth'
+import { sampleData } from '../data/sampleData'
+import GraphCanvas from '../components/GraphCanvas.vue'
+import ServerPanel from '../components/ServerPanel.vue'
+import ServerModal from '../components/ServerModal.vue'
+import L7Modal from '../components/L7Modal.vue'
+import InfraModal from '../components/InfraModal.vue'
+import ExternalServiceModal from '../components/ExternalServiceModal.vue'
+import DependencyModal from '../components/DependencyModal.vue'
+import ImpactPanel from '../components/ImpactPanel.vue'
+import type { Server, L7Node, InfraNode, ExternalServiceNode, AnyNode, Dependency, D3Link } from '../types'
+
+const route = useRoute()
+const router = useRouter()
+const projectStore = useProjectStore()
+const authStore = useAuthStore()
 
 const store = useGraphStore()
 const selectedNode = ref<AnyNode | null>(null)
@@ -631,7 +641,7 @@ function loadSample() {
     'sample-e1': { x:  800, y:   60 },  // Slack
     'sample-e3': { x:  800, y:  220 },  // SMS Gateway
   }
-  localStorage.setItem('server-dependencies-positions', JSON.stringify(samplePositions))
+  store.savePositions(samplePositions)
   store.loadData(sampleData)
   selectedNode.value = null
   sampleConfirm.value = false
@@ -672,8 +682,25 @@ function handleKeyDown(e: KeyboardEvent) {
     }
   }
 }
-onMounted(() => window.addEventListener('keydown', handleKeyDown))
+onMounted(async () => {
+  window.addEventListener('keydown', handleKeyDown)
+  const projectId = route.params.id as string
+  try {
+    await projectStore.loadProject(projectId)
+    await store.setProject(projectId)
+  } catch {
+    router.push({ name: 'projects' })
+  }
+})
 onUnmounted(() => window.removeEventListener('keydown', handleKeyDown))
+
+watch(() => route.params.id, async (newId) => {
+  if (newId && typeof newId === 'string') {
+    await projectStore.loadProject(newId)
+    await store.setProject(newId)
+    selectedNode.value = null
+  }
+})
 </script>
 
 <style>
@@ -706,12 +733,24 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
 }
 .app-title { font-size: 15px; font-weight: 700; color: #f1f5f9; letter-spacing: 0.02em; }
 .toolbar-right { display: flex; align-items: center; gap: 10px; }
+.btn-back {
+  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: #94a3b8;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap; text-decoration: none;
+}
+.btn-back:hover { border-color: #475569; color: #e2e8f0; }
 .btn-sample {
   font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
   border: 1px solid #1d4ed8; background: #0f2044; color: #60a5fa;
   cursor: pointer; transition: all 0.15s; white-space: nowrap;
 }
 .btn-sample:hover { background: #1e3a8a; border-color: #3b82f6; color: #93c5fd; }
+.btn-logout {
+  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid #334155; background: transparent; color: #64748b;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.btn-logout:hover { border-color: #ef4444; color: #f87171; }
 .btn-readonly {
   position: relative;
   font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
