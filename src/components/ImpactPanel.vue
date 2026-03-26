@@ -51,7 +51,7 @@
         <h4>구성 서버 <span class="count">{{ memberServers.length }}</span></h4>
         <ul>
           <li v-for="s in memberServers" :key="s.id">
-            <span :class="['env-badge', s.environment]">{{ envLabel(s.environment) }}</span>
+            <span v-if="s.environment" :class="['env-badge', s.environment]">{{ envLabel(s.environment) }}</span>
             {{ s.name }}
             <span class="sub-text">{{ s.team }}</span>
           </li>

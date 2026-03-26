@@ -102,7 +102,9 @@ export const useGraphStore = defineStore('graph', () => {
   }
 
   // --- Dependency CRUD ---
-  function addDependency(data: Omit<Dependency, 'id'>): Dependency {
+  function addDependency(data: Omit<Dependency, 'id'>): Dependency | null {
+    const exists = dependencies.value.some(d => d.source === data.source && d.target === data.target)
+    if (exists) return null
     const dep: Dependency = { ...data, id: generateId() }
     dependencies.value.push(dep)
     return dep
@@ -146,6 +148,14 @@ export const useGraphStore = defineStore('graph', () => {
     URL.revokeObjectURL(url)
   }
 
+  function loadData(data: GraphData) {
+    servers.value = data.servers ?? []
+    l7Nodes.value = data.l7Nodes ?? []
+    dbNodes.value = data.dbNodes ?? []
+    externalNodes.value = data.externalNodes ?? []
+    dependencies.value = data.dependencies ?? []
+  }
+
   function importJSON(file: File): Promise<void> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
@@ -172,6 +182,6 @@ export const useGraphStore = defineStore('graph', () => {
     addDBNode, updateDBNode, deleteDBNode,
     addExternalNode, updateExternalNode, deleteExternalNode,
     addDependency, removeDependency,
-    findNodeById, getImpactedNodes, exportJSON, importJSON,
+    findNodeById, getImpactedNodes, exportJSON, importJSON, loadData,
   }
 })

@@ -1,6 +1,6 @@
 <template>
   <div ref="container" class="graph-container">
-    <svg ref="svgRef" class="graph-svg">
+    <svg ref="svgRef" class="graph-svg" @dblclick="onCanvasDblClick">
       <defs>
         <marker
           v-for="m in markerDefs"
@@ -36,17 +36,23 @@
         </g>
 
         <!-- L7 멤버 연결선 (의존성 라인보다 먼저 렌더링) -->
-        <line
-          v-for="ml in l7MemberLines"
-          :key="ml.key"
-          :x1="ml.x1" :y1="ml.y1"
-          :x2="ml.x2" :y2="ml.y2"
-          stroke="#7c3aed"
-          stroke-width="1"
-          stroke-dasharray="4,3"
-          opacity="0.45"
-          pointer-events="none"
-        />
+        <g v-for="ml in l7MemberLines" :key="ml.key" pointer-events="none">
+          <!-- 글로우 레이어 -->
+          <line
+            :x1="ml.x1" :y1="ml.y1" :x2="ml.x2" :y2="ml.y2"
+            stroke="#7c3aed" stroke-width="8" opacity="0.15"
+          />
+          <!-- 메인 라인 -->
+          <line
+            :x1="ml.x1" :y1="ml.y1" :x2="ml.x2" :y2="ml.y2"
+            stroke="#a78bfa" stroke-width="2"
+            stroke-dasharray="6,4" stroke-linecap="round" opacity="0.85"
+          />
+          <!-- 끝점 커넥터 (L7 쪽) -->
+          <circle :cx="ml.x1" :cy="ml.y1" r="4" fill="#7c3aed" stroke="#a78bfa" stroke-width="1.5" opacity="0.9"/>
+          <!-- 끝점 커넥터 (서버 쪽) -->
+          <circle :cx="ml.x2" :cy="ml.y2" r="3" fill="#a78bfa" opacity="0.85"/>
+        </g>
 
         <!-- 의존성 링크 -->
         <line
@@ -54,9 +60,15 @@
           :key="link.id"
           :x1="link.x1" :y1="link.y1"
           :x2="link.x2" :y2="link.y2"
-          :stroke="impactedLinks.has(link.id) ? '#ef4444' : '#94a3b8'"
-          stroke-width="1.5"
-          :marker-end="`url(#${impactedLinks.has(link.id) ? 'arrow-red' : 'arrow-default'})`"
+          :class="{
+            'link-outgoing': showAllFlow || outgoingLinks.has(link.id),
+            'link-impacted': !showAllFlow && impactedLinks.has(link.id),
+            'link-normal':   !showAllFlow && !impactedLinks.has(link.id) && !outgoingLinks.has(link.id),
+          }"
+          :stroke="!showAllFlow && impactedLinks.has(link.id) ? '#ef4444' : showAllFlow || outgoingLinks.has(link.id) ? '#22c55e' : '#94a3b8'"
+          :stroke-width="showAllFlow || impactedLinks.has(link.id) || outgoingLinks.has(link.id) ? 2.5 : 1.5"
+          :opacity="!showAllFlow && selectedId && !impactedLinks.has(link.id) && !outgoingLinks.has(link.id) ? 0.15 : 1"
+          :marker-end="`url(#${!showAllFlow && impactedLinks.has(link.id) ? 'arrow-red' : showAllFlow || outgoingLinks.has(link.id) ? 'arrow-green' : 'arrow-default'})`"
         />
 
         <!-- 드래그 미리보기 화살표 -->
@@ -88,14 +100,14 @@
         >
           <title>{{ node.name }}</title>
           <rect
-            x="-86" y="-37" width="172" height="74" rx="6"
+            x="-86" y="-37" width="187" height="74" rx="6"
             :fill="nodeColor(node)"
             :stroke="nodeStroke(node)"
             :stroke-width="isHighlighted(node) ? 3 : 1.5"
           />
 
           <!-- 아이콘/텍스트 구분선 -->
-          <line x1="-60" y1="-31" x2="-60" y2="31" stroke="rgba(255,255,255,0.12)" stroke-width="1" pointer-events="none"/>
+          <line x1="-60" y1="-31" x2="-60" y2="31" :stroke="node.nodeKind === 'db' ? 'rgba(3,105,161,0.18)' : 'rgba(255,255,255,0.12)'" stroke-width="1" pointer-events="none"/>
 
           <!-- 타입 아이콘 (좌측 컬럼 수직 중앙) -->
           <g transform="translate(-79,-6)" opacity="0.85" pointer-events="none">
@@ -115,10 +127,10 @@
             </template>
             <!-- DB -->
             <template v-else-if="node.nodeKind === 'db'">
-              <ellipse cx="5.5" cy="1.8" rx="5" ry="1.8" stroke="white" stroke-width="0.9" fill="none"/>
-              <line x1="0.5" y1="1.8" x2="0.5" y2="7.5" stroke="white" stroke-width="0.9"/>
-              <line x1="10.5" y1="1.8" x2="10.5" y2="7.5" stroke="white" stroke-width="0.9"/>
-              <ellipse cx="5.5" cy="7.5" rx="5" ry="1.8" stroke="white" stroke-width="0.9" fill="none"/>
+              <ellipse cx="5.5" cy="1.8" rx="5" ry="1.8" stroke="#0369a1" stroke-width="0.9" fill="none"/>
+              <line x1="0.5" y1="1.8" x2="0.5" y2="7.5" stroke="#0369a1" stroke-width="0.9"/>
+              <line x1="10.5" y1="1.8" x2="10.5" y2="7.5" stroke="#0369a1" stroke-width="0.9"/>
+              <ellipse cx="5.5" cy="7.5" rx="5" ry="1.8" stroke="#0369a1" stroke-width="0.9" fill="none"/>
             </template>
             <!-- External -->
             <template v-else-if="node.nodeKind === 'external'">
@@ -131,23 +143,23 @@
           </g>
 
           <!-- 노드 텍스트 (우측 텍스트 영역 중앙: x=13) -->
-          <text x="13" dy="-9" text-anchor="middle" class="node-label">{{ truncate(node.name) }}</text>
+          <text x="21" dy="-9" text-anchor="middle" class="node-label" :style="node.nodeKind === 'db' ? 'fill:#0f172a' : ''">{{ truncate(node.name) }}</text>
 
           <template v-if="node.nodeKind === 'l7'">
-            <text x="13" dy="6" text-anchor="middle" class="node-sub">L7 Load Balancer</text>
-            <text x="13" dy="19" text-anchor="middle" class="node-meta">{{ (node as any).ip || '' }}{{ (node as any).ip && (node as any).memberServerIds?.length ? ' · ' : '' }}{{ (node as any).memberServerIds?.length ?? 0 }}개 서버</text>
+            <text x="21" dy="6" text-anchor="middle" class="node-sub">L7 Load Balancer</text>
+            <text x="21" dy="19" text-anchor="middle" class="node-meta">{{ (node as any).ip || '' }}{{ (node as any).ip && (node as any).memberServerIds?.length ? ' · ' : '' }}{{ (node as any).memberServerIds?.length ?? 0 }}개 서버</text>
           </template>
           <template v-else-if="node.nodeKind === 'db'">
-            <text x="13" dy="6" text-anchor="middle" class="node-sub">{{ (node as any).dbType || 'Database' }}</text>
-            <text x="13" dy="19" text-anchor="middle" class="node-meta">{{ (node as any).host || '-' }}{{ (node as any).port ? ':' + (node as any).port : '' }}</text>
+            <text x="21" dy="6" text-anchor="middle" class="node-sub" style="fill:rgba(15,23,42,0.65)">{{ (node as any).dbType || 'Database' }}</text>
+            <text x="21" dy="19" text-anchor="middle" class="node-meta" style="fill:rgba(15,23,42,0.5)">{{ (node as any).host || '-' }}{{ (node as any).port ? ':' + (node as any).port : '' }}</text>
           </template>
           <template v-else-if="node.nodeKind === 'external'">
-            <text x="13" dy="6" text-anchor="middle" class="node-sub">외부 서비스</text>
-            <text x="13" dy="19" text-anchor="middle" class="node-meta">담당자 {{ (node as any).contacts?.length ?? 0 }}명</text>
+            <text x="21" dy="6" text-anchor="middle" class="node-sub">외부 서비스</text>
+            <text x="21" dy="19" text-anchor="middle" class="node-meta">담당자 {{ (node as any).contacts?.length ?? 0 }}명</text>
           </template>
           <template v-else>
-            <text x="13" dy="6" text-anchor="middle" class="node-ip">{{ (node as any).internalIp || '-' }}</text>
-            <text x="13" dy="19" text-anchor="middle" class="node-meta">NAT: {{ (node as any).natIp || '-' }}</text>
+            <text x="21" dy="6" text-anchor="middle" class="node-ip">{{ (node as any).internalIp || '-' }}</text>
+            <text x="21" dy="19" text-anchor="middle" class="node-meta">NAT: {{ (node as any).natIp || '-' }}</text>
           </template>
         </g>
 
@@ -177,7 +189,7 @@
         <span class="legend-dot" style="background:#3b0764;border-color:#7c3aed"></span>L7
       </div>
       <div class="legend-item">
-        <span class="legend-dot" style="background:#0c2040;border-color:#0369a1"></span>DB
+        <span class="legend-dot" style="background:#f0f9ff;border-color:#7dd3fc"></span>DB
       </div>
       <div class="legend-item">
         <span class="legend-dot" style="background:#052e16;border-color:#16a34a"></span>External
@@ -189,7 +201,8 @@
       class="canvas-btn tracking-btn"
       :class="{ active: nodeTracking }"
       @click="nodeTracking = !nodeTracking"
-      :title="nodeTracking ? '노드 트래킹 ON' : '노드 트래킹 OFF'"
+      :data-tooltip="`${nodeTracking ? '트래킹 ON' : '트래킹 OFF'} — 선택 노드 자동 이동`"
+      data-shortcut="F"
     >
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
         <circle cx="7" cy="7" r="3" stroke="currentColor" stroke-width="1.2"/>
@@ -201,6 +214,24 @@
       </svg>
       트래킹
     </button>
+
+    <!-- 전체 흐름 토글 버튼 -->
+    <div class="canvas-btns canvas-btns-right">
+      <button
+        class="canvas-btn"
+        :class="{ active: showAllFlow }"
+        @click="showAllFlow = !showAllFlow"
+        :data-tooltip="showAllFlow ? '전체 의존 흐름 ON' : '전체 의존 흐름 OFF'"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M1 7h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <path d="M7 4l3.5 3L7 10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M1 3h5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity="0.5"/>
+          <path d="M1 11h5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity="0.5"/>
+        </svg>
+        의존성
+      </button>
+    </div>
 
     <!-- 그리드 토글 버튼 -->
     <div class="canvas-btns">
@@ -220,6 +251,53 @@
         </svg>
         중심
       </button>
+    </div>
+
+    <!-- 미니맵 -->
+    <div v-if="minimapNodes.length > 0" class="minimap">
+      <svg class="minimap-svg" :viewBox="`0 0 ${MINIMAP_W} ${MINIMAP_H}`" :width="MINIMAP_W" :height="MINIMAP_H" overflow="hidden">
+        <defs>
+          <clipPath id="minimap-clip">
+            <rect x="0" y="0" :width="MINIMAP_W" :height="MINIMAP_H"/>
+          </clipPath>
+        </defs>
+        <g clip-path="url(#minimap-clip)">
+          <!-- 노드 점 -->
+          <circle
+            v-for="node in minimapNodes"
+            :key="node.id"
+            :cx="node.mx"
+            :cy="node.my"
+            r="3"
+            :fill="minimapNodeColor(node)"
+            opacity="0.9"
+          />
+          <!-- 뷰포트 바깥 어두운 오버레이 (mask로 뷰포트 구멍 뚫기) -->
+          <template v-if="minimapViewport">
+            <defs>
+              <mask id="viewport-hole">
+                <rect x="0" y="0" :width="MINIMAP_W" :height="MINIMAP_H" fill="white"/>
+                <rect
+                  :x="minimapViewport.x" :y="minimapViewport.y"
+                  :width="minimapViewport.w" :height="minimapViewport.h"
+                  fill="black"
+                />
+              </mask>
+            </defs>
+            <rect x="0" y="0" :width="MINIMAP_W" :height="MINIMAP_H"
+              fill="rgba(0,0,0,0.45)" mask="url(#viewport-hole)"/>
+            <!-- 뷰포트 테두리 -->
+            <rect
+              :x="minimapViewport.x" :y="minimapViewport.y"
+              :width="minimapViewport.w" :height="minimapViewport.h"
+              fill="none"
+              stroke="rgba(255,255,255,0.75)"
+              stroke-width="1.5"
+              rx="2"
+            />
+          </template>
+        </g>
+      </svg>
     </div>
 
     <!-- 하단 우측 줌 컨트롤 -->
@@ -248,8 +326,60 @@
       <span class="hint-target">{{ connectTarget.name }}</span>
       (놓으면 의존관계 생성)
     </div>
+    <div v-else-if="blockedTarget && arrowSource" class="blocked-hint">
+      <span class="hint-source">{{ arrowSource.name }}</span> →
+      <span class="hint-blocked">{{ blockedTarget.name }}</span>
+      연결 불가
+    </div>
     <div v-else-if="arrowSource && arrowPreview && !connectTarget" class="drag-hint">
       다른 노드 위에서 놓으면 의존관계를 생성합니다
+    </div>
+    <!-- 연결 차단 토스트 -->
+    <transition name="fade">
+      <div v-if="connectBlockedMsg" class="blocked-toast">{{ connectBlockedMsg }}</div>
+    </transition>
+
+    <!-- 노드 추가 메뉴 (더블클릭) -->
+    <div v-if="addNodeMenu.visible" class="add-node-menu"
+      :style="{ left: addNodeMenu.x + 'px', top: addNodeMenu.y + 'px' }" @click.stop>
+      <div class="add-node-menu-title">노드 추가</div>
+      <button @click="onAddNodeMenuSelect('server')">
+        <svg class="menu-icon" viewBox="0 0 11 9" fill="none">
+          <rect x="0.5" y="0.5" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="0.9"/>
+          <line x1="0.5" y1="3.7" x2="10.5" y2="3.7" stroke="currentColor" stroke-width="0.7"/>
+          <circle cx="8.5" cy="6.2" r="0.9" fill="currentColor"/>
+          <circle cx="6.5" cy="6.2" r="0.9" fill="currentColor"/>
+        </svg>
+        서버
+      </button>
+      <button @click="onAddNodeMenuSelect('l7')">
+        <svg class="menu-icon" viewBox="0 0 11 11" fill="none">
+          <circle cx="5.5" cy="3.5" r="3" stroke="currentColor" stroke-width="0.9"/>
+          <line x1="5.5" y1="6.5" x2="2" y2="10" stroke="currentColor" stroke-width="0.9"/>
+          <line x1="5.5" y1="6.5" x2="9" y2="10" stroke="currentColor" stroke-width="0.9"/>
+          <line x1="2.5" y1="3.5" x2="8.5" y2="3.5" stroke="currentColor" stroke-width="0.8"/>
+        </svg>
+        L7 로드밸런서
+      </button>
+      <button @click="onAddNodeMenuSelect('db')">
+        <svg class="menu-icon" viewBox="0 0 11 10" fill="none">
+          <ellipse cx="5.5" cy="1.8" rx="5" ry="1.8" stroke="#7dd3fc" stroke-width="0.9"/>
+          <line x1="0.5" y1="1.8" x2="0.5" y2="8" stroke="#7dd3fc" stroke-width="0.9"/>
+          <line x1="10.5" y1="1.8" x2="10.5" y2="8" stroke="#7dd3fc" stroke-width="0.9"/>
+          <ellipse cx="5.5" cy="8" rx="5" ry="1.8" stroke="#7dd3fc" stroke-width="0.9"/>
+        </svg>
+        DB
+      </button>
+      <button @click="onAddNodeMenuSelect('external')">
+        <svg class="menu-icon" viewBox="0 0 11 11" fill="none">
+          <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" stroke-width="0.9"/>
+          <ellipse cx="5.5" cy="5.5" rx="2.2" ry="4.5" stroke="currentColor" stroke-width="0.7"/>
+          <line x1="1" y1="5.5" x2="10" y2="5.5" stroke="currentColor" stroke-width="0.7"/>
+          <line x1="1.5" y1="3" x2="9.5" y2="3" stroke="currentColor" stroke-width="0.5"/>
+          <line x1="1.5" y1="8" x2="9.5" y2="8" stroke="currentColor" stroke-width="0.5"/>
+        </svg>
+        외부 서비스
+      </button>
     </div>
 
     <!-- 컨텍스트 메뉴 -->
@@ -277,6 +407,7 @@ const props = defineProps<{
   links: D3Link[]
   impactedNodes: Set<string>
   impactedLinks: Set<string>
+  outgoingLinks: Set<string>
   selectedId: string | null
   readOnly: boolean
 }>()
@@ -287,6 +418,7 @@ const emit = defineEmits<{
   deleteNode: [node: AnyNode]
   addDependency: [source: AnyNode]
   quickConnect: [source: AnyNode, target: AnyNode]
+  addNodeAt: [nodeKind: 'server' | 'l7' | 'db' | 'external']
 }>()
 
 const container = ref<HTMLDivElement>()
@@ -296,6 +428,12 @@ const gRef = ref<SVGGElement>()
 const showGrid = ref(true)
 const currentZoom = ref(100)
 const nodeTracking = ref(true)
+const showAllFlow = ref(false)
+const currentTransform = ref({ k: 1, x: 0, y: 0 })
+
+const MINIMAP_W = 160
+const MINIMAP_H = 100
+const MINIMAP_PAD = 10
 
 
 const renderedNodes = ref<D3Node[]>([])
@@ -303,7 +441,8 @@ const renderedLinks = ref<D3Link[]>([])
 
 const markerDefs = [
   { id: 'arrow-default', fill: '#94a3b8' },
-  { id: 'arrow-red', fill: '#ef4444' },
+  { id: 'arrow-red',     fill: '#ef4444' },
+  { id: 'arrow-green',   fill: '#22c55e' },
 ]
 
 let simulation: d3.Simulation<D3Node, D3Link> | null = null
@@ -333,35 +472,68 @@ function savePositions() {
 const arrowSource = ref<D3Node | null>(null)
 const arrowPreview = ref<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
 const connectTarget = ref<D3Node | null>(null)
+const blockedTarget = ref<D3Node | null>(null)
+const connectBlockedMsg = ref('')
+
+function isConnectionBlocked(source: D3Node, target: D3Node): boolean {
+  return source.nodeKind === 'db' && (!target.nodeKind || target.nodeKind === 'server')
+}
+
+let blockMsgTimer: ReturnType<typeof setTimeout> | null = null
+function showBlockedMsg(msg: string) {
+  connectBlockedMsg.value = msg
+  if (blockMsgTimer) clearTimeout(blockMsgTimer)
+  blockMsgTimer = setTimeout(() => { connectBlockedMsg.value = '' }, 2500)
+}
 
 // 컨텍스트 메뉴
 const contextMenu = ref({ visible: false, x: 0, y: 0, node: null as AnyNode | null })
 
+// 노드 추가 메뉴 (더블클릭)
+const addNodeMenu = ref({ visible: false, x: 0, y: 0 })
+let pendingNodePosition: { x: number; y: number } | null = null
+
+function onCanvasDblClick(event: MouseEvent) {
+  if (props.readOnly) return
+  const { x, y } = getSvgPoint(event)
+  if (findNodeAt(x, y, '')) return   // 노드 위면 무시
+  contextMenu.value.visible = false
+  addNodeMenu.value = { visible: true, x: event.offsetX, y: event.offsetY }
+  pendingNodePosition = { x, y }
+}
+
+function onAddNodeMenuSelect(nodeKind: 'server' | 'l7' | 'db' | 'external') {
+  addNodeMenu.value.visible = false
+  emit('addNodeAt', nodeKind)
+}
+
+
 // ─── 텍스트 잘라내기 ─────────────────────────────────────
-function truncate(text: string, max = 12): string {
+function truncate(text: string, max = 20): string {
   return text.length > max ? text.slice(0, max) + '…' : text
 }
 
 // ─── 색상 ───────────────────────────────────────────────
 function nodeColor(node: D3Node): string {
   if (node.nodeKind === 'l7') return '#3b0764'
-  if (node.nodeKind === 'db') return '#0c2040'
+  if (node.nodeKind === 'db') return '#f0f9ff'
   if (node.nodeKind === 'external') return '#052e16'
   return '#1e3a8a'
 }
 
 function nodeStroke(node: D3Node): string {
+  if (blockedTarget.value?.id === node.id) return '#ef4444'
   if (connectTarget.value?.id === node.id) return '#22c55e'
   if (arrowSource.value?.id === node.id) return '#60a5fa'
   if (props.selectedId === node.id) {
     if (node.nodeKind === 'l7') return '#a78bfa'
-    if (node.nodeKind === 'db') return '#38bdf8'
+    if (node.nodeKind === 'db') return '#0284c7'
     if (node.nodeKind === 'external') return '#4ade80'
     return '#2563eb'
   }
   if (props.impactedNodes.has(node.id)) return '#ef4444'
   if (node.nodeKind === 'l7') return '#7c3aed'
-  if (node.nodeKind === 'db') return '#0369a1'
+  if (node.nodeKind === 'db') return '#7dd3fc'
   if (node.nodeKind === 'external') return '#16a34a'
   return '#475569'
 }
@@ -369,6 +541,7 @@ function nodeStroke(node: D3Node): string {
 function isHighlighted(node: D3Node): boolean {
   return props.selectedId === node.id || props.impactedNodes.has(node.id)
     || connectTarget.value?.id === node.id || arrowSource.value?.id === node.id
+    || blockedTarget.value?.id === node.id
 }
 
 // ─── 링크 끝점 계산 (노드 경계까지) ────────────────────
@@ -382,7 +555,7 @@ const computedLinks = computed(() => {
     const len = Math.hypot(dx, dy)
     if (len < 1) return { ...link, x1: sx, y1: sy, x2: tx, y2: ty }
     const ux = dx / len, uy = dy / len
-    const hw = 86, hh = 37
+    const hw = 93, hh = 37
     const tEdge = Math.min(
       Math.abs(ux) > 0.001 ? hw / Math.abs(ux) : Infinity,
       Math.abs(uy) > 0.001 ? hh / Math.abs(uy) : Infinity
@@ -429,7 +602,7 @@ function getSvgPoint(event: MouseEvent): { x: number; y: number } {
 function findNodeAt(worldX: number, worldY: number, excludeId: string): D3Node | null {
   return renderedNodes.value.find(n => {
     if (n.id === excludeId) return false
-    return Math.abs(worldX - (n.x ?? 0)) < 86 && Math.abs(worldY - (n.y ?? 0)) < 37
+    return Math.abs(worldX - (n.x ?? 0)) < 93 && Math.abs(worldY - (n.y ?? 0)) < 37
   }) ?? null
 }
 
@@ -462,8 +635,9 @@ function buildSimulation() {
   // hasNewNodes: 저장 위치도 없는 진짜 신규 노드 여부
   const hasNewNodes = nodes.some(n => n.x == null)
 
-  // 3순위: 신규 노드는 현재 뷰포트 중심에 배치
+  // 3순위: 신규 노드는 더블클릭 위치 또는 현재 뷰포트 중심에 배치
   if (hasNewNodes) {
+    const clickPos = pendingNodePosition
     const viewportCenter = (() => {
       if (!svgRef.value) return { x: width / 2, y: height / 2 }
       const transform = d3.zoomTransform(svgRef.value)
@@ -471,8 +645,13 @@ function buildSimulation() {
       return { x: cx, y: cy }
     })()
     nodes.forEach(n => {
-      if (n.x == null) { n.x = viewportCenter.x; n.y = viewportCenter.y }
+      if (n.x == null) {
+        const pos = clickPos ?? viewportCenter
+        n.x = pos.x; n.y = pos.y
+        if (clickPos) { n.fx = pos.x; n.fy = pos.y }  // 더블클릭 위치는 고정
+      }
     })
+    pendingNodePosition = null
   }
   const links: D3Link[] = props.links.map(l => ({
     ...l,
@@ -491,8 +670,8 @@ function buildSimulation() {
     .velocityDecay(0.6)
     .force('link', d3.forceLink<D3Node, D3Link>(links).id(d => d.id).distance(200))
     .force('charge', d3.forceManyBody().strength(-400))
-    .force('center', d3.forceCenter(width / 2, height / 2))
-    .force('collision', d3.forceCollide(106))
+    .force('center', d3.forceCenter(0, 0))
+    .force('collision', d3.forceCollide(113))
     .on('tick', () => {
       renderedNodes.value = [...nodes]
       renderedLinks.value = [...links]
@@ -511,6 +690,8 @@ function buildSimulation() {
 function setupZoom() {
   if (zoomSetup || !svgRef.value || !gRef.value) return
   zoomSetup = true
+  const width = container.value?.clientWidth ?? 800
+  const height = container.value?.clientHeight ?? 600
   const svg = d3.select(svgRef.value)
   const g = d3.select(gRef.value)
   zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
@@ -518,8 +699,11 @@ function setupZoom() {
     .on('zoom', e => {
       g.attr('transform', e.transform.toString())
       currentZoom.value = Math.round(e.transform.k * 100)
+      currentTransform.value = { k: e.transform.k, x: e.transform.x, y: e.transform.y }
     })
   svg.call(zoomBehavior)
+  // 초기 뷰포트: 월드 (0,0) = 그리드 중심이 화면 중앙에 오도록 즉시 적용
+  svg.call(zoomBehavior.transform, d3.zoomIdentity.translate(width / 2, height / 2))
 }
 
 function goToCenter() {
@@ -571,15 +755,27 @@ function startArrowDrag(event: MouseEvent, node: D3Node) {
       isDragging = true
     }
     arrowPreview.value = { x1: node.x ?? 0, y1: node.y ?? 0, x2: x, y2: y }
-    connectTarget.value = findNodeAt(x, y, node.id)
+    const found = findNodeAt(x, y, node.id)
+    if (found && isConnectionBlocked(node, found)) {
+      connectTarget.value = null
+      blockedTarget.value = found
+    } else {
+      connectTarget.value = found
+      blockedTarget.value = null
+    }
   }
   const handleUp = () => {
     window.removeEventListener('mousemove', handleMove)
     window.removeEventListener('mouseup', handleUp)
-    if (isDragging && connectTarget.value) emit('quickConnect', node, connectTarget.value)
+    if (isDragging && blockedTarget.value) {
+      showBlockedMsg(`DB 노드는 서버 노드에 의존성을 추가할 수 없습니다`)
+    } else if (isDragging && connectTarget.value) {
+      emit('quickConnect', node, connectTarget.value)
+    }
     arrowPreview.value = null
     arrowSource.value = null
     connectTarget.value = null
+    blockedTarget.value = null
   }
   window.addEventListener('mousemove', handleMove)
   window.addEventListener('mouseup', handleUp)
@@ -595,7 +791,7 @@ watch(() => [props.nodes, props.links], buildSimulation, { deep: true })
 watch(() => props.selectedId, (id) => {
   if (nodeTracking.value && id) navigateTo(id)
 })
-onMounted(() => { buildSimulation(); setupZoom() })
+onMounted(() => { setupZoom(); buildSimulation() })
 onUnmounted(() => simulation?.stop())
 
 function onNodeClick(node: AnyNode) {
@@ -610,9 +806,64 @@ function onEditNode() { if (contextMenu.value.node) emit('editNode', contextMenu
 function onDeleteNode() { if (contextMenu.value.node) emit('deleteNode', contextMenu.value.node); contextMenu.value.visible = false }
 function onAddDep() { if (contextMenu.value.node) emit('addDependency', contextMenu.value.node); contextMenu.value.visible = false }
 
-function closeContextMenu() { contextMenu.value.visible = false }
+function closeContextMenu() {
+  contextMenu.value.visible = false
+  addNodeMenu.value.visible = false
+}
 onMounted(() => document.addEventListener('click', closeContextMenu))
 onUnmounted(() => document.removeEventListener('click', closeContextMenu))
+
+// ─── 미니맵 ─────────────────────────────────────────────
+// 월드 (0,0) = 미니맵 중앙 고정, 노드 분포에 따라 스케일만 조정
+const minimapLayout = computed(() => {
+  const nodes = renderedNodes.value
+  if (nodes.length === 0) return null
+  const xs = nodes.map(n => Math.abs(n.x ?? 0))
+  const ys = nodes.map(n => Math.abs(n.y ?? 0))
+  const maxExtentX = Math.max(...xs, 1) + 120
+  const maxExtentY = Math.max(...ys, 1) + 80
+  const scaleX = (MINIMAP_W / 2 - MINIMAP_PAD) / maxExtentX
+  const scaleY = (MINIMAP_H / 2 - MINIMAP_PAD) / maxExtentY
+  const scale = Math.min(scaleX, scaleY)
+  // 미니맵 중심 = 월드 (0,0)
+  const cx = MINIMAP_W / 2
+  const cy = MINIMAP_H / 2
+  return { scale, cx, cy }
+})
+
+const minimapNodes = computed(() => {
+  const layout = minimapLayout.value
+  if (!layout) return []
+  return renderedNodes.value.map(n => ({
+    ...n,
+    mx: layout.cx + (n.x ?? 0) * layout.scale,
+    my: layout.cy + (n.y ?? 0) * layout.scale,
+  }))
+})
+
+const minimapViewport = computed(() => {
+  const layout = minimapLayout.value
+  if (!layout) return null
+  const { k, x: tx, y: ty } = currentTransform.value
+  const w = container.value?.clientWidth ?? 800
+  const h = container.value?.clientHeight ?? 600
+  const worldLeft = -tx / k
+  const worldTop = -ty / k
+  const worldRight = (w - tx) / k
+  const worldBottom = (h - ty) / k
+  const mx = layout.cx + worldLeft * layout.scale
+  const my = layout.cy + worldTop * layout.scale
+  const mw = (worldRight - worldLeft) * layout.scale
+  const mh = (worldBottom - worldTop) * layout.scale
+  return { x: mx, y: my, w: mw, h: mh }
+})
+
+function minimapNodeColor(node: { nodeKind?: string }): string {
+  if (node.nodeKind === 'l7') return '#a78bfa'
+  if (node.nodeKind === 'db') return '#7dd3fc'
+  if (node.nodeKind === 'external') return '#4ade80'
+  return '#60a5fa'
+}
 
 // ─── 줌 컨트롤 ──────────────────────────────────────────
 function applyZoom(percent: number) {
@@ -644,7 +895,11 @@ function navigateTo(nodeId: string) {
   )
 }
 
-defineExpose({ navigateTo })
+function toggleTracking() {
+  nodeTracking.value = !nodeTracking.value
+}
+
+defineExpose({ navigateTo, toggleTracking })
 </script>
 
 <style scoped>
@@ -658,6 +913,27 @@ defineExpose({ navigateTo })
 .node-ip { font-size: 10px; fill: rgba(255,255,255,0.75); pointer-events: none; }
 .node-sub { font-size: 9px; fill: rgba(255,255,255,0.65); pointer-events: none; font-weight: 600; letter-spacing: 0.02em; }
 .node-meta { font-size: 9.5px; fill: rgba(255,255,255,0.5); pointer-events: none; }
+/* 의존성 링크 애니메이션 */
+@keyframes flow-dash {
+  from { stroke-dashoffset: 18; }
+  to   { stroke-dashoffset: 0; }
+}
+/* 장애 영향: 의존노드 → 선택노드 (빨간, forward 방향) */
+.link-impacted {
+  stroke-dasharray: 10 5;
+  animation: flow-dash 0.55s linear infinite;
+  filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.7));
+}
+/* 의존 경로: 선택노드 → 의존노드 (녹색, forward 방향) */
+.link-outgoing {
+  stroke-dasharray: 10 5;
+  animation: flow-dash 0.55s linear infinite;
+  filter: drop-shadow(0 0 3px rgba(34, 197, 94, 0.7));
+}
+.link-normal {
+  transition: opacity 0.2s;
+}
+
 .graph-node { cursor: grab; }
 .graph-node:active { cursor: grabbing; }
 .graph-node.connect-source rect { filter: brightness(1.3); }
@@ -682,8 +958,43 @@ defineExpose({ navigateTo })
   padding: 6px 16px; font-size: 13px; color: #93c5fd;
   pointer-events: none; z-index: 50; white-space: nowrap;
 }
+.blocked-hint {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  background: #1c0a0a; border: 1px solid #ef4444; border-radius: 20px;
+  padding: 6px 16px; font-size: 13px; color: #fca5a5;
+  pointer-events: none; z-index: 50; white-space: nowrap;
+}
+.hint-blocked { color: #ef4444; font-weight: 700; }
+.blocked-toast {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: #1c0a0a; border: 1px solid #ef4444; border-radius: 10px;
+  padding: 14px 24px; font-size: 14px; color: #fca5a5; font-weight: 600;
+  pointer-events: none; z-index: 100; white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(239,68,68,0.25);
+}
+.fade-enter-active { transition: opacity 0.2s; }
+.fade-leave-active { transition: opacity 0.4s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 .hint-source { color: #60a5fa; font-weight: 700; }
 .hint-target { color: #22c55e; font-weight: 700; }
+.add-node-menu {
+  position: absolute; background: #1e293b; border: 1px solid #334155;
+  border-radius: 8px; padding: 4px 0; z-index: 110; min-width: 160px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.add-node-menu-title {
+  padding: 6px 14px 5px; font-size: 11px; font-weight: 700;
+  color: #475569; letter-spacing: 0.05em; text-transform: uppercase;
+  border-bottom: 1px solid #334155; margin-bottom: 3px;
+}
+.add-node-menu button {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 7px 14px; background: none;
+  border: none; color: #e2e8f0; text-align: left; cursor: pointer; font-size: 13px;
+}
+.add-node-menu button:hover { background: #334155; }
+.menu-icon { width: 14px; height: 14px; flex-shrink: 0; }
+
 .context-menu {
   position: absolute; background: #1e293b; border: 1px solid #334155;
   border-radius: 6px; padding: 4px 0; z-index: 100; min-width: 120px;
@@ -720,6 +1031,12 @@ defineExpose({ navigateTo })
 .canvas-btns {
   position: absolute; bottom: 12px; left: 12px;
   display: flex; gap: 6px; z-index: 50;
+}
+.canvas-btns-right {
+  left: 12px; bottom: auto; top: 50px;
+}
+.canvas-btns-right .canvas-btn.active {
+  color: #22c55e; border-color: #16a34a;
 }
 .canvas-btn {
   display: flex; align-items: center; gap: 5px;
@@ -758,4 +1075,72 @@ defineExpose({ navigateTo })
 .zoom-input::-webkit-inner-spin-button,
 .zoom-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 .zoom-pct { color: #64748b; font-size: 11px; }
+
+/* 단축키 툴팁 */
+[data-tooltip]::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 400;
+  padding: 5px 9px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 300;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+[data-tooltip][data-shortcut]::after {
+  content: attr(data-shortcut);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(calc(-50% + 2px));
+  margin-top: 22px;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 300;
+  letter-spacing: 0.05em;
+}
+[data-tooltip]:hover::before,
+[data-tooltip]:hover::after { opacity: 1; }
+
+/* 트래킹 버튼 툴팁은 오른쪽으로 표시 (좌측 사이드바에 가리지 않도록) */
+.tracking-btn::before {
+  top: 0;
+  left: calc(100% + 8px);
+  transform: none;
+}
+.tracking-btn[data-shortcut]::after {
+  top: 22px;
+  left: calc(100% + 8px);
+  transform: none;
+  margin-top: 0;
+}
+
+.minimap {
+  position: absolute; bottom: 56px; right: 12px;
+  width: 160px; height: 100px; z-index: 50;
+  background: rgba(15, 23, 42, 0.88); border: 1px solid #334155;
+  border-radius: 8px; overflow: hidden;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+.minimap-svg { display: block; }
 </style>

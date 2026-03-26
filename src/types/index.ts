@@ -1,4 +1,4 @@
-export type DependencyType = 'http' | 'db' | 'queue' | 'other'
+export type DependencyType = 'http' | 'db' | 'queue' | 'websocket' | 'other'
 
 export interface Server {
   id: string
@@ -8,6 +8,7 @@ export interface Server {
   internalIp: string
   natIp: string
   description: string
+  environment?: string
   hasFirewall?: boolean
   firewallUrl?: string
 }

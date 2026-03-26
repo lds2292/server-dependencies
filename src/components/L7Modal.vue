@@ -14,9 +14,26 @@
         </label>
 
         <div class="section-label">구성 서버 선택</div>
+        <div class="server-filter-wrap">
+          <svg class="filter-icon" width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <circle cx="5.5" cy="5.5" r="4" stroke="#475569" stroke-width="1.3"/>
+            <line x1="8.5" y1="8.5" x2="12" y2="12" stroke="#475569" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          <input
+            v-model="serverFilter"
+            class="server-filter-input"
+            placeholder="서버 이름 또는 팀으로 검색..."
+          />
+          <button v-if="serverFilter" class="filter-clear" type="button" @click="serverFilter = ''">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <line x1="1" y1="1" x2="9" y2="9" stroke="#64748b" stroke-width="1.4" stroke-linecap="round"/>
+              <line x1="9" y1="1" x2="1" y2="9" stroke="#64748b" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
         <div class="server-checklist">
           <label
-            v-for="server in servers"
+            v-for="server in filteredServers"
             :key="server.id"
             class="check-item"
           >
@@ -29,6 +46,7 @@
             <span v-if="server.team" class="check-team">{{ server.team }}</span>
           </label>
           <p v-if="servers.length === 0" class="empty-list">추가된 서버가 없습니다</p>
+          <p v-else-if="filteredServers.length === 0" class="empty-list">검색 결과가 없습니다</p>
         </div>
         <p class="selected-count">{{ form.memberServerIds.length }}개 서버 선택됨</p>
 
@@ -49,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import type { Server, L7Node } from '../types'
 
 const props = defineProps<{
@@ -69,6 +87,15 @@ const isDuplicate = computed(() => {
   if (!trimmed) return false
   if (props.node?.name === trimmed) return false
   return props.takenNames.has(trimmed)
+})
+
+const serverFilter = ref('')
+const filteredServers = computed(() => {
+  const q = serverFilter.value.trim().toLowerCase()
+  if (!q) return props.servers
+  return props.servers.filter(s =>
+    s.name.toLowerCase().includes(q) || (s.team ?? '').toLowerCase().includes(q)
+  )
 })
 
 const form = reactive<{ name: string; ip: string; memberServerIds: string[]; description: string }>({
@@ -117,6 +144,25 @@ input:focus, textarea:focus { border-color: #7c3aed; }
 .section-label {
   font-size: 12px; font-weight: 600; color: #94a3b8;
 }
+.server-filter-wrap {
+  display: flex; align-items: center; gap: 7px;
+  background: #0f172a; border: 1px solid #334155;
+  border-radius: 6px; padding: 6px 10px;
+  transition: border-color 0.15s;
+}
+.server-filter-wrap:focus-within { border-color: #7c3aed; }
+.filter-icon { flex-shrink: 0; }
+.server-filter-input {
+  flex: 1; background: none; border: none;
+  color: #e2e8f0; font-size: 12px; outline: none; padding: 0;
+}
+.server-filter-input::placeholder { color: #475569; }
+.filter-clear {
+  background: none; border: none; padding: 0;
+  cursor: pointer; display: flex; align-items: center;
+  opacity: 0.7; transition: opacity 0.15s;
+}
+.filter-clear:hover { opacity: 1; }
 .server-checklist {
   background: #0f172a; border: 1px solid #334155;
   border-radius: 6px; padding: 6px 0;

@@ -15,12 +15,18 @@
           대상 노드 (target) *
           <CustomSelect
             v-model="form.target"
-            :options="nodeOptions"
+            :options="targetOptions"
             placeholder="서버 / L7 선택..."
           />
         </label>
         <p v-if="form.source && form.source === form.target" class="error">
           source와 target이 같을 수 없습니다.
+        </p>
+        <p v-else-if="isDuplicate" class="error">
+          이미 동일한 의존성이 존재합니다.
+        </p>
+        <p v-else-if="isDbToServerBlocked" class="error">
+          DB 노드는 서버 노드에 의존성을 추가할 수 없습니다.
         </p>
         <label>
           연결 유형
@@ -35,7 +41,7 @@
           <button
             type="submit"
             class="btn-primary"
-            :disabled="!form.source || !form.target || form.source === form.target"
+            :disabled="!form.source || !form.target || form.source === form.target || isDuplicate || isDbToServerBlocked"
           >
             추가
           </button>
@@ -46,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue'
+import { reactive, computed, watch } from 'vue'
 import type { AnyNode, Dependency, DependencyType } from '../types'
 import CustomSelect from './CustomSelect.vue'
 
@@ -54,6 +60,7 @@ const props = defineProps<{
   nodes: AnyNode[]
   defaultSource?: string
   defaultTarget?: string
+  existingDependencies?: Dependency[]
 }>()
 
 const emit = defineEmits<{
@@ -64,26 +71,75 @@ const emit = defineEmits<{
 const nodeOptions = computed(() =>
   props.nodes.map(n => ({
     value: n.id,
-    label: n.nodeKind === 'l7' ? `[L7] ${n.name}` : n.name,
+    label: n.nodeKind === 'l7' ? `[L7] ${n.name}` : (n.nodeKind === 'db' ? `[DB] ${n.name}` : n.name),
   }))
 )
 
+const sourceNode = computed(() => props.nodes.find(n => n.id === form.source))
+
+const targetOptions = computed(() => {
+  if (sourceNode.value?.nodeKind === 'db') {
+    return props.nodes
+      .filter(n => n.nodeKind === 'db')
+      .map(n => ({ value: n.id, label: `[DB] ${n.name}` }))
+  }
+  return nodeOptions.value
+})
+
+const isDbToServerBlocked = computed(() => {
+  if (!form.source || !form.target) return false
+  const target = props.nodes.find(n => n.id === form.target)
+  return sourceNode.value?.nodeKind === 'db' && (!target?.nodeKind || target.nodeKind === 'server')
+})
+
 const typeOptions = [
   { value: 'http', label: 'HTTP' },
+  { value: 'websocket', label: 'WebSocket' },
   { value: 'db', label: 'DB' },
   { value: 'queue', label: 'Queue' },
   { value: 'other', label: 'Other' },
 ]
 
+function defaultTypeForTarget(targetId: string): DependencyType {
+  const target = props.nodes.find(n => n.id === targetId)
+  if (!target) return 'http'
+  return target.nodeKind === 'db' ? 'db' : 'http'
+}
+
+function resolveInitialTarget(): string {
+  const targetId = props.defaultTarget ?? ''
+  if (!targetId) return ''
+  const src = props.nodes.find(n => n.id === (props.defaultSource ?? ''))
+  if (src?.nodeKind === 'db') {
+    const tgt = props.nodes.find(n => n.id === targetId)
+    if (tgt?.nodeKind !== 'db') return ''
+  }
+  return targetId
+}
+
 const form = reactive({
   source: props.defaultSource ?? '',
-  target: props.defaultTarget ?? '',
-  type: 'http' as DependencyType,
+  target: resolveInitialTarget(),
+  type: defaultTypeForTarget(resolveInitialTarget()) as DependencyType,
   description: '',
 })
 
+watch(() => form.target, (targetId) => {
+  form.type = defaultTypeForTarget(targetId)
+})
+
+watch(() => form.source, () => {
+  const isTargetStillValid = targetOptions.value.some(o => o.value === form.target)
+  if (!isTargetStillValid) form.target = ''
+})
+
+const isDuplicate = computed(() =>
+  !!form.source && !!form.target && form.source !== form.target &&
+  (props.existingDependencies ?? []).some(d => d.source === form.source && d.target === form.target)
+)
+
 function onSubmit() {
-  if (form.source === form.target) return
+  if (form.source === form.target || isDuplicate.value) return
   emit('submit', { ...form })
 }
 </script>
