@@ -458,11 +458,31 @@ function applyPath(targetNode: AnyNode) {
     showToast('연결된 경로가 없습니다')
     return
   }
-  pathNodeIds.value = new Set(path)
+  // 경로에 L7이 포함되면 해당 L7의 모든 멤버 서버도 포함
+  const expandedPath = [...path]
+  for (const nodeId of path) {
+    const l7 = store.l7Nodes.find(n => n.id === nodeId)
+    if (l7) {
+      for (const memberId of l7.memberServerIds) {
+        if (!expandedPath.includes(memberId)) expandedPath.push(memberId)
+      }
+    }
+  }
+  const pathNodeSet = new Set(expandedPath)
+  pathNodeIds.value = pathNodeSet
   const linkIds = new Set<string>()
+  // 원본 경로의 연속 쌍으로 링크 수집
   for (let i = 0; i < path.length - 1; i++) {
     const dep = store.dependencies.find(d => d.source === path[i] && d.target === path[i + 1])
     if (dep) linkIds.add(dep.id)
+  }
+  // L7 확장으로 추가된 멤버 노드들의 의존성 링크도 수집 (경로 내 노드와 연결된 것)
+  for (const nodeId of expandedPath) {
+    if (path.includes(nodeId)) continue
+    for (const dep of store.dependencies) {
+      if (dep.source === nodeId && pathNodeSet.has(dep.target)) linkIds.add(dep.id)
+      if (dep.target === nodeId && pathNodeSet.has(dep.source)) linkIds.add(dep.id)
+    }
   }
   pathLinkIds.value = linkIds
   pathMode.value = false

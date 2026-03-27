@@ -299,10 +299,18 @@ export const useGraphStore = defineStore('graph', () => {
 
   function findPath(sourceId: string, targetId: string): string[] | null {
     if (sourceId === targetId) return [sourceId]
+    // L7 memberServerIds 역방향 맵: serverId -> l7Id
+    const serverToL7 = new Map<string, string>()
+    for (const l7 of l7Nodes.value) {
+      for (const memberId of l7.memberServerIds) {
+        serverToL7.set(memberId, l7.id)
+      }
+    }
     const visited = new Set<string>([sourceId])
     const queue: Array<[string, string[]]> = [[sourceId, [sourceId]]]
     while (queue.length > 0) {
       const [current, path] = queue.shift()!
+      // dependency 엣지 탐색
       for (const dep of dependencies.value) {
         if (dep.source !== current) continue
         const next = dep.target
@@ -311,6 +319,23 @@ export const useGraphStore = defineStore('graph', () => {
           visited.add(next)
           queue.push([next, [...path, next]])
         }
+      }
+      // 현재 노드가 L7이면 memberServerIds도 탐색
+      const l7 = l7Nodes.value.find(n => n.id === current)
+      if (l7) {
+        for (const memberId of l7.memberServerIds) {
+          if (memberId === targetId) return [...path, memberId]
+          if (!visited.has(memberId)) {
+            visited.add(memberId)
+            queue.push([memberId, [...path, memberId]])
+          }
+        }
+      }
+      // 현재 노드가 L7에 속한 멤버라면 해당 L7도 탐색 경로에 포함
+      const parentL7Id = serverToL7.get(current)
+      if (parentL7Id && !visited.has(parentL7Id)) {
+        visited.add(parentL7Id)
+        queue.push([parentL7Id, [...path, parentL7Id]])
       }
     }
     return null

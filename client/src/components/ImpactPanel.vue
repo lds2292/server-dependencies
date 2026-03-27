@@ -75,8 +75,8 @@
         <ul>
           <li v-for="(c, i) in (selectedNode as any).contacts" :key="i" class="contact-li">
             <span class="contact-name">{{ c.name }}</span>
-            <span v-if="c.phone" class="sub-text">{{ c.phone }}</span>
-            <span v-if="c.email" class="sub-text">{{ c.email }}</span>
+            <span v-if="c.phone" class="contact-info">{{ c.phone }}</span>
+            <span v-if="c.email" class="contact-info">{{ c.email }}</span>
           </li>
         </ul>
       </div>
@@ -209,9 +209,10 @@ li {
   font-size: 12px; color: #cbd5e1; padding: 3px 5px; border-radius: 4px;
 }
 li:hover { background: #273549; }
-.sub-text { font-size: 10px; color: #475569; }
+.sub-text { font-size: 10px; color: #94a3b8; }
 .contact-li { align-items: flex-start; flex-direction: column; gap: 2px; padding: 5px 6px; }
 .contact-name { font-weight: 600; color: #e2e8f0; font-size: 12px; }
+.contact-info { font-size: 11px; color: #94a3b8; }
 .dep-type {
   font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 700; flex-shrink: 0;
 }

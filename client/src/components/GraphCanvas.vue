@@ -5,7 +5,7 @@
       @mousedown="onCanvasSvgMouseDown"
       @dblclick="onCanvasDblClick"
       @click="onCanvasClick"
-      @contextmenu.prevent
+      @contextmenu.prevent="onCanvasContextMenu"
     >
       <defs>
         <marker
@@ -43,23 +43,30 @@
 
         <!-- L7 멤버 연결선 (의존성 라인보다 먼저 렌더링) -->
         <g v-for="ml in l7MemberLines" :key="ml.key" pointer-events="none"
-          :opacity="(pathMode || pathNodes.size > 0) ? 0.1 : 1"
+          :opacity="(pathMode || pathNodes.size > 0) ? (pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId) ? 1 : 0.1) : 1"
         >
           <!-- 글로우 레이어 -->
           <line
             :x1="ml.x1" :y1="ml.y1" :x2="ml.x2" :y2="ml.y2"
-            stroke="#7c3aed" stroke-width="8" opacity="0.15"
+            :stroke="(pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId)) ? '#f59e0b' : '#7c3aed'"
+            stroke-width="8" opacity="0.15"
           />
           <!-- 메인 라인 -->
           <line
             :x1="ml.x1" :y1="ml.y1" :x2="ml.x2" :y2="ml.y2"
-            stroke="#a78bfa" stroke-width="2"
+            :stroke="(pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId)) ? '#f59e0b' : '#a78bfa'"
+            :stroke-width="(pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId)) ? 3 : 2"
             stroke-dasharray="6,4" stroke-linecap="round" opacity="0.85"
           />
           <!-- 끝점 커넥터 (L7 쪽) -->
-          <circle :cx="ml.x1" :cy="ml.y1" r="4" fill="#7c3aed" stroke="#a78bfa" stroke-width="1.5" opacity="0.9"/>
+          <circle :cx="ml.x1" :cy="ml.y1" r="4"
+            :fill="(pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId)) ? '#f59e0b' : '#7c3aed'"
+            :stroke="(pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId)) ? '#fcd34d' : '#a78bfa'"
+            stroke-width="1.5" opacity="0.9"/>
           <!-- 끝점 커넥터 (서버 쪽) -->
-          <circle :cx="ml.x2" :cy="ml.y2" r="3" fill="#a78bfa" opacity="0.85"/>
+          <circle :cx="ml.x2" :cy="ml.y2" r="3"
+            :fill="(pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId)) ? '#f59e0b' : '#a78bfa'"
+            opacity="0.85"/>
         </g>
 
         <!-- 의존성 링크 -->
@@ -121,7 +128,7 @@
           :opacity="nodeOpacity(node)"
           @mousedown.stop="onNodeMouseDown($event, node)"
           @click.stop="onNodeClick(node)"
-          @contextmenu.prevent="onNodeContextMenu($event, node)"
+          @contextmenu.prevent.stop="onNodeContextMenu($event, node)"
           @mouseenter="hoveredNodeId = (props.pathMode && node.nodeKind === 'l7') ? null : node.id"
           @mouseleave="hoveredNodeId = null"
         >
@@ -352,25 +359,6 @@
         </svg>
         중심
       </button>
-      <button class="canvas-btn" @click="exportGraph('png')" title="PNG로 내보내기">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <rect x="1" y="1" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.1"/>
-          <polyline points="1,8 4,5 6.5,8 9,6 13,9" stroke="currentColor" stroke-width="1.1" fill="none" stroke-linejoin="round"/>
-          <circle cx="10.5" cy="3.5" r="1.2" fill="currentColor" opacity="0.7"/>
-          <line x1="7" y1="13" x2="7" y2="11" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-          <polyline points="4.5,11.5 7,13.5 9.5,11.5" stroke="currentColor" stroke-width="1.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        PNG
-      </button>
-      <button class="canvas-btn" @click="exportGraph('svg')" title="SVG로 내보내기">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <polyline points="1,5 4,2 7,5" stroke="currentColor" stroke-width="1.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="4" y1="2" x2="4" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-          <polyline points="7,9 10,12 13,9" stroke="currentColor" stroke-width="1.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="10" y1="5" x2="10" y2="12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-        </svg>
-        SVG
-      </button>
     </div>
 
     <!-- 미니맵 -->
@@ -542,6 +530,82 @@
         </template>
       </template>
     </div>
+
+    <!-- 캔버스 빈 공간 우클릭 컨텍스트 메뉴 -->
+    <div v-if="canvasContextMenu.visible" class="context-menu canvas-context-menu"
+      :style="{ left: canvasContextMenu.x + 'px', top: canvasContextMenu.y + 'px' }" @click.stop>
+      <template v-if="!readOnly">
+        <div class="submenu-item" @mouseenter="canvasContextMenu.activeSubmenu = 'add'" @mouseleave="canvasContextMenu.activeSubmenu = null">
+          <span>노드 추가</span>
+          <span class="submenu-arrow">▶</span>
+          <div v-if="canvasContextMenu.activeSubmenu === 'add'" class="submenu">
+            <button @click="onCanvasAddNode('server')">
+              <svg class="menu-icon" viewBox="0 0 11 9" fill="none">
+                <rect x="0.5" y="0.5" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="0.9"/>
+                <line x1="0.5" y1="3.7" x2="10.5" y2="3.7" stroke="currentColor" stroke-width="0.7"/>
+                <circle cx="8.5" cy="6.2" r="0.9" fill="currentColor"/>
+                <circle cx="6.5" cy="6.2" r="0.9" fill="currentColor"/>
+              </svg>
+              서버
+            </button>
+            <button @click="onCanvasAddNode('l7')">
+              <svg class="menu-icon" viewBox="0 0 11 11" fill="none">
+                <circle cx="5.5" cy="3.5" r="3" stroke="currentColor" stroke-width="0.9"/>
+                <line x1="5.5" y1="6.5" x2="2" y2="10" stroke="currentColor" stroke-width="0.9"/>
+                <line x1="5.5" y1="6.5" x2="9" y2="10" stroke="currentColor" stroke-width="0.9"/>
+                <line x1="2.5" y1="3.5" x2="8.5" y2="3.5" stroke="currentColor" stroke-width="0.8"/>
+              </svg>
+              L7
+            </button>
+            <button @click="onCanvasAddNode('infra')">
+              <svg class="menu-icon" viewBox="0 0 11 10" fill="none">
+                <ellipse cx="5.5" cy="1.8" rx="5" ry="1.8" stroke="#7dd3fc" stroke-width="0.9"/>
+                <line x1="0.5" y1="1.8" x2="0.5" y2="8" stroke="#7dd3fc" stroke-width="0.9"/>
+                <line x1="10.5" y1="1.8" x2="10.5" y2="8" stroke="#7dd3fc" stroke-width="0.9"/>
+                <ellipse cx="5.5" cy="8" rx="5" ry="1.8" stroke="#7dd3fc" stroke-width="0.9"/>
+              </svg>
+              인프라
+            </button>
+            <button @click="onCanvasAddNode('external')">
+              <svg class="menu-icon" viewBox="0 0 11 11" fill="none">
+                <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" stroke-width="0.9"/>
+                <ellipse cx="5.5" cy="5.5" rx="2.2" ry="4.5" stroke="currentColor" stroke-width="0.7"/>
+                <line x1="1" y1="5.5" x2="10" y2="5.5" stroke="currentColor" stroke-width="0.7"/>
+                <line x1="1.5" y1="3" x2="9.5" y2="3" stroke="currentColor" stroke-width="0.5"/>
+                <line x1="1.5" y1="8" x2="9.5" y2="8" stroke="currentColor" stroke-width="0.5"/>
+              </svg>
+              외부 서비스
+            </button>
+          </div>
+        </div>
+      </template>
+      <button @click="openExportModal">내보내기</button>
+    </div>
+
+    <!-- 내보내기 모달 -->
+    <div v-if="exportModal.visible" class="modal-backdrop" @click.self="exportModal.visible = false">
+      <div class="export-modal">
+        <h3>내보내기</h3>
+        <div class="export-format">
+          <label :class="{ active: exportModal.format === 'png' }">
+            <input type="radio" value="png" v-model="exportModal.format" />
+            PNG
+          </label>
+          <label :class="{ active: exportModal.format === 'svg' }">
+            <input type="radio" value="svg" v-model="exportModal.format" />
+            SVG
+          </label>
+        </div>
+        <label class="export-option">
+          <input type="checkbox" v-model="exportModal.transparent" />
+          배경 제거 (투명)
+        </label>
+        <div class="export-actions">
+          <button class="btn-secondary" @click="exportModal.visible = false">취소</button>
+          <button class="btn-primary" @click="onExportConfirm">내보내기</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -650,6 +714,8 @@ const contextMenu = ref({ visible: false, x: 0, y: 0, node: null as AnyNode | nu
 
 // 노드 추가 메뉴 (더블클릭)
 const addNodeMenu = ref({ visible: false, x: 0, y: 0 })
+const canvasContextMenu = ref({ visible: false, x: 0, y: 0, activeSubmenu: null as string | null })
+const exportModal = ref({ visible: false, format: 'png' as 'svg' | 'png', transparent: false })
 let pendingNodePosition: { x: number; y: number } | null = null
 
 function onCanvasClick() {
@@ -678,6 +744,30 @@ function onCanvasDblClick(event: MouseEvent) {
 function onAddNodeMenuSelect(nodeKind: 'server' | 'l7' | 'infra' | 'external') {
   addNodeMenu.value.visible = false
   emit('addNodeAt', nodeKind)
+}
+
+function onCanvasContextMenu(event: MouseEvent) {
+  const { x, y } = getSvgPoint(event)
+  if (findNodeAt(x, y, '')) return  // 노드 위면 노드 컨텍스트 메뉴에 위임
+  contextMenu.value.visible = false
+  addNodeMenu.value.visible = false
+  pendingNodePosition = { x, y }
+  canvasContextMenu.value = { visible: true, x: event.offsetX, y: event.offsetY, activeSubmenu: null }
+}
+
+function onCanvasAddNode(nodeKind: 'server' | 'l7' | 'infra' | 'external') {
+  canvasContextMenu.value.visible = false
+  emit('addNodeAt', nodeKind)
+}
+
+function openExportModal() {
+  canvasContextMenu.value.visible = false
+  exportModal.value.visible = true
+}
+
+function onExportConfirm() {
+  exportGraph(exportModal.value.format, exportModal.value.transparent)
+  exportModal.value.visible = false
 }
 
 
@@ -810,7 +900,7 @@ const computedLinks = computed(() => {
 // ─── L7 멤버 연결선 ──────────────────────────────────────
 const l7MemberLines = computed(() => {
   const nodeMap = new Map(renderedNodes.value.map(n => [n.id, n]))
-  const lines: { key: string; x1: number; y1: number; x2: number; y2: number }[] = []
+  const lines: { key: string; l7Id: string; memberId: string; x1: number; y1: number; x2: number; y2: number }[] = []
   for (const node of renderedNodes.value) {
     if (node.nodeKind !== 'l7') continue
     const memberIds: string[] = (node as any).memberServerIds ?? []
@@ -819,6 +909,8 @@ const l7MemberLines = computed(() => {
       if (member) {
         lines.push({
           key: `${node.id}-${mid}`,
+          l7Id: node.id,
+          memberId: mid,
           x1: node.x ?? 0, y1: node.y ?? 0,
           x2: member.x ?? 0, y2: member.y ?? 0,
         })
@@ -1137,6 +1229,7 @@ function onNodeClick(node: AnyNode) {
   emit('nodeClick', node)
 }
 function onNodeContextMenu(event: MouseEvent, node: AnyNode) {
+  canvasContextMenu.value.visible = false
   contextMenu.value = { visible: true, x: event.offsetX, y: event.offsetY, node }
 }
 function onEditNode() { if (contextMenu.value.node) emit('editNode', contextMenu.value.node); contextMenu.value.visible = false }
@@ -1151,6 +1244,7 @@ function onStartPath() { if (contextMenu.value.node) emit('startPathFrom', conte
 function closeContextMenu() {
   contextMenu.value.visible = false
   addNodeMenu.value.visible = false
+  canvasContextMenu.value.visible = false
 }
 onMounted(() => document.addEventListener('click', closeContextMenu))
 onUnmounted(() => document.removeEventListener('click', closeContextMenu))
@@ -1338,7 +1432,7 @@ function downloadBlob(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-async function exportGraph(format: 'svg' | 'png') {
+async function exportGraph(format: 'svg' | 'png', transparent = false) {
   if (!svgRef.value) return
   const nodes = renderedNodes.value
   if (nodes.length === 0) return
@@ -1366,14 +1460,16 @@ async function exportGraph(format: 'svg' | 'png') {
   ) as SVGGElement | undefined
   innerG?.removeAttribute('transform')
 
-  // 배경
-  const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-  bg.setAttribute('x', String(minX))
-  bg.setAttribute('y', String(minY))
-  bg.setAttribute('width', String(vw))
-  bg.setAttribute('height', String(vh))
-  bg.setAttribute('fill', '#0f172a')
-  clone.insertBefore(bg, clone.firstChild)
+  // 배경 (투명 옵션이 아닐 때만 삽입)
+  if (!transparent) {
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+    bg.setAttribute('x', String(minX))
+    bg.setAttribute('y', String(minY))
+    bg.setAttribute('width', String(vw))
+    bg.setAttribute('height', String(vh))
+    bg.setAttribute('fill', '#0f172a')
+    clone.insertBefore(bg, clone.firstChild)
+  }
 
   // 스코프된 CSS 텍스트 클래스 인라인
   const style = document.createElementNS('http://www.w3.org/2000/svg', 'style')
@@ -1552,6 +1648,59 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds })
   border: none; color: #e2e8f0; text-align: left; cursor: pointer; font-size: 13px;
 }
 .context-menu button:hover { background: #334155; }
+.submenu-item {
+  position: relative; display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px 6px 16px; color: #e2e8f0; font-size: 13px; cursor: pointer; user-select: none;
+}
+.submenu-item:hover { background: #334155; }
+.submenu-arrow { font-size: 9px; color: #94a3b8; margin-left: 8px; }
+.submenu {
+  position: absolute; left: 100%; top: -4px;
+  background: #1e293b; border: 1px solid #334155;
+  border-radius: 6px; padding: 4px 0; min-width: 120px; z-index: 101;
+}
+.submenu button {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; padding: 6px 16px; background: none;
+  border: none; color: #e2e8f0; text-align: left; cursor: pointer; font-size: 13px;
+}
+.submenu button:hover { background: #334155; }
+
+/* 내보내기 모달 */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center; z-index: 300;
+}
+.export-modal {
+  background: #1e293b; border: 1px solid #334155;
+  border-radius: 10px; padding: 24px; width: 300px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.export-modal h3 { margin: 0; color: #f1f5f9; font-size: 15px; }
+.export-format { display: flex; gap: 8px; }
+.export-format label {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px; border: 1px solid #334155; border-radius: 6px;
+  color: #94a3b8; cursor: pointer; font-size: 13px; transition: all 0.15s;
+}
+.export-format label.active { border-color: #3b82f6; color: #e2e8f0; background: rgba(59,130,246,0.1); }
+.export-format input[type=radio] { display: none; }
+.export-option {
+  display: flex; align-items: center; gap: 8px;
+  color: #e2e8f0; font-size: 13px; cursor: pointer;
+}
+.export-option input[type=checkbox] { accent-color: #3b82f6; width: 14px; height: 14px; }
+.export-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.btn-primary {
+  padding: 7px 16px; background: #2563eb; color: #fff;
+  border: none; border-radius: 6px; cursor: pointer; font-size: 13px;
+}
+.btn-primary:hover { background: #1d4ed8; }
+.btn-secondary {
+  padding: 7px 16px; background: none; color: #94a3b8;
+  border: 1px solid #334155; border-radius: 6px; cursor: pointer; font-size: 13px;
+}
+.btn-secondary:hover { background: #334155; color: #e2e8f0; }
 .context-menu button.danger { color: #ef4444; }
 .context-menu button.disabled-item { color: #475569; cursor: not-allowed; font-style: italic; }
 .context-menu button.disabled-item:hover { background: none; }
