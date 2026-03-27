@@ -64,7 +64,7 @@
             data-shortcut="E"
             :disabled="!projectStore.canWrite"
           >{{ readOnly ? 'Read Only' : 'Edit' }}</button>
-          <button v-if="projectStore.canAdmin" class="btn-members" @click="showMembersModal = true">멤버 관리</button>
+          <button v-if="projectStore.canAdmin" class="btn-members" @click="onOpenMembersModal">멤버 관리</button>
           <button class="btn-logout" @click="showLogoutConfirm = true">로그아웃</button>
         </div>
       </div>
@@ -440,20 +440,32 @@
             </div>
           </div>
 
-          <!-- 멤버 추가 -->
-          <div class="member-add-form">
+          <!-- 초대 전송 -->
+          <div v-if="projectStore.canAdmin" class="member-add-form">
             <input
               v-model="addMemberIdentifier"
               class="member-input"
               placeholder="이메일"
-              @keydown.enter="onAddMember"
+              @keydown.enter="onSendInvitation"
             />
             <select v-model="addMemberRole" class="role-select">
               <option v-for="r in addableRoles" :key="r" :value="r">{{ roleLabel(r) }}</option>
             </select>
-            <button class="btn-primary" @click="onAddMember" :disabled="!addMemberIdentifier.trim()">추가</button>
+            <button class="btn-primary" @click="onSendInvitation" :disabled="!addMemberIdentifier.trim()">초대</button>
           </div>
           <div v-if="memberError" class="member-error">{{ memberError }}</div>
+
+          <!-- 대기 중인 초대 -->
+          <div v-if="projectStore.canAdmin && projectStore.projectInvitations.length > 0" class="pending-invitations">
+            <div class="pending-invitations-title">대기 중인 초대</div>
+            <div v-for="inv in projectStore.projectInvitations" :key="inv.id" class="pending-inv-row">
+              <div class="pending-inv-info">
+                <span class="member-name">{{ inv.invitee.email }}</span>
+                <span :class="['role-badge', inv.role.toLowerCase()]">{{ roleLabel(inv.role) }}</span>
+              </div>
+              <button class="member-remove-btn" @click="onCancelInvitation(inv.id)" title="초대 취소">x</button>
+            </div>
+          </div>
         </div>
       </div>
     </transition>
@@ -875,6 +887,13 @@ function handleKeyDown(e: KeyboardEvent) {
 // ─── 멤버 관리 ───────────────────────────────────────────
 const showLogoutConfirm = ref(false)
 const showMembersModal = ref(false)
+
+async function onOpenMembersModal() {
+  showMembersModal.value = true
+  if (projectStore.currentProject) {
+    await projectStore.loadProjectInvitations(projectStore.currentProject.id).catch(() => {})
+  }
+}
 const membersOverlayMousedown = ref(false)
 const addMemberIdentifier = ref('')
 const addMemberRole = ref<ProjectMemberRole>('READONLY')
@@ -915,16 +934,29 @@ function assignableRoles(_currentRole: ProjectMemberRole): ProjectMemberRole[] {
   return ['WRITER', 'READONLY']
 }
 
-async function onAddMember() {
+async function onSendInvitation() {
   if (!addMemberIdentifier.value.trim() || !projectStore.currentProject) return
   memberError.value = ''
   try {
-    await projectStore.addMember(projectStore.currentProject.id, addMemberIdentifier.value.trim(), addMemberRole.value)
+    await projectStore.sendInvitation(projectStore.currentProject.id, addMemberIdentifier.value.trim(), addMemberRole.value)
+    await projectStore.loadProjectInvitations(projectStore.currentProject.id)
     addMemberIdentifier.value = ''
-    showToast('멤버가 추가되었습니다.', 'success')
+    showToast('초대가 전송되었습니다.', 'success')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string } } }
-    memberError.value = e.response?.data?.error ?? '멤버 추가에 실패했습니다.'
+    memberError.value = e.response?.data?.error ?? '초대 전송에 실패했습니다.'
+  }
+}
+
+async function onCancelInvitation(invId: string) {
+  if (!projectStore.currentProject) return
+  memberError.value = ''
+  try {
+    await projectStore.cancelInvitation(projectStore.currentProject.id, invId)
+    showToast('초대가 취소되었습니다.', 'success')
+  } catch (err: unknown) {
+    const e = err as { response?: { data?: { error?: string } } }
+    memberError.value = e.response?.data?.error ?? '초대 취소에 실패했습니다.'
   }
 }
 
@@ -1344,6 +1376,10 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
 }
 .member-remove-btn:hover { background: #ef444422; border-color: #ef4444; }
 .member-add-form { display: flex; gap: 8px; align-items: center; }
+.pending-invitations { margin-top: 12px; border-top: 1px solid #1e293b; padding-top: 12px; }
+.pending-invitations-title { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.pending-inv-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+.pending-inv-info { display: flex; align-items: center; gap: 8px; }
 .member-input {
   flex: 1; padding: 6px 10px; background: #0f172a; border: 1px solid #334155;
   border-radius: 6px; color: #e2e8f0; font-size: 12px; outline: none;

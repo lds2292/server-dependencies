@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import * as projectController from '../controllers/projectController'
 import * as graphController from '../controllers/graphController'
+import * as invitationController from '../controllers/invitationController'
 import { authenticate } from '../middleware/authenticate'
 
 const router = Router()
@@ -13,7 +14,10 @@ router.get('/:id', projectController.getProject)
 router.patch('/:id', projectController.updateProject)
 router.delete('/:id', projectController.deleteProject)
 
-router.post('/:id/members', projectController.addMember)
+router.post('/:id/invitations', invitationController.sendInvitation)
+router.get('/:id/invitations', invitationController.getProjectInvitations)
+router.delete('/:id/invitations/:invId', invitationController.cancelInvitation)
+
 router.delete('/:id/members/me', projectController.leaveProject)
 router.delete('/:id/members/:userId', projectController.removeMember)
 router.patch('/:id/members/:userId/role', projectController.updateMemberRole)

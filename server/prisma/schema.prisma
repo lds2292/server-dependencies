@@ -16,10 +16,12 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
 
-  ownedProjects Project[]       @relation("ProjectOwner")
-  memberships   ProjectMember[]
-  sessions      Session[]
-  auditLogs     AuditLog[]
+  ownedProjects       Project[]           @relation("ProjectOwner")
+  memberships         ProjectMember[]
+  sessions            Session[]
+  auditLogs           AuditLog[]
+  invitationsSent     ProjectInvitation[] @relation("InvitationsSent")
+  invitationsReceived ProjectInvitation[] @relation("InvitationsReceived")
 }
 
 model Session {
@@ -40,10 +42,11 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner     User            @relation("ProjectOwner", fields: [ownerId], references: [id])
-  members   ProjectMember[]
-  graphData GraphData?
-  auditLogs AuditLog[]
+  owner       User                @relation("ProjectOwner", fields: [ownerId], references: [id])
+  members     ProjectMember[]
+  graphData   GraphData?
+  auditLogs   AuditLog[]
+  invitations ProjectInvitation[]
 }
 
 enum ProjectMemberRole {
@@ -63,6 +66,29 @@ model ProjectMember {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([projectId, userId])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model ProjectInvitation {
+  id        String            @id @default(uuid())
+  projectId String
+  inviterId String
+  inviteeId String
+  role      ProjectMemberRole
+  status    InvitationStatus  @default(PENDING)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  inviter User    @relation("InvitationsSent",     fields: [inviterId], references: [id])
+  invitee User    @relation("InvitationsReceived", fields: [inviteeId], references: [id])
+
+  @@unique([projectId, inviteeId])
 }
 
 model GraphData {

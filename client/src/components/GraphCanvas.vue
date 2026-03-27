@@ -862,6 +862,7 @@ function nodeStroke(node: D3Node): string {
   if (blockedTarget.value?.id === node.id) return '#ef4444'
   if (connectTarget.value?.id === node.id) return '#22c55e'
   if (arrowSource.value?.id === node.id) return '#60a5fa'
+
   if (props.selectedId === node.id) {
     if (node.nodeKind === 'l7') return '#a78bfa'
     if (node.nodeKind === 'infra') return '#0284c7'
@@ -1946,11 +1947,16 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds })
 .context-menu button.path-item-disabled { color: #475569; cursor: not-allowed; }
 .context-menu button.path-item-disabled:hover { background: none; }
 
-/* 다중 선택 */
+/* 다중 선택 - marching ants */
 .graph-node.multi-selected > rect:first-of-type {
-  stroke: #60a5fa;
-  stroke-width: 2;
-  stroke-dasharray: 5 3;
+  stroke: #f97316;
+  stroke-width: 2.5;
+  stroke-dasharray: 6 4;
+  animation: marching-ants 0.5s linear infinite;
+}
+@keyframes marching-ants {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -20; }
 }
 
 /* 순환 의존성 */

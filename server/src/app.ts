@@ -4,6 +4,7 @@ import helmet from 'helmet'
 import dotenv from 'dotenv'
 import authRouter from './routes/auth'
 import projectsRouter from './routes/projects'
+import invitationsRouter from './routes/invitations'
 import logger from './lib/logger'
 
 dotenv.config()
@@ -36,6 +37,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 app.use('/api/auth', authRouter)
 app.use('/api/projects', projectsRouter)
+app.use('/api/invitations', invitationsRouter)
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' })

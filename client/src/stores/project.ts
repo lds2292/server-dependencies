@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { projectApi, type Project, type ProjectMemberRole } from '../api/projectApi'
+import { projectApi, type Project, type ProjectMemberRole, type ProjectInvitation, type ProjectPendingInvitation } from '../api/projectApi'
 import { useAuthStore } from './auth'
 
 export const useProjectStore = defineStore('project', () => {
   const projects = ref<Project[]>([])
   const currentProject = ref<Project | null>(null)
+  const myInvitations = ref<ProjectInvitation[]>([])
+  const projectInvitations = ref<ProjectPendingInvitation[]>([])
 
   const myRole = computed<ProjectMemberRole | null>(() => {
     const auth = useAuthStore()
@@ -47,9 +49,18 @@ export const useProjectStore = defineStore('project', () => {
     if (currentProject.value?.id === id) currentProject.value = null
   }
 
-  async function addMember(projectId: string, identifier: string, role: ProjectMemberRole): Promise<void> {
-    const { data } = await projectApi.addMember(projectId, identifier, role)
-    if (currentProject.value?.id === projectId) currentProject.value = data
+  async function sendInvitation(projectId: string, identifier: string, role: ProjectMemberRole): Promise<void> {
+    await projectApi.sendInvitation(projectId, identifier, role)
+  }
+
+  async function loadProjectInvitations(projectId: string): Promise<void> {
+    const { data } = await projectApi.getProjectInvitations(projectId)
+    projectInvitations.value = data
+  }
+
+  async function cancelInvitation(projectId: string, invId: string): Promise<void> {
+    await projectApi.cancelInvitation(projectId, invId)
+    projectInvitations.value = projectInvitations.value.filter(i => i.id !== invId)
   }
 
   async function removeMember(projectId: string, userId: string): Promise<void> {
@@ -68,9 +79,27 @@ export const useProjectStore = defineStore('project', () => {
     if (currentProject.value?.id === projectId) currentProject.value = null
   }
 
+  async function loadMyInvitations(): Promise<void> {
+    const { data } = await projectApi.getMyInvitations()
+    myInvitations.value = data
+  }
+
+  async function acceptInvitation(invId: string): Promise<void> {
+    await projectApi.acceptInvitation(invId)
+    myInvitations.value = myInvitations.value.filter(i => i.id !== invId)
+  }
+
+  async function rejectInvitation(invId: string): Promise<void> {
+    await projectApi.rejectInvitation(invId)
+    myInvitations.value = myInvitations.value.filter(i => i.id !== invId)
+  }
+
   return {
-    projects, currentProject, myRole, canWrite, canAdmin, isMaster,
+    projects, currentProject, myInvitations, projectInvitations,
+    myRole, canWrite, canAdmin, isMaster,
     loadProjects, loadProject, createProject, updateProject, deleteProject,
-    addMember, removeMember, updateMemberRole, leaveProject,
+    sendInvitation, loadProjectInvitations, cancelInvitation,
+    removeMember, updateMemberRole, leaveProject,
+    loadMyInvitations, acceptInvitation, rejectInvitation,
   }
 })

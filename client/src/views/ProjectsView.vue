@@ -1,12 +1,61 @@
 <template>
   <div class="projects-page">
     <header class="projects-header">
-      <span class="projects-logo">Server Dependencies</span>
+      <div class="projects-logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- 좌상단 → 우하단 방향 화살표 (파랑) -->
+          <line x1="4" y1="4" x2="22" y2="22" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round"/>
+          <polyline points="14,22 22,22 22,14" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <!-- 우하단 → 좌상단 방향 화살표 (주황) -->
+          <line x1="28" y1="28" x2="10" y2="10" stroke="#f97316" stroke-width="2.2" stroke-linecap="round"/>
+          <polyline points="18,10 10,10 10,18" stroke="#f97316" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <!-- 웹 로고 (좌하단) -->
+          <circle cx="6" cy="26" r="3.5" stroke="#94a3b8" stroke-width="1.4" fill="none"/>
+          <line x1="6" y1="22.5" x2="6" y2="29.5" stroke="#94a3b8" stroke-width="1" stroke-linecap="round"/>
+          <line x1="2.5" y1="26" x2="9.5" y2="26" stroke="#94a3b8" stroke-width="1" stroke-linecap="round"/>
+          <path d="M3.5 23.8 Q6 25 8.5 23.8" stroke="#94a3b8" stroke-width="1" fill="none" stroke-linecap="round"/>
+          <path d="M3.5 28.2 Q6 27 8.5 28.2" stroke="#94a3b8" stroke-width="1" fill="none" stroke-linecap="round"/>
+          <!-- DB 로고 (우상단) -->
+          <ellipse cx="26" cy="5" rx="4" ry="1.8" stroke="#94a3b8" stroke-width="1.4" fill="none"/>
+          <line x1="22" y1="5" x2="22" y2="9" stroke="#94a3b8" stroke-width="1.4"/>
+          <line x1="30" y1="5" x2="30" y2="9" stroke="#94a3b8" stroke-width="1.4"/>
+          <path d="M22 9 Q26 11 30 9" stroke="#94a3b8" stroke-width="1.4" fill="none"/>
+        </svg>
+        <span>Server Dependencies</span>
+      </div>
       <div class="header-right">
         <span class="user-info">{{ auth.user?.username }}</span>
         <button class="btn-logout" @click="showLogoutConfirm = true">로그아웃</button>
       </div>
     </header>
+
+    <!-- 초대 알림 배너 -->
+    <div v-if="projectStore.myInvitations.length > 0" class="invitations-banner">
+      <div class="invitations-banner-inner">
+        <div class="invitations-banner-title">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1L8.5 5H13L9.5 7.5L11 11.5L7 9L3 11.5L4.5 7.5L1 5H5.5L7 1Z" stroke="#f97316" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
+          </svg>
+          대기 중인 초대 {{ projectStore.myInvitations.length }}건
+        </div>
+        <div class="invitations-list">
+          <div
+            v-for="inv in projectStore.myInvitations"
+            :key="inv.id"
+            class="invitation-item"
+          >
+            <div class="invitation-info">
+              <span class="invitation-project">{{ inv.project.name }}</span>
+              <span class="invitation-meta">{{ inv.inviter.username }} 님이 초대 · {{ roleLabel(inv.role) }}</span>
+            </div>
+            <div class="invitation-actions">
+              <button class="btn-accept" @click="onAcceptInvitation(inv.id)">수락</button>
+              <button class="btn-reject" @click="onRejectInvitation(inv.id)">거절</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="projects-body">
       <div class="projects-top">
@@ -98,6 +147,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useProjectStore } from '../stores/project'
+import type { ProjectMemberRole } from '../api/projectApi'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -112,12 +162,39 @@ const creating = ref(false)
 
 onMounted(async () => {
   loading.value = true
-  try { await projectStore.loadProjects() } finally { loading.value = false }
+  try {
+    await Promise.all([
+      projectStore.loadProjects(),
+      projectStore.loadMyInvitations(),
+    ])
+  } finally {
+    loading.value = false
+  }
 })
+
+function roleLabel(role: ProjectMemberRole): string {
+  const map: Record<ProjectMemberRole, string> = {
+    MASTER: '마스터', ADMIN: '관리자', WRITER: '편집자', READONLY: '읽기전용',
+  }
+  return map[role] ?? role
+}
+
+async function onAcceptInvitation(invId: string) {
+  try {
+    await projectStore.acceptInvitation(invId)
+    await projectStore.loadProjects()
+  } catch { /* ignore */ }
+}
+
+async function onRejectInvitation(invId: string) {
+  try {
+    await projectStore.rejectInvitation(invId)
+  } catch { /* ignore */ }
+}
 
 async function onLogout() {
   await auth.logout()
-  router.push({ name: 'login' })
+  router.push({ name: 'hero' })
 }
 
 async function onCreateProject() {
@@ -151,7 +228,10 @@ function formatDate(iso: string): string {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 32px; border-bottom: 1px solid #1e293b;
 }
-.projects-logo { font-size: 13px; font-weight: 700; color: #60a5fa; letter-spacing: 0.04em; }
+.projects-logo {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 700; color: #60a5fa; letter-spacing: 0.04em;
+}
 .header-right { display: flex; align-items: center; gap: 12px; }
 .user-info { font-size: 12px; color: #64748b; }
 .btn-logout {
@@ -220,6 +300,37 @@ function formatDate(iso: string): string {
 .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-confirm-danger { background: #991b1b; }
 .btn-confirm-danger:hover:not(:disabled) { background: #b91c1c; }
+/* 초대 배너 */
+.invitations-banner {
+  background: #1a1f2e; border-bottom: 1px solid #2a3347;
+}
+.invitations-banner-inner {
+  max-width: 960px; margin: 0 auto; padding: 16px 32px;
+}
+.invitations-banner-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; color: #f97316; margin-bottom: 12px;
+}
+.invitations-list { display: flex; flex-direction: column; gap: 8px; }
+.invitation-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #0f172a; border: 1px solid #2a3347; border-radius: 8px;
+  padding: 10px 14px;
+}
+.invitation-info { display: flex; flex-direction: column; gap: 2px; }
+.invitation-project { font-size: 13px; font-weight: 700; color: #e2e8f0; }
+.invitation-meta { font-size: 11px; color: #64748b; }
+.invitation-actions { display: flex; gap: 6px; }
+.btn-accept {
+  font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 5px;
+  border: none; background: #1d4ed8; color: #fff; cursor: pointer; transition: background 0.15s;
+}
+.btn-accept:hover { background: #2563eb; }
+.btn-reject {
+  font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 5px;
+  border: 1px solid #334155; background: transparent; color: #64748b; cursor: pointer; transition: all 0.15s;
+}
+.btn-reject:hover { border-color: #ef4444; color: #f87171; }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
