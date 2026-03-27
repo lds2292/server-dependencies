@@ -1,5 +1,5 @@
 import { http } from './http'
-import type { GraphData } from '../types'
+import type { GraphData, ExternalContact } from '../types'
 
 export type PositionMap = Record<string, { x: number; y: number }>
 
@@ -15,5 +15,11 @@ export const graphApi = {
   },
   savePositions(projectId: string, positions: PositionMap) {
     return http.put(`/projects/${projectId}/graph/positions`, positions)
+  },
+  getNodeContacts(projectId: string, nodeId: string) {
+    return http.get<{ contacts: ExternalContact[] }>(`/projects/${projectId}/nodes/${nodeId}/contacts`)
+  },
+  saveNodeContacts(projectId: string, nodeId: string, contacts: ExternalContact[]) {
+    return http.put<{ ok: boolean }>(`/projects/${projectId}/nodes/${nodeId}/contacts`, { contacts })
   },
 }

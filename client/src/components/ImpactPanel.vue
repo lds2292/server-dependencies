@@ -12,12 +12,22 @@
           <p class="detail-row">팀: {{ (selectedNode as any).team || '-' }}</p>
           <div class="ip-group">
             <span class="ip-label">내부 IP</span>
-            <span v-for="ip in (selectedNode as any).internalIps" :key="ip" class="detail-row mono ip-chip">{{ ip }}</span>
+            <div v-for="ip in (selectedNode as any).internalIps" :key="ip" class="ip-row">
+              <span class="detail-row mono ip-chip">{{ ip }}</span>
+              <button class="btn-copy" @click="copyText(ip)" :title="'복사'" type="button">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="0.5" width="7" height="7" rx="1" stroke="currentColor"/><path d="M1 3.5H0.5V10.5H7.5V10" stroke="currentColor" stroke-linecap="round"/></svg>
+              </button>
+            </div>
             <span v-if="!(selectedNode as any).internalIps?.length" class="detail-row mono">-</span>
           </div>
           <div class="ip-group">
             <span class="ip-label">NAT IP</span>
-            <span v-for="ip in (selectedNode as any).natIps" :key="ip" class="detail-row mono ip-chip">{{ ip }}</span>
+            <div v-for="ip in (selectedNode as any).natIps" :key="ip" class="ip-row">
+              <span class="detail-row mono ip-chip">{{ ip }}</span>
+              <button class="btn-copy" @click="copyText(ip)" :title="'복사'" type="button">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="0.5" width="7" height="7" rx="1" stroke="currentColor"/><path d="M1 3.5H0.5V10.5H7.5V10" stroke="currentColor" stroke-linecap="round"/></svg>
+              </button>
+            </div>
             <span v-if="!(selectedNode as any).natIps?.length" class="detail-row mono">-</span>
           </div>
           <p v-if="(selectedNode as any).hasFirewall" class="detail-firewall">
@@ -28,16 +38,29 @@
 
         <!-- L7 전용 -->
         <template v-else-if="selectedNode.nodeKind === 'l7'">
-          <p v-if="(selectedNode as any).ip" class="detail-row mono">IP: {{ (selectedNode as any).ip }}</p>
-          <p v-if="(selectedNode as any).natIp" class="detail-row mono">NAT IP: {{ (selectedNode as any).natIp }}</p>
+          <div v-if="(selectedNode as any).ip" class="ip-row">
+            <span class="detail-row mono">IP: {{ (selectedNode as any).ip }}</span>
+            <button class="btn-copy" @click="copyText((selectedNode as any).ip)" title="복사" type="button">
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="0.5" width="7" height="7" rx="1" stroke="currentColor"/><path d="M1 3.5H0.5V10.5H7.5V10" stroke="currentColor" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <div v-if="(selectedNode as any).natIp" class="ip-row">
+            <span class="detail-row mono">NAT IP: {{ (selectedNode as any).natIp }}</span>
+            <button class="btn-copy" @click="copyText((selectedNode as any).natIp)" title="복사" type="button">
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="0.5" width="7" height="7" rx="1" stroke="currentColor"/><path d="M1 3.5H0.5V10.5H7.5V10" stroke="currentColor" stroke-linecap="round"/></svg>
+            </button>
+          </div>
         </template>
 
         <!-- DB 전용 -->
         <template v-else-if="selectedNode.nodeKind === 'infra'">
           <p class="detail-row">유형: {{ (selectedNode as any).infraType || '-' }}</p>
-          <p v-if="(selectedNode as any).host" class="detail-row mono">
-            {{ (selectedNode as any).host }}{{ (selectedNode as any).port ? ':' + (selectedNode as any).port : '' }}
-          </p>
+          <div v-if="(selectedNode as any).host" class="ip-row">
+            <span class="detail-row mono">{{ (selectedNode as any).host }}{{ (selectedNode as any).port ? ':' + (selectedNode as any).port : '' }}</span>
+            <button class="btn-copy" @click="copyText((selectedNode as any).host + ((selectedNode as any).port ? ':' + (selectedNode as any).port : ''))" title="복사" type="button">
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="0.5" width="7" height="7" rx="1" stroke="currentColor"/><path d="M1 3.5H0.5V10.5H7.5V10" stroke="currentColor" stroke-linecap="round"/></svg>
+            </button>
+          </div>
         </template>
 
         <!-- 외부서비스 전용 -->
@@ -71,15 +94,48 @@
 
       <!-- 외부서비스 담당자 -->
       <div v-if="selectedNode.nodeKind === 'external' && (selectedNode as any).contacts?.length" class="section">
-        <h4>담당자 <span class="count">{{ (selectedNode as any).contacts.length }}</span></h4>
+        <div class="section-header">
+          <h4>담당자 <span class="count">{{ (selectedNode as any).contacts.length }}</span></h4>
+          <button v-if="!unmaskedContacts" class="btn-unmask" @click="showPasswordModal = true">마스킹 해제</button>
+          <span v-else class="unmask-badge">해제됨</span>
+        </div>
         <ul>
-          <li v-for="(c, i) in (selectedNode as any).contacts" :key="i" class="contact-li">
+          <li v-for="(c, i) in (unmaskedContacts ?? (selectedNode as any).contacts)" :key="i" class="contact-li">
             <span class="contact-name">{{ c.name }}</span>
-            <span v-if="c.phone" class="contact-info">{{ c.phone }}</span>
-            <span v-if="c.email" class="contact-info">{{ c.email }}</span>
+            <div v-if="c.phone" class="contact-copy-row">
+              <span class="contact-info">{{ formatPhone(c.phone) }}</span>
+              <button v-if="unmaskedContacts" class="btn-copy" @click="copyText(c.phone)" title="복사" type="button">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="0.5" width="7" height="7" rx="1" stroke="currentColor"/><path d="M1 3.5H0.5V10.5H7.5V10" stroke="currentColor" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <div v-if="c.email" class="contact-copy-row">
+              <span class="contact-info">{{ c.email }}</span>
+              <button v-if="unmaskedContacts" class="btn-copy" @click="copyText(c.email!)" title="복사" type="button">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="0.5" width="7" height="7" rx="1" stroke="currentColor"/><path d="M1 3.5H0.5V10.5H7.5V10" stroke="currentColor" stroke-linecap="round"/></svg>
+              </button>
+            </div>
           </li>
         </ul>
       </div>
+
+      <!-- 비밀번호 확인 모달 -->
+      <Teleport to="body">
+        <div v-if="showPasswordModal" class="mask-modal-backdrop" @click.self="closePasswordModal">
+          <div class="mask-modal">
+            <h4>비밀번호 확인</h4>
+            <p class="mask-modal-desc">개인정보 확인을 위해 비밀번호를 입력해주세요.</p>
+            <input type="password" v-model="passwordInput" class="mask-modal-input"
+              placeholder="비밀번호" @keyup.enter="onUnmask" autofocus />
+            <span v-if="verifyError" class="verify-error">{{ verifyError }}</span>
+            <div class="mask-modal-actions">
+              <button class="btn-secondary" @click="closePasswordModal">취소</button>
+              <button class="btn-primary" @click="onUnmask" :disabled="verifyLoading || !passwordInput">
+                {{ verifyLoading ? '확인 중...' : '확인' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
 
       <!-- 의존 관계 -->
       <div class="section">
@@ -127,12 +183,18 @@
     <div v-else class="no-selection">
       <p>노드를 클릭하면<br />상세 정보가 표시됩니다</p>
     </div>
+
+    <transition name="copy-fade">
+      <div v-if="copyToast" class="copy-toast">{{ copyToast }}</div>
+    </transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { Server, AnyNode, Dependency } from '../types'
+import { computed, ref, watch } from 'vue'
+import type { Server, AnyNode, Dependency, ExternalContact } from '../types'
+import { projectApi } from '../api/projectApi'
+import { formatPhone } from '../composables/useContactValidation'
 
 function typeLabel(node: AnyNode): string {
   if (node.nodeKind === 'l7') return 'L7'
@@ -147,7 +209,54 @@ const props = defineProps<{
   dependencies: Dependency[]
   impactedIds: Set<string>
   readOnly: boolean
+  currentProjectId: string
 }>()
+
+const unmaskedContacts = ref<ExternalContact[] | null>(null)
+const showPasswordModal = ref(false)
+const passwordInput = ref('')
+const verifyError = ref('')
+const verifyLoading = ref(false)
+const copyToast = ref('')
+let copyToastTimer: ReturnType<typeof setTimeout> | null = null
+
+function copyText(value: string) {
+  navigator.clipboard.writeText(value).then(() => {
+    copyToast.value = '복사됨'
+    if (copyToastTimer) clearTimeout(copyToastTimer)
+    copyToastTimer = setTimeout(() => { copyToast.value = '' }, 1500)
+  })
+}
+
+watch(() => props.selectedNode?.id, () => {
+  unmaskedContacts.value = null
+  showPasswordModal.value = false
+  passwordInput.value = ''
+  verifyError.value = ''
+})
+
+function closePasswordModal() {
+  showPasswordModal.value = false
+  passwordInput.value = ''
+  verifyError.value = ''
+}
+
+async function onUnmask() {
+  if (!props.selectedNode || !passwordInput.value) return
+  verifyLoading.value = true
+  verifyError.value = ''
+  try {
+    const res = await projectApi.unmasksContacts(props.currentProjectId, props.selectedNode.id, passwordInput.value)
+    unmaskedContacts.value = res.data.contacts
+    showPasswordModal.value = false
+    passwordInput.value = ''
+  } catch (err: unknown) {
+    const e = err as { response?: { data?: { error?: string } } }
+    verifyError.value = e.response?.data?.error ?? '비밀번호가 올바르지 않습니다.'
+  } finally {
+    verifyLoading.value = false
+  }
+}
 
 defineEmits<{
   removeDependency: [id: string]
@@ -177,6 +286,7 @@ function getNodeName(id: string) {
 .impact-panel {
   background: #1e293b; border-left: 1px solid #334155;
   height: 100%; overflow-y: auto; display: flex; flex-direction: column;
+  position: relative;
 }
 .no-selection {
   display: flex; align-items: center; justify-content: center;
@@ -213,6 +323,42 @@ li:hover { background: #273549; }
 .contact-li { align-items: flex-start; flex-direction: column; gap: 2px; padding: 5px 6px; }
 .contact-name { font-weight: 600; color: #e2e8f0; font-size: 12px; }
 .contact-info { font-size: 11px; color: #94a3b8; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+.section-header h4 { margin: 0; }
+.btn-unmask {
+  font-size: 10px; padding: 2px 8px; border-radius: 4px; border: 1px solid #334155;
+  background: none; color: #94a3b8; cursor: pointer;
+}
+.btn-unmask:hover { border-color: #f59e0b; color: #f59e0b; }
+.unmask-badge { font-size: 10px; color: #34d399; font-weight: 600; }
+.mask-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center; z-index: 500;
+}
+.mask-modal {
+  background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+  padding: 24px; width: 300px; display: flex; flex-direction: column; gap: 12px;
+}
+.mask-modal h4 { margin: 0; color: #f1f5f9; font-size: 14px; }
+.mask-modal-desc { margin: 0; font-size: 12px; color: #94a3b8; }
+.mask-modal-input {
+  width: 100%; padding: 8px 10px; background: #0f172a; border: 1px solid #334155;
+  border-radius: 6px; color: #e2e8f0; font-size: 13px; box-sizing: border-box;
+}
+.mask-modal-input:focus { outline: none; border-color: #3b82f6; }
+.verify-error { font-size: 12px; color: #f87171; }
+.mask-modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.btn-primary {
+  padding: 7px 16px; background: #2563eb; color: #fff;
+  border: none; border-radius: 6px; cursor: pointer; font-size: 13px;
+}
+.btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-secondary {
+  padding: 7px 16px; background: none; color: #94a3b8;
+  border: 1px solid #334155; border-radius: 6px; cursor: pointer; font-size: 13px;
+}
+.btn-secondary:hover { background: #334155; color: #e2e8f0; }
 .dep-type {
   font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 700; flex-shrink: 0;
 }
@@ -232,6 +378,24 @@ li:hover .del-dep { opacity: 1; }
 .ip-group { display: flex; flex-direction: column; gap: 2px; margin: 2px 0; }
 .ip-label { font-size: 11px; color: #475569; font-weight: 600; }
 .ip-chip { font-size: 12px; color: #7dd3fc; font-family: 'Menlo', 'Consolas', monospace; padding-left: 6px; }
+.ip-row { display: flex; align-items: center; gap: 4px; }
+.contact-copy-row { display: flex; align-items: center; gap: 4px; }
+.btn-copy {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid transparent; border-radius: 3px;
+  color: #475569; cursor: pointer; padding: 2px 3px; flex-shrink: 0;
+  transition: color 0.1s, border-color 0.1s;
+}
+.btn-copy:hover { color: #06b6d4; border-color: #164e63; }
+.copy-toast {
+  position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
+  background: #0c4a6e; border: 1px solid #0e7490; border-radius: 6px;
+  padding: 5px 14px; font-size: 12px; color: #7dd3fc; font-weight: 600;
+  pointer-events: none; white-space: nowrap; z-index: 10;
+}
+.copy-fade-enter-active { transition: opacity 0.15s; }
+.copy-fade-leave-active { transition: opacity 0.3s; }
+.copy-fade-enter-from, .copy-fade-leave-to { opacity: 0; }
 .type-badge {
   font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 800; flex-shrink: 0;
 }

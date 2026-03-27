@@ -113,10 +113,30 @@ export const useGraphStore = defineStore('graph', () => {
     })
   }
 
-  async function savePositions(positions: PositionMap): Promise<void> {
+  // --- 포지션 저장 (메모리 버퍼링) ---
+  const positionsDirty = ref(false)
+  const autosaveEnabled = ref(localStorage.getItem('autosave_enabled') !== 'false')
+  const autosaveInterval = ref(Number(localStorage.getItem('autosave_interval') || 30))
+
+  function savePositions(positions: PositionMap): void {
     currentPositions.value = positions
-    if (!currentProjectId.value) return
-    await graphApi.savePositions(currentProjectId.value, positions)
+    positionsDirty.value = true
+  }
+
+  async function flushPositions(): Promise<void> {
+    if (!positionsDirty.value || !currentProjectId.value) return
+    await graphApi.savePositions(currentProjectId.value, currentPositions.value)
+    positionsDirty.value = false
+  }
+
+  function setAutosaveEnabled(val: boolean): void {
+    autosaveEnabled.value = val
+    localStorage.setItem('autosave_enabled', String(val))
+  }
+
+  function setAutosaveInterval(val: number): void {
+    autosaveInterval.value = val
+    localStorage.setItem('autosave_interval', String(val))
   }
 
   function getPositions(): PositionMap {
@@ -383,6 +403,13 @@ export const useGraphStore = defineStore('graph', () => {
     })
   }
 
+  // 외부 서비스 contacts 저장 후 서버에서 최신 상태로 갱신 (마스킹 포함)
+  async function syncExternalNodes(): Promise<void> {
+    if (!currentProjectId.value) return
+    const res = await graphApi.getGraph(currentProjectId.value)
+    externalNodes.value = res.data.externalNodes ?? []
+  }
+
   return {
     servers, l7Nodes, infraNodes, externalNodes, dependencies, currentProjectId,
     addServer, updateServer, deleteServer,
@@ -392,6 +419,7 @@ export const useGraphStore = defineStore('graph', () => {
     addDependency, removeDependency,
     findNodeById, getImpactedNodes, getCycleNodes, findPath, exportJSON, importJSON, loadData,
     undo, redo, beginBatch, endBatch, canUndo, canRedo,
-    setProject, saveGraph, savePositions, getPositions,
+    setProject, saveGraph, savePositions, flushPositions, getPositions, syncExternalNodes,
+    positionsDirty, autosaveEnabled, autosaveInterval, setAutosaveEnabled, setAutosaveInterval,
   }
 })

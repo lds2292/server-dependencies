@@ -38,7 +38,7 @@ async function migrate() {
   let migrated = 0
 
   for (const record of records) {
-    const data = record.data as GraphDataJson
+    const data = record.data as unknown as GraphDataJson
 
     const updatedServers = (data.servers as ServerNode[]).map(s => ({
       ...s,

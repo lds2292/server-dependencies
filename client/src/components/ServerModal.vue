@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-backdrop" @click.self="$emit('close')">
+  <div class="modal-backdrop" @mousedown.self="backdropDown = true" @mouseup.self="backdropDown && $emit('close')" @mouseup="backdropDown = false">
     <div class="modal">
       <h3>{{ isEdit ? '서버 수정' : '서버 추가' }}</h3>
       <form @submit.prevent="onSubmit">
@@ -58,12 +58,14 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import type { Server } from '../types'
 
 
 import IpInput from './IpInput.vue'
 import CustomCombobox from './CustomCombobox.vue'
+
+const backdropDown = ref(false)
 
 const props = defineProps<{
   server?: Server | null

@@ -133,9 +133,20 @@
           @mouseleave="hoveredNodeId = null"
         >
           <title>{{ node.name }}</title>
+          <!-- 배경 (fill만, stroke 없음) -->
+          <rect x="-86" y="-37" width="187" height="74" rx="6" :fill="nodeColor(node)"/>
+
+          <!-- DB 벤더 아이콘 패널 배경 (왼쪽 컬럼만 시그니처 컬러, 왼쪽만 둥글게) -->
+          <template v-if="node.nodeKind === 'infra'">
+            <template v-for="dbIcon in [getInfraIconInfo((node as any).infraType)]" :key="'dbpanel'">
+              <path v-if="dbIcon" d="M -60,-37 L -80,-37 A 6,6 0 0 0 -86,-31 L -86,31 A 6,6 0 0 0 -80,37 L -60,37 Z" :fill="dbIcon.bgColor" pointer-events="none"/>
+            </template>
+          </template>
+
+          <!-- 테두리 (stroke만, fill 없음 - 패널 위에 그려져 border가 가려지지 않음) -->
           <rect
             x="-86" y="-37" width="187" height="74" rx="6"
-            :fill="nodeColor(node)"
+            fill="none"
             :stroke="nodeStroke(node)"
             :stroke-width="isHighlighted(node) ? 3 : 1.5"
           />
@@ -431,7 +442,7 @@
 
     <!-- 하단 힌트 -->
     <div v-if="!readOnly" class="mode-hint">일반 드래그: 노드 이동 &nbsp;|&nbsp; Ctrl + 드래그: 의존성 연결</div>
-    <div v-else class="mode-hint readonly-hint">읽기 전용 모드 — 노드 이동만 가능</div>
+    <div v-else class="mode-hint readonly-hint">읽기 전용 모드</div>
 
     <!-- 순환 의존성 경고 배너 -->
     <div v-if="cycleNodes.size > 0 && !pathMode && pathNodes.size === 0" class="cycle-warning-banner">
@@ -772,22 +783,22 @@ function onExportConfirm() {
 
 
 // ─── DB 타입별 배지 정보 ─────────────────────────────────
-function getInfraIconInfo(infraType?: string): { abbr: string; color: string; textColor: string } | null {
+function getInfraIconInfo(infraType?: string): { abbr: string; color: string; textColor: string; bgColor: string } | null {
   if (!infraType) return null
   const t = infraType.toLowerCase()
-  if (t.includes('postgres'))                           return { abbr: 'PG', color: '#1d4ed8', textColor: '#fff' }
-  if (t.includes('mysql'))                              return { abbr: 'MY', color: '#e97c00', textColor: '#fff' }
-  if (t.includes('mariadb'))                            return { abbr: 'MA', color: '#b45309', textColor: '#fff' }
-  if (t.includes('redis'))                              return { abbr: 'RD', color: '#dc2626', textColor: '#fff' }
-  if (t.includes('mongo'))                              return { abbr: 'MG', color: '#15803d', textColor: '#fff' }
-  if (t.includes('oracle'))                             return { abbr: 'OR', color: '#c2410c', textColor: '#fff' }
-  if (t.includes('sqlite'))                             return { abbr: 'SL', color: '#0369a1', textColor: '#fff' }
-  if (t.includes('cassandra'))                          return { abbr: 'CA', color: '#6d28d9', textColor: '#fff' }
-  if (t.includes('elastic'))                            return { abbr: 'ES', color: '#d97706', textColor: '#fff' }
-  if (t.includes('dynamo'))                             return { abbr: 'DY', color: '#b45309', textColor: '#fff' }
-  if (t.includes('mssql') || t.includes('sqlserver') || t.includes('sql server')) return { abbr: 'MS', color: '#0284c7', textColor: '#fff' }
-  if (t.includes('influx'))                             return { abbr: 'IF', color: '#0891b2', textColor: '#fff' }
-  if (t.includes('clickhouse'))                         return { abbr: 'CH', color: '#ea580c', textColor: '#fff' }
+  if (t.includes('postgres'))                           return { abbr: 'PG', color: '#1d4ed8', textColor: '#fff', bgColor: '#dbeafe' }
+  if (t.includes('mysql'))                              return { abbr: 'MY', color: '#e97c00', textColor: '#fff', bgColor: '#ffedd5' }
+  if (t.includes('mariadb'))                            return { abbr: 'MA', color: '#b45309', textColor: '#fff', bgColor: '#fef3c7' }
+  if (t.includes('redis'))                              return { abbr: 'RD', color: '#dc2626', textColor: '#fff', bgColor: '#fee2e2' }
+  if (t.includes('mongo'))                              return { abbr: 'MG', color: '#15803d', textColor: '#fff', bgColor: '#dcfce7' }
+  if (t.includes('oracle'))                             return { abbr: 'OR', color: '#c2410c', textColor: '#fff', bgColor: '#ffedd5' }
+  if (t.includes('sqlite'))                             return { abbr: 'SL', color: '#0369a1', textColor: '#fff', bgColor: '#e0f2fe' }
+  if (t.includes('cassandra'))                          return { abbr: 'CA', color: '#6d28d9', textColor: '#fff', bgColor: '#ede9fe' }
+  if (t.includes('elastic'))                            return { abbr: 'ES', color: '#d97706', textColor: '#fff', bgColor: '#fef9c3' }
+  if (t.includes('dynamo'))                             return { abbr: 'DY', color: '#b45309', textColor: '#fff', bgColor: '#fef3c7' }
+  if (t.includes('mssql') || t.includes('sqlserver') || t.includes('sql server')) return { abbr: 'MS', color: '#0284c7', textColor: '#fff', bgColor: '#e0f2fe' }
+  if (t.includes('influx'))                             return { abbr: 'IF', color: '#0891b2', textColor: '#fff', bgColor: '#cffafe' }
+  if (t.includes('clickhouse'))                         return { abbr: 'CH', color: '#ea580c', textColor: '#fff', bgColor: '#ffedd5' }
   return null
 }
 
@@ -1190,7 +1201,8 @@ function onCanvasSvgMouseDown(event: MouseEvent) {
 
 function onNodeMouseDown(event: MouseEvent, node: D3Node) {
   contextMenu.value.visible = false
-  if (!props.readOnly && (event.ctrlKey || event.metaKey)) startArrowDrag(event, node)
+  if (props.readOnly) return
+  if (event.ctrlKey || event.metaKey) startArrowDrag(event, node)
   else startNodeDrag(event, node)
 }
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-backdrop" @click.self="$emit('close')">
+  <div class="modal-backdrop" @mousedown.self="backdropDown = true" @mouseup.self="backdropDown && $emit('close')" @mouseup="backdropDown = false">
     <div class="modal">
       <h3>{{ isEdit ? '외부서비스 수정' : '외부서비스 추가' }}</h3>
       <form @submit.prevent="onSubmit">
@@ -36,8 +36,22 @@
               <input v-model="contact.name" placeholder="담당자명 *" class="contact-name" />
               <button type="button" class="btn-remove" @click="removeContact(idx)" title="삭제">✕</button>
             </div>
-            <input v-model="contact.phone" placeholder="연락처 (예: 010-1234-5678)" />
-            <input v-model="contact.email" type="email" placeholder="이메일" />
+            <input
+              :value="contact.phone"
+              @input="onPhoneInput(idx, $event)"
+              @blur="onContactBlur(idx)"
+              placeholder="연락처 (숫자만 입력: 01012345678)"
+              :class="{ 'input-error': contactErrors[idx]?.phone }"
+            />
+            <span v-if="contactErrors[idx]?.phone" class="error-msg">{{ contactErrors[idx].phone }}</span>
+            <input
+              v-model="contact.email"
+              type="text"
+              placeholder="이메일"
+              @blur="onContactBlur(idx)"
+              :class="{ 'input-error': contactErrors[idx]?.email }"
+            />
+            <span v-if="contactErrors[idx]?.email" class="error-msg">{{ contactErrors[idx].email }}</span>
           </div>
           <p v-if="form.contacts.length === 0" class="no-contacts">담당자가 없습니다</p>
         </div>
@@ -46,7 +60,7 @@
 
         <div class="actions">
           <button type="button" class="btn-secondary" @click="$emit('close')">취소</button>
-          <button type="submit" class="btn-primary" :disabled="!form.name.trim() || isDuplicate">{{ isEdit ? '저장' : '추가' }}</button>
+          <button type="submit" class="btn-primary" :disabled="!form.name.trim() || isDuplicate || hasAnyContactError">{{ isEdit ? '저장' : '추가' }}</button>
         </div>
       </form>
     </div>
@@ -54,10 +68,15 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import type { ExternalServiceNode, ExternalContact } from '../types'
+import { graphApi } from '../api/graphApi'
+import { useContactValidation } from '../composables/useContactValidation'
+import type { ContactErrors } from '../composables/useContactValidation'
 
-const props = defineProps<{ node?: ExternalServiceNode | null; takenNames: Set<string> }>()
+const backdropDown = ref(false)
+
+const props = defineProps<{ node?: ExternalServiceNode | null; takenNames: Set<string>; currentProjectId: string }>()
 const emit = defineEmits<{ close: []; submit: [data: Omit<ExternalServiceNode, 'id'>] }>()
 const isEdit = computed(() => !!props.node)
 const isDuplicate = computed(() => {
@@ -66,6 +85,9 @@ const isDuplicate = computed(() => {
   if (props.node?.name === trimmed) return false
   return props.takenNames.has(trimmed)
 })
+
+const { validateContact, hasErrors, formatPhone, sanitizePhone } = useContactValidation()
+const contactErrors = ref<ContactErrors[]>([])
 
 const form = reactive<{
   name: string
@@ -76,26 +98,58 @@ const form = reactive<{
   hasFirewall: props.node?.hasFirewall ?? false,
   firewallUrl: props.node?.firewallUrl ?? '',
   hasWhitelist: props.node?.hasWhitelist ?? false,
-  contacts: props.node?.contacts ? props.node.contacts.map(c => ({ ...c })) : [],
+  contacts: [],
   description: props.node?.description ?? '',
+})
+
+onMounted(async () => {
+  if (props.node && props.currentProjectId) {
+    try {
+      const res = await graphApi.getNodeContacts(props.currentProjectId, props.node.id)
+      form.contacts = res.data.contacts.map(c => ({ ...c }))
+      contactErrors.value = form.contacts.map(() => ({}))
+    } catch {
+      // 로드 실패 시 빈 배열 유지
+    }
+  }
 })
 
 function addContact() {
   form.contacts.push({ name: '', phone: '', email: '' })
+  contactErrors.value.push({})
 }
 function removeContact(idx: number) {
   form.contacts.splice(idx, 1)
+  contactErrors.value.splice(idx, 1)
 }
+
+function onPhoneInput(idx: number, event: Event) {
+  const digits = sanitizePhone((event.target as HTMLInputElement).value)
+  const formatted = formatPhone(digits)
+  form.contacts[idx].phone = formatted
+  ;(event.target as HTMLInputElement).value = formatted
+  if (contactErrors.value[idx]) contactErrors.value[idx].phone = undefined
+}
+
+function onContactBlur(idx: number) {
+  contactErrors.value[idx] = validateContact(form.contacts[idx].phone, form.contacts[idx].email)
+}
+
+const hasAnyContactError = computed(() => contactErrors.value.some(hasErrors))
 
 function onSubmit() {
   if (!form.name.trim()) return
+  contactErrors.value = form.contacts.map(c => validateContact(c.phone, c.email))
+  if (hasAnyContactError.value) return
   emit('submit', {
     nodeKind: 'external',
     name: form.name.trim(),
     hasFirewall: form.hasFirewall,
     firewallUrl: form.hasFirewall ? form.firewallUrl : '',
     hasWhitelist: form.hasWhitelist,
-    contacts: form.contacts.filter(c => c.name.trim()),
+    contacts: form.contacts
+      .filter(c => c.name.trim())
+      .map(c => ({ ...c, phone: c.phone ? c.phone.replace(/\D/g, '') : c.phone })),
     description: form.description,
   })
 }

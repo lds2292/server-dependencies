@@ -54,7 +54,6 @@ export async function savePositions(req: Request, res: Response): Promise<void> 
   if (!await assertProjectAccess(req.params.id, req.user!.userId, res)) return
   try {
     await graphService.savePositions(req.params.id, req.body)
-    logger.info('GRAPH positions saved', { projectId: req.params.id, userId: req.user!.userId })
     res.status(204).send()
   } catch (err) {
     logger.error('GRAPH savePositions error', { projectId: req.params.id, userId: req.user!.userId, error: (err as Error).message })

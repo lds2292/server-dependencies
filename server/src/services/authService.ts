@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import prisma from '../prisma'
 import type { AuthTokenPayload } from '../types'
+import { encrypt, decrypt, hmac } from './cryptoService'
 
 const SALT_ROUNDS = 12
 
@@ -11,6 +12,11 @@ export async function hashPassword(plain: string): Promise<string> {
 
 export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
   return bcrypt.compare(plain, hash)
+}
+
+/** DB에서 읽은 User 레코드의 암호화 필드를 복호화합니다. */
+export function decryptUserFields<T extends { email: string; username: string }>(user: T): T {
+  return { ...user, email: decrypt(user.email), username: decrypt(user.username) }
 }
 
 export function generateAccessToken(payload: AuthTokenPayload): string {
@@ -34,27 +40,38 @@ export function verifyRefreshToken(token: string): AuthTokenPayload {
 }
 
 export async function register(email: string, username: string, password: string) {
-  const existingEmail = await prisma.user.findUnique({ where: { email } })
+  const emailHash = hmac(email.toLowerCase())
+  const usernameHash = hmac(username)
+
+  const existingEmail = await prisma.user.findUnique({ where: { emailHash } })
   if (existingEmail) throw Object.assign(new Error('이미 사용 중인 이메일입니다.'), { code: 'EMAIL_TAKEN' })
 
-  const existingUsername = await prisma.user.findUnique({ where: { username } })
+  const existingUsername = await prisma.user.findUnique({ where: { usernameHash } })
   if (existingUsername) throw Object.assign(new Error('이미 사용 중인 사용자명입니다.'), { code: 'USERNAME_TAKEN' })
 
   const passwordHash = await hashPassword(password)
   const user = await prisma.user.create({
-    data: { email, username, passwordHash },
+    data: {
+      email: encrypt(email),
+      emailHash,
+      username: encrypt(username),
+      usernameHash,
+      passwordHash,
+    },
   })
-  return user
+  return decryptUserFields(user)
 }
 
 export async function login(email: string, password: string) {
-  const user = await prisma.user.findUnique({ where: { email } })
+  const emailHash = hmac(email.toLowerCase())
+  const user = await prisma.user.findUnique({ where: { emailHash } })
   if (!user) throw Object.assign(new Error('이메일 또는 비밀번호가 올바르지 않습니다.'), { code: 'INVALID_CREDENTIALS' })
 
   const valid = await verifyPassword(password, user.passwordHash)
   if (!valid) throw Object.assign(new Error('이메일 또는 비밀번호가 올바르지 않습니다.'), { code: 'INVALID_CREDENTIALS' })
 
-  const payload: AuthTokenPayload = { userId: user.id, email: user.email, username: user.username }
+  const decrypted = decryptUserFields(user)
+  const payload: AuthTokenPayload = { userId: user.id, email: decrypted.email, username: decrypted.username }
   const accessToken = generateAccessToken(payload)
   const refreshToken = generateRefreshToken(payload)
 
@@ -63,7 +80,14 @@ export async function login(email: string, password: string) {
 
   await prisma.session.create({ data: { token: refreshToken, userId: user.id, expiresAt } })
 
-  return { user, accessToken, refreshToken }
+  return { user: decrypted, accessToken, refreshToken }
+}
+
+export async function verifyUserPassword(userId: string, password: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user) throw Object.assign(new Error('비밀번호가 올바르지 않습니다.'), { code: 'INVALID_CREDENTIALS' })
+  const ok = await verifyPassword(password, user.passwordHash)
+  if (!ok) throw Object.assign(new Error('비밀번호가 올바르지 않습니다.'), { code: 'INVALID_CREDENTIALS' })
 }
 
 export async function logout(refreshToken: string) {

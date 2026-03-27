@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
+import { createCipheriv, createDecipheriv, randomBytes, createHmac } from 'crypto'
 
 const ALGORITHM = 'aes-256-gcm'
 const IV_LENGTH = 16
@@ -47,4 +47,14 @@ export function decryptStringArray(arr: string[]): string[] {
 
 export function isEncrypted(value: string): boolean {
   return value.startsWith(ENCRYPTED_PREFIX)
+}
+
+/**
+ * HMAC-SHA256 결정론적 해시 (조회/유일성 검증용)
+ * 이메일은 소문자로 정규화 후 호출하세요.
+ */
+export function hmac(value: string): string {
+  const key = process.env.ENCRYPTION_KEY
+  if (!key) throw new Error('ENCRYPTION_KEY environment variable is not set')
+  return createHmac('sha256', key).update(value).digest('hex')
 }

@@ -9,14 +9,17 @@ generator client {
 
 model User {
   id           String   @id @default(uuid())
-  email        String   @unique
-  username     String   @unique
+  email        String              /// AES-256-GCM 암호화 저장
+  emailHash    String   @unique    /// HMAC-SHA256 (조회/유일성 검증)
+  username     String              /// AES-256-GCM 암호화 저장
+  usernameHash String   @unique    /// HMAC-SHA256 (조회/유일성 검증)
   passwordHash String
   createdAt    DateTime @default(now())
 
   ownedProjects Project[]       @relation("ProjectOwner")
   memberships   ProjectMember[]
   sessions      Session[]
+  auditLogs     AuditLog[]
 }
 
 model Session {
@@ -40,12 +43,21 @@ model Project {
   owner     User            @relation("ProjectOwner", fields: [ownerId], references: [id])
   members   ProjectMember[]
   graphData GraphData?
+  auditLogs AuditLog[]
+}
+
+enum ProjectMemberRole {
+  MASTER
+  ADMIN
+  WRITER
+  READONLY
 }
 
 model ProjectMember {
   projectId String
   userId    String
-  joinedAt  DateTime @default(now())
+  role      ProjectMemberRole @default(READONLY)
+  joinedAt  DateTime          @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -57,8 +69,32 @@ model GraphData {
   id        String   @id @default(uuid())
   projectId String   @unique
   data      Json
+  contacts  Json?
   positions Json?
   updatedAt DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  projectId   String?
+  action      String
+  nodeId      String?
+  email       String?
+  status      String
+  ipAddress   String?
+  userAgent   String?
+  failReason  String?
+  createdAt   DateTime @default(now())
+
+  user    User?    @relation(fields: [userId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([email, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
 }

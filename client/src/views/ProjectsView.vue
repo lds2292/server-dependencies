@@ -4,7 +4,7 @@
       <span class="projects-logo">Server Dependencies</span>
       <div class="header-right">
         <span class="user-info">{{ auth.user?.username }}</span>
-        <button class="btn-logout" @click="onLogout">로그아웃</button>
+        <button class="btn-logout" @click="showLogoutConfirm = true">로그아웃</button>
       </div>
     </header>
 
@@ -51,6 +51,20 @@
       </div>
     </div>
 
+    <!-- 로그아웃 확인 모달 -->
+    <transition name="fade">
+      <div v-if="showLogoutConfirm" class="modal-overlay" @click.self="showLogoutConfirm = false">
+        <div class="modal-card" style="max-width:340px">
+          <h2 class="modal-title">로그아웃</h2>
+          <p style="font-size:13px;color:#94a3b8;margin:0 0 20px">로그아웃 하시겠습니까?</p>
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" @click="showLogoutConfirm = false">취소</button>
+            <button type="button" class="btn-confirm btn-confirm-danger" @click="onLogout">로그아웃</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- 프로젝트 생성 모달 -->
     <transition name="fade">
       <div v-if="showCreate" class="modal-overlay" @click.self="showCreate = false">
@@ -91,6 +105,7 @@ const projectStore = useProjectStore()
 
 const loading = ref(false)
 const showCreate = ref(false)
+const showLogoutConfirm = ref(false)
 const createForm = ref({ name: '', description: '' })
 const createError = ref('')
 const creating = ref(false)
@@ -203,6 +218,8 @@ function formatDate(iso: string): string {
 }
 .btn-confirm:hover:not(:disabled) { background: #1d4ed8; }
 .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-confirm-danger { background: #991b1b; }
+.btn-confirm-danger:hover:not(:disabled) { background: #b91c1c; }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-backdrop" @click.self="$emit('close')">
+  <div class="modal-backdrop" @mousedown.self="backdropDown = true" @mouseup.self="backdropDown && $emit('close')" @mouseup="backdropDown = false">
     <div class="modal">
       <h3>{{ isEdit ? '인프라 노드 수정' : '인프라 노드 추가' }}</h3>
       <form @submit.prevent="onSubmit">
@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import type { InfraNode } from '../types'
 import CustomSelect from './CustomSelect.vue'
 
@@ -54,6 +54,7 @@ const INFRA_DEFAULT_PORTS: Record<string, string> = {
   Other: '',
 }
 
+const backdropDown = ref(false)
 const props = defineProps<{ node?: InfraNode | null; takenNames: Set<string> }>()
 const emit = defineEmits<{ close: []; submit: [data: Omit<InfraNode, 'id'>] }>()
 const isEdit = computed(() => !!props.node)

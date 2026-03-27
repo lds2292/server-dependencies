@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-backdrop" @click.self="$emit('close')">
+  <div class="modal-backdrop" @mousedown.self="backdropDown = true" @mouseup.self="backdropDown && $emit('close')" @mouseup="backdropDown = false">
     <div class="modal">
       <h3>의존성 추가</h3>
       <form @submit.prevent="onSubmit">
@@ -52,9 +52,11 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import type { AnyNode, Dependency, DependencyType } from '../types'
 import CustomSelect from './CustomSelect.vue'
+
+const backdropDown = ref(false)
 
 const props = defineProps<{
   nodes: AnyNode[]

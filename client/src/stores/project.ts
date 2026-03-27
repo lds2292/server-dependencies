@@ -1,10 +1,22 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { projectApi, type Project } from '../api/projectApi'
+import { ref, computed } from 'vue'
+import { projectApi, type Project, type ProjectMemberRole } from '../api/projectApi'
+import { useAuthStore } from './auth'
 
 export const useProjectStore = defineStore('project', () => {
   const projects = ref<Project[]>([])
   const currentProject = ref<Project | null>(null)
+
+  const myRole = computed<ProjectMemberRole | null>(() => {
+    const auth = useAuthStore()
+    if (!currentProject.value || !auth.user) return null
+    const me = currentProject.value.members.find(m => m.userId === auth.user!.id)
+    return me?.role ?? null
+  })
+
+  const canWrite = computed(() => myRole.value === 'MASTER' || myRole.value === 'ADMIN' || myRole.value === 'WRITER')
+  const canAdmin = computed(() => myRole.value === 'MASTER' || myRole.value === 'ADMIN')
+  const isMaster = computed(() => myRole.value === 'MASTER')
 
   async function loadProjects(): Promise<void> {
     const { data } = await projectApi.list()
@@ -35,8 +47,8 @@ export const useProjectStore = defineStore('project', () => {
     if (currentProject.value?.id === id) currentProject.value = null
   }
 
-  async function addMember(projectId: string, identifier: string): Promise<void> {
-    const { data } = await projectApi.addMember(projectId, identifier)
+  async function addMember(projectId: string, identifier: string, role: ProjectMemberRole): Promise<void> {
+    const { data } = await projectApi.addMember(projectId, identifier, role)
     if (currentProject.value?.id === projectId) currentProject.value = data
   }
 
@@ -45,5 +57,20 @@ export const useProjectStore = defineStore('project', () => {
     if (currentProject.value?.id === projectId) currentProject.value = data
   }
 
-  return { projects, currentProject, loadProjects, loadProject, createProject, updateProject, deleteProject, addMember, removeMember }
+  async function updateMemberRole(projectId: string, userId: string, role: ProjectMemberRole): Promise<void> {
+    const { data } = await projectApi.updateMemberRole(projectId, userId, role)
+    if (currentProject.value?.id === projectId) currentProject.value = data
+  }
+
+  async function leaveProject(projectId: string): Promise<void> {
+    await projectApi.leaveProject(projectId)
+    projects.value = projects.value.filter(p => p.id !== projectId)
+    if (currentProject.value?.id === projectId) currentProject.value = null
+  }
+
+  return {
+    projects, currentProject, myRole, canWrite, canAdmin, isMaster,
+    loadProjects, loadProject, createProject, updateProject, deleteProject,
+    addMember, removeMember, updateMemberRole, leaveProject,
+  }
 })

@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-backdrop" @click.self="$emit('close')">
+  <div class="modal-backdrop" @mousedown.self="backdropDown = true" @mouseup.self="backdropDown && $emit('close')" @mouseup="backdropDown = false">
     <div class="modal">
       <h3>{{ isEdit ? 'L7 노드 수정' : 'L7 노드 추가' }}</h3>
       <form @submit.prevent="onSubmit">
@@ -73,6 +73,8 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import type { Server, L7Node } from '../types'
+
+const backdropDown = ref(false)
 
 const props = defineProps<{
   node?: L7Node | null

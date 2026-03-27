@@ -26,16 +26,46 @@
           <router-link to="/projects" class="btn-back">← 목록</router-link>
           <span class="app-title">{{ projectStore.currentProject?.name ?? 'Server Dependencies' }}</span>
           <button class="btn-help" @click="showHelp = true" title="사용 방법">?</button>
+          <div v-if="!readOnly" class="autosave-group">
+            <button
+              :class="['btn-save', { dirty: store.positionsDirty }]"
+              @click="manualSave"
+              data-tooltip="위치 수동 저장"
+              data-shortcut="Cmd+S"
+            >저장{{ store.positionsDirty ? ' *' : '' }}</button>
+            <button
+              class="btn-autosave"
+              @click="store.setAutosaveEnabled(!store.autosaveEnabled)"
+              :data-tooltip="store.autosaveEnabled ? '자동저장 켜짐' : '자동저장 꺼짐'"
+            >
+              <span :class="['autosave-dot', { active: store.autosaveEnabled }]"></span>
+              자동저장
+            </button>
+            <select
+              v-if="store.autosaveEnabled"
+              class="select-interval"
+              :value="store.autosaveInterval"
+              @change="store.setAutosaveInterval(Number(($event.target as HTMLSelectElement).value))"
+            >
+              <option value="30">30초</option>
+              <option value="60">60초</option>
+              <option value="90">90초</option>
+              <option value="120">120초</option>
+              <option value="180">180초</option>
+            </select>
+          </div>
         </div>
         <div class="toolbar-right">
-          <button class="btn-sample" @click="onSampleClick">Sample</button>
+          <button v-if="projectStore.canWrite" class="btn-sample" @click="onSampleClick">Sample</button>
           <button
             :class="['btn-readonly', { active: readOnly }]"
-            @click="readOnly = !readOnly"
-            :data-tooltip="readOnly ? '편집 모드로 전환' : '읽기 전용으로 전환'"
+            @click="projectStore.canWrite ? (readOnly = !readOnly) : null"
+            :data-tooltip="!projectStore.canWrite ? '읽기 전용 권한입니다' : readOnly ? '편집 모드로 전환' : '읽기 전용으로 전환'"
             data-shortcut="E"
+            :disabled="!projectStore.canWrite"
           >{{ readOnly ? 'Read Only' : 'Edit' }}</button>
-          <button class="btn-logout" @click="authStore.logout().then(() => router.push({ name: 'login' }))">로그아웃</button>
+          <button v-if="projectStore.canAdmin" class="btn-members" @click="showMembersModal = true">멤버 관리</button>
+          <button class="btn-logout" @click="showLogoutConfirm = true">로그아웃</button>
         </div>
       </div>
       <div class="graph-wrap">
@@ -80,6 +110,7 @@
           :dependencies="store.dependencies"
           :impacted-ids="impactedNodeIds"
           :read-only="readOnly"
+          :current-project-id="projectStore.currentProject?.id ?? ''"
           @remove-dependency="store.removeDependency"
           @add-dependency="openAddDepModal"
           @clear-selection="selectedNode = null"
@@ -256,6 +287,7 @@
       v-if="externalModal.visible"
       :node="externalModal.editing"
       :taken-names="allNodeNames"
+      :current-project-id="projectStore.currentProject?.id ?? ''"
       @close="externalModal.visible = false"
       @submit="onExternalModalSubmit"
     />
@@ -336,8 +368,96 @@
     </transition>
 
     <transition name="toast-fade">
-      <div v-if="toastMsg" class="app-toast">{{ toastMsg }}</div>
+      <div v-if="toastMsg" :class="['app-toast', toastType]">{{ toastMsg }}</div>
     </transition>
+
+    <transition name="loading-fade">
+      <div v-if="isLoading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+      </div>
+    </transition>
+    <!-- 로그아웃 확인 모달 -->
+    <transition name="toast-fade">
+      <div v-if="showLogoutConfirm" class="delete-overlay" @click.self="showLogoutConfirm = false">
+        <div class="delete-dialog">
+          <div class="delete-dialog-body">
+            <div class="delete-dialog-title">로그아웃</div>
+            <div class="delete-dialog-desc">로그아웃 하시겠습니까?</div>
+          </div>
+          <div class="delete-dialog-actions">
+            <button class="delete-btn-cancel" @click="showLogoutConfirm = false">취소</button>
+            <button class="delete-btn-confirm" @click="authStore.logout().then(() => router.push({ name: 'login' }))">로그아웃</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 멤버 관리 모달 -->
+    <transition name="toast-fade">
+      <div v-if="showMembersModal" class="delete-overlay" @mousedown.self="membersOverlayMousedown = true" @mouseup.self="membersOverlayMousedown && (showMembersModal = false); membersOverlayMousedown = false">
+        <div class="members-modal">
+          <div class="shortcuts-header">
+            <span class="shortcuts-title">멤버 관리</span>
+            <button class="shortcuts-close" @click="showMembersModal = false">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <line x1="1" y1="1" x2="11" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="11" y1="1" x2="1" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- 멤버 목록 -->
+          <div class="members-list">
+            <div
+              v-for="member in projectStore.currentProject?.members"
+              :key="member.userId"
+              class="member-row"
+            >
+              <div class="member-info">
+                <span class="member-name">{{ member.user.username }}</span>
+                <span class="member-email">{{ member.user.email }}</span>
+              </div>
+              <div class="member-actions">
+                <span v-if="member.userId === authStore.user?.id" :class="['role-badge', member.role.toLowerCase()]">
+                  {{ roleLabel(member.role) }} (나)
+                </span>
+                <select
+                  v-else-if="canChangeRole(member.role)"
+                  class="role-select"
+                  :value="member.role"
+                  @change="onChangeRole(member.userId, ($event.target as HTMLSelectElement).value)"
+                >
+                  <option v-for="r in assignableRoles(member.role)" :key="r" :value="r">{{ roleLabel(r) }}</option>
+                </select>
+                <span v-else :class="['role-badge', member.role.toLowerCase()]">{{ roleLabel(member.role) }}</span>
+                <button
+                  v-if="canRemoveMember(member.role, member.userId)"
+                  class="member-remove-btn"
+                  @click="onRemoveMember(member.userId)"
+                  title="멤버 제거"
+                >x</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 멤버 추가 -->
+          <div class="member-add-form">
+            <input
+              v-model="addMemberIdentifier"
+              class="member-input"
+              placeholder="이메일"
+              @keydown.enter="onAddMember"
+            />
+            <select v-model="addMemberRole" class="role-select">
+              <option v-for="r in addableRoles" :key="r" :value="r">{{ roleLabel(r) }}</option>
+            </select>
+            <button class="btn-primary" @click="onAddMember" :disabled="!addMemberIdentifier.trim()">추가</button>
+          </div>
+          <div v-if="memberError" class="member-error">{{ memberError }}</div>
+        </div>
+      </div>
+    </transition>
+
     <DependencyModal
       v-if="depModal.visible"
       :nodes="allNodes"
@@ -351,11 +471,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useGraphStore } from '../stores/graph'
 import { useProjectStore } from '../stores/project'
 import { useAuthStore } from '../stores/auth'
+import type { ProjectMemberRole } from '../api/projectApi'
 import { sampleData } from '../data/sampleData'
 import GraphCanvas from '../components/GraphCanvas.vue'
 import ServerPanel from '../components/ServerPanel.vue'
@@ -365,6 +486,7 @@ import InfraModal from '../components/InfraModal.vue'
 import ExternalServiceModal from '../components/ExternalServiceModal.vue'
 import DependencyModal from '../components/DependencyModal.vue'
 import ImpactPanel from '../components/ImpactPanel.vue'
+import { graphApi } from '../api/graphApi'
 import type { Server, L7Node, InfraNode, ExternalServiceNode, AnyNode, Dependency, D3Link } from '../types'
 
 const route = useRoute()
@@ -582,20 +704,63 @@ function onInfraModalSubmit(data: Omit<InfraNode, 'id'>) {
 const externalModal = ref<{ visible: boolean; editing: ExternalServiceNode | null }>({ visible: false, editing: null })
 function openAddExternalModal() { externalModal.value = { visible: true, editing: null } }
 function openEditExternalModal(n: ExternalServiceNode) { externalModal.value = { visible: true, editing: n } }
-function onExternalModalSubmit(data: Omit<ExternalServiceNode, 'id'>) {
-  if (externalModal.value.editing) store.updateExternalNode(externalModal.value.editing.id, data)
-  else store.addExternalNode(data)
+async function onExternalModalSubmit(data: Omit<ExternalServiceNode, 'id'>) {
+  const { contacts, ...nodeData } = data
+  const projectId = projectStore.currentProject?.id ?? ''
+
+  if (externalModal.value.editing) {
+    const nodeId = externalModal.value.editing.id
+    store.updateExternalNode(nodeId, { ...nodeData, contacts: [] })
+    if (projectId) {
+      await graphApi.saveNodeContacts(projectId, nodeId, contacts)
+      await store.syncExternalNodes()
+      if (selectedNode.value?.id === nodeId) {
+        selectedNode.value = store.externalNodes.find(n => n.id === nodeId) ?? selectedNode.value
+      }
+    }
+  } else {
+    const newNode = store.addExternalNode({ ...nodeData, contacts: [] })
+    if (projectId && newNode?.id) {
+      await graphApi.saveNodeContacts(projectId, newNode.id, contacts)
+      await store.syncExternalNodes()
+      if (selectedNode.value?.id === newNode.id) {
+        selectedNode.value = store.externalNodes.find(n => n.id === newNode.id) ?? selectedNode.value
+      }
+    }
+  }
   externalModal.value.visible = false
 }
 
 // Toast
 const toastMsg = ref('')
+const toastType = ref<'error' | 'success'>('error')
 let toastTimer: ReturnType<typeof setTimeout> | null = null
-function showToast(msg: string) {
+function showToast(msg: string, type: 'error' | 'success' = 'error') {
   toastMsg.value = msg
+  toastType.value = type
   if (toastTimer) clearTimeout(toastTimer)
   toastTimer = setTimeout(() => { toastMsg.value = '' }, 2500)
 }
+
+// ─── 포지션 자동/수동 저장 ────────────────────────────────
+let autosaveTimer: ReturnType<typeof setInterval> | null = null
+
+function resetAutosaveTimer() {
+  if (autosaveTimer) { clearInterval(autosaveTimer); autosaveTimer = null }
+  if (!readOnly.value && store.autosaveEnabled) {
+    autosaveTimer = setInterval(() => { store.flushPositions() }, store.autosaveInterval * 1000)
+  }
+}
+
+async function manualSave() {
+  if (readOnly.value) return
+  await store.flushPositions()
+  showToast('저장되었습니다.', 'success')
+}
+
+watch([() => store.autosaveEnabled, () => store.autosaveInterval], resetAutosaveTimer)
+watch(readOnly, resetAutosaveTimer)
+onBeforeUnmount(() => { store.flushPositions() })
 
 // Dependency Modal
 const depModal = ref<{ visible: boolean; defaultSource: string; defaultTarget: string }>({ visible: false, defaultSource: '', defaultTarget: '' })
@@ -687,7 +852,12 @@ function handleKeyDown(e: KeyboardEvent) {
     if (store.redo()) showToast('다시 실행')
     return
   }
-  if (e.key === 'e' || e.key === 'E') {
+  if (meta && e.key === 's') {
+    e.preventDefault()
+    manualSave()
+    return
+  }
+  if ((e.key === 'e' || e.key === 'E') && projectStore.canWrite) {
     readOnly.value = !readOnly.value
   }
   if (e.key === 'f' || e.key === 'F') {
@@ -702,23 +872,122 @@ function handleKeyDown(e: KeyboardEvent) {
     }
   }
 }
+// ─── 멤버 관리 ───────────────────────────────────────────
+const showLogoutConfirm = ref(false)
+const showMembersModal = ref(false)
+const membersOverlayMousedown = ref(false)
+const addMemberIdentifier = ref('')
+const addMemberRole = ref<ProjectMemberRole>('READONLY')
+const memberError = ref('')
+
+const ROLE_LABELS: Record<ProjectMemberRole, string> = {
+  MASTER: 'Master', ADMIN: 'Admin', WRITER: 'Writer', READONLY: 'ReadOnly',
+}
+function roleLabel(role: string): string {
+  return ROLE_LABELS[role as ProjectMemberRole] ?? role
+}
+
+const ALL_ROLES: ProjectMemberRole[] = ['ADMIN', 'WRITER', 'READONLY']
+
+// Master가 부여할 수 있는 역할 (ADMIN 포함), Admin은 WRITER/READONLY만
+const addableRoles = computed<ProjectMemberRole[]>(() =>
+  projectStore.isMaster ? ALL_ROLES : ['WRITER', 'READONLY']
+)
+
+// 해당 멤버 역할을 변경할 수 있는지 (자기 자신 제외, 권한 검사)
+function canChangeRole(targetRole: ProjectMemberRole): boolean {
+  const my = projectStore.myRole
+  if (!my) return false
+  if (my === 'MASTER') return targetRole !== 'MASTER'
+  if (my === 'ADMIN') return targetRole === 'WRITER' || targetRole === 'READONLY'
+  return false
+}
+
+// 해당 멤버 역할을 제거할 수 있는지
+function canRemoveMember(targetRole: ProjectMemberRole, targetUserId: string): boolean {
+  if (targetUserId === authStore.user?.id) return false
+  return canChangeRole(targetRole)
+}
+
+// 변경 가능한 역할 목록
+function assignableRoles(_currentRole: ProjectMemberRole): ProjectMemberRole[] {
+  if (projectStore.isMaster) return ALL_ROLES
+  return ['WRITER', 'READONLY']
+}
+
+async function onAddMember() {
+  if (!addMemberIdentifier.value.trim() || !projectStore.currentProject) return
+  memberError.value = ''
+  try {
+    await projectStore.addMember(projectStore.currentProject.id, addMemberIdentifier.value.trim(), addMemberRole.value)
+    addMemberIdentifier.value = ''
+    showToast('멤버가 추가되었습니다.', 'success')
+  } catch (err: unknown) {
+    const e = err as { response?: { data?: { error?: string } } }
+    memberError.value = e.response?.data?.error ?? '멤버 추가에 실패했습니다.'
+  }
+}
+
+async function onRemoveMember(targetUserId: string) {
+  if (!projectStore.currentProject) return
+  memberError.value = ''
+  try {
+    await projectStore.removeMember(projectStore.currentProject.id, targetUserId)
+    showToast('멤버가 제거되었습니다.', 'success')
+  } catch (err: unknown) {
+    const e = err as { response?: { data?: { error?: string } } }
+    memberError.value = e.response?.data?.error ?? '멤버 제거에 실패했습니다.'
+  }
+}
+
+async function onChangeRole(targetUserId: string, newRole: string) {
+  if (!projectStore.currentProject) return
+  memberError.value = ''
+  try {
+    await projectStore.updateMemberRole(projectStore.currentProject.id, targetUserId, newRole as ProjectMemberRole)
+    showToast('역할이 변경되었습니다.', 'success')
+  } catch (err: unknown) {
+    const e = err as { response?: { data?: { error?: string } } }
+    memberError.value = e.response?.data?.error ?? '역할 변경에 실패했습니다.'
+  }
+}
+
+// ReadOnly 역할인 경우 편집 모드 강제 비활성
+watch(() => projectStore.myRole, (role) => {
+  if (role === 'READONLY') readOnly.value = true
+}, { immediate: true })
+
+const isLoading = ref(false)
+
 onMounted(async () => {
   window.addEventListener('keydown', handleKeyDown)
   const projectId = route.params.id as string
+  isLoading.value = true
   try {
     await projectStore.loadProject(projectId)
     await store.setProject(projectId)
   } catch {
     router.push({ name: 'projects' })
+  } finally {
+    isLoading.value = false
   }
+  resetAutosaveTimer()
 })
-onUnmounted(() => window.removeEventListener('keydown', handleKeyDown))
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+  if (autosaveTimer) { clearInterval(autosaveTimer); autosaveTimer = null }
+})
 
 watch(() => route.params.id, async (newId) => {
   if (newId && typeof newId === 'string') {
-    await projectStore.loadProject(newId)
-    await store.setProject(newId)
-    selectedNode.value = null
+    isLoading.value = true
+    try {
+      await projectStore.loadProject(newId)
+      await store.setProject(newId)
+      selectedNode.value = null
+    } finally {
+      isLoading.value = false
+    }
   }
 })
 </script>
@@ -779,6 +1048,33 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
 }
 .btn-readonly:hover { border-color: #475569; color: #e2e8f0; }
 .btn-readonly.active { background: #2d1b69; border-color: #7c3aed; color: #c4b5fd; }
+.autosave-group { display: flex; align-items: center; gap: 4px; }
+.btn-save {
+  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: #94a3b8;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap; position: relative;
+}
+.btn-save:hover { border-color: #475569; color: #e2e8f0; }
+.btn-save.dirty { border-color: #f59e0b; color: #fbbf24; background: #1c1200; }
+.btn-save.dirty:hover { background: #292100; border-color: #fbbf24; }
+.btn-autosave {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: #64748b;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap; position: relative;
+}
+.btn-autosave:hover { border-color: #475569; color: #94a3b8; }
+.autosave-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  background: #475569; transition: background 0.2s;
+}
+.autosave-dot.active { background: #22c55e; box-shadow: 0 0 4px rgba(34,197,94,0.6); }
+.select-interval {
+  font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 6px;
+  border: 1px solid #334155; background: #1e293b; color: #94a3b8;
+  cursor: pointer; transition: all 0.15s; outline: none;
+}
+.select-interval:hover { border-color: #475569; }
 
 /* 단축키 툴팁 */
 [data-tooltip] { position: relative; }
@@ -831,9 +1127,32 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
   z-index: 500; white-space: nowrap; box-shadow: 0 4px 20px rgba(239,68,68,0.25);
   pointer-events: none;
 }
+.app-toast.success {
+  background: #022c22; border-color: #059669; color: #6ee7b7;
+  box-shadow: 0 4px 20px rgba(5,150,105,0.25);
+}
 .toast-fade-enter-active { transition: opacity 0.2s; }
 .toast-fade-leave-active { transition: opacity 0.4s; }
 .toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; }
+
+.loading-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 900;
+  backdrop-filter: blur(2px);
+}
+.loading-spinner {
+  width: 40px; height: 40px;
+  border: 3px solid #1e293b;
+  border-top-color: #06b6d4;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-fade-enter-active { transition: opacity 0.2s; }
+.loading-fade-leave-active { transition: opacity 0.3s; }
+.loading-fade-enter-from, .loading-fade-leave-to { opacity: 0; }
 
 .delete-overlay {
   position: fixed; inset: 0;
@@ -980,4 +1299,62 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
 .help-dot.red   { background: #ef4444; }
 .help-dot.green { background: #22c55e; }
 .help-dot.amber { background: #f59e0b; }
+
+/* 멤버 관리 */
+.btn-members {
+  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid #0e7490; background: #083344; color: #22d3ee;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.btn-members:hover { background: #164e63; border-color: #22d3ee; }
+.members-modal {
+  background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+  padding: 20px; min-width: 440px; max-width: 560px; width: 100%;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.members-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
+.member-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; background: #0f172a; border-radius: 8px; border: 1px solid #1e293b;
+  gap: 12px;
+}
+.member-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.member-name { font-size: 13px; font-weight: 600; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-email { font-size: 11px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.role-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid transparent;
+}
+.role-badge.master  { background: #2d1b69; border-color: #7c3aed; color: #c4b5fd; }
+.role-badge.admin   { background: #0f2044; border-color: #1d4ed8; color: #60a5fa; }
+.role-badge.writer  { background: #052e16; border-color: #16a34a; color: #4ade80; }
+.role-badge.readonly { background: #1c1a09; border-color: #ca8a04; color: #fbbf24; }
+.role-select {
+  font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 6px;
+  border: 1px solid #334155; background: #0f172a; color: #94a3b8;
+  cursor: pointer; outline: none;
+}
+.role-select:hover { border-color: #475569; }
+.member-remove-btn {
+  width: 20px; height: 20px; border-radius: 4px; border: 1px solid #ef444433;
+  background: transparent; color: #ef4444; cursor: pointer; font-size: 11px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: all 0.15s;
+}
+.member-remove-btn:hover { background: #ef444422; border-color: #ef4444; }
+.member-add-form { display: flex; gap: 8px; align-items: center; }
+.member-input {
+  flex: 1; padding: 6px 10px; background: #0f172a; border: 1px solid #334155;
+  border-radius: 6px; color: #e2e8f0; font-size: 12px; outline: none;
+}
+.member-input:focus { border-color: #3b82f6; }
+.member-error { font-size: 12px; color: #f87171; }
+.btn-primary {
+  font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 6px;
+  border: 1px solid #1d4ed8; background: #1e40af; color: #bfdbfe;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.btn-primary:hover { background: #1d4ed8; color: #dbeafe; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
