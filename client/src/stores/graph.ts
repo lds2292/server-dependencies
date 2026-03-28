@@ -187,6 +187,7 @@ export const useGraphStore = defineStore('graph', () => {
 
   const canUndo = computed(() => undoStack.value.length > 0)
   const canRedo = computed(() => redoStack.value.length > 0)
+  const positionRestoreVersion = ref(0)
 
   function currentSnapshot(): Snapshot {
     return {
@@ -220,6 +221,7 @@ export const useGraphStore = defineStore('graph', () => {
 
   function restoreSnapshot(snap: Snapshot) {
     currentPositions.value = snap.positions
+    positionRestoreVersion.value++
     servers.value = snap.data.servers ?? []
     l7Nodes.value = snap.data.l7Nodes ?? []
     infraNodes.value = snap.data.infraNodes ?? []
@@ -626,7 +628,7 @@ export const useGraphStore = defineStore('graph', () => {
     addExternalNode, updateExternalNode, deleteExternalNode,
     addDependency, removeDependency, updateDependency,
     findNodeById, getImpactedNodes, getCycleNodes, findPath, exportJSON, importJSON, loadData,
-    undo, redo, beginBatch, endBatch, canUndo, canRedo,
+    undo, redo, beginBatch, endBatch, canUndo, canRedo, saveSnapshot, positionRestoreVersion,
     setProject, resetGraph, saveGraph, savePositions, flushPositions, getPositions, syncExternalNodes,
     resolveConflicts, dismissConflict,
     positionsDirty, autosaveEnabled, autosaveInterval, setAutosaveEnabled, setAutosaveInterval,

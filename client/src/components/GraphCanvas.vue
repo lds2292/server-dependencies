@@ -722,6 +722,20 @@ function savePositions() {
   graphStore.savePositions(positions)
 }
 
+function _getLinkNodeId(endpoint: string | D3Node): string {
+  return typeof endpoint === 'string' ? endpoint : endpoint.id
+}
+
+watch(() => graphStore.positionRestoreVersion, () => {
+  const positions = graphStore.getPositions()
+  renderedNodes.value.forEach(n => {
+    const pos = positions[n.id]
+    if (pos) { n.fx = pos.x; n.fy = pos.y; n.x = pos.x; n.y = pos.y }
+  })
+  renderedNodes.value = [...renderedNodes.value]
+  simulation?.alpha(0.05).restart()
+})
+
 // 드래그 상태
 const hoveredNodeId = ref<string | null>(null)
 const arrowSource = ref<D3Node | null>(null)
@@ -1088,9 +1102,151 @@ function goToCenter() {
   )
 }
 
+function _applyHierarchicalLayout() {
+  if (props.readOnly) return
+  const nodes = renderedNodes.value
+  const links = renderedLinks.value
+  if (nodes.length === 0) return
+
+  const inDegree = new Map<string, number>(nodes.map(n => [n.id, 0]))
+  const children = new Map<string, string[]>(nodes.map(n => [n.id, []]))
+  for (const link of links) {
+    const src = _getLinkNodeId(link.source)
+    const tgt = _getLinkNodeId(link.target)
+    if (!inDegree.has(tgt) || !inDegree.has(src)) continue
+    inDegree.set(tgt, (inDegree.get(tgt) ?? 0) + 1)
+    children.get(src)!.push(tgt)
+  }
+
+  const layer = new Map<string, number>()
+  const queue: string[] = []
+  for (const [id, deg] of inDegree) {
+    if (deg === 0) { queue.push(id); layer.set(id, 0) }
+  }
+  let head = 0
+  while (head < queue.length) {
+    const id = queue[head++]
+    const cur = layer.get(id) ?? 0
+    for (const childId of (children.get(id) ?? [])) {
+      const proposed = cur + 1
+      if (!layer.has(childId) || layer.get(childId)! < proposed) {
+        layer.set(childId, proposed)
+      }
+      inDegree.set(childId, (inDegree.get(childId) ?? 1) - 1)
+      if (inDegree.get(childId) === 0) queue.push(childId)
+    }
+  }
+  const maxLayer = layer.size > 0 ? Math.max(...layer.values()) : 0
+  for (const n of nodes) {
+    if (!layer.has(n.id)) layer.set(n.id, maxLayer + 1)
+  }
+
+  const layerGroups = new Map<number, string[]>()
+  for (const [id, l] of layer) {
+    if (!layerGroups.has(l)) layerGroups.set(l, [])
+    layerGroups.get(l)!.push(id)
+  }
+
+  const X_SPACING = 220
+  const Y_SPACING = 250
+  const posMap = new Map<string, { x: number; y: number }>()
+  for (const [l, group] of layerGroups) {
+    const totalWidth = (group.length - 1) * X_SPACING
+    group.forEach((id, i) => {
+      posMap.set(id, { x: -totalWidth / 2 + i * X_SPACING, y: l * Y_SPACING })
+    })
+  }
+
+  const allX = Array.from(posMap.values()).map(p => p.x)
+  const allY = Array.from(posMap.values()).map(p => p.y)
+  const cx = (Math.min(...allX) + Math.max(...allX)) / 2
+  const cy = (Math.min(...allY) + Math.max(...allY)) / 2
+
+  for (const n of nodes) {
+    const pos = posMap.get(n.id)
+    if (pos) { n.fx = pos.x - cx; n.fy = pos.y - cy; n.x = n.fx; n.y = n.fy }
+  }
+  renderedNodes.value = [...nodes]
+  simulation?.alpha(0.05).restart()
+  savePositions()
+}
+
+function _applyRadialLayout() {
+  if (props.readOnly) return
+  const nodes = renderedNodes.value
+  const links = renderedLinks.value
+  if (nodes.length === 0) return
+
+  const inDegree = new Map<string, number>(nodes.map(n => [n.id, 0]))
+  const neighbors = new Map<string, Set<string>>(nodes.map(n => [n.id, new Set()]))
+  for (const link of links) {
+    const src = _getLinkNodeId(link.source)
+    const tgt = _getLinkNodeId(link.target)
+    if (!inDegree.has(src) || !inDegree.has(tgt)) continue
+    inDegree.set(tgt, (inDegree.get(tgt) ?? 0) + 1)
+    neighbors.get(src)!.add(tgt)
+    neighbors.get(tgt)!.add(src)
+  }
+
+  const roots = nodes.filter(n => (inDegree.get(n.id) ?? 0) === 0).map(n => n.id)
+  const startNodes = roots.length > 0
+    ? roots
+    : [nodes.reduce((a, b) =>
+        (neighbors.get(a.id)?.size ?? 0) >= (neighbors.get(b.id)?.size ?? 0) ? a : b
+      ).id]
+
+  const level = new Map<string, number>()
+  const bfsQueue: string[] = []
+  for (const id of startNodes) { level.set(id, 0); bfsQueue.push(id) }
+  let bfsHead = 0
+  while (bfsHead < bfsQueue.length) {
+    const id = bfsQueue[bfsHead++]
+    const cur = level.get(id) ?? 0
+    for (const neighborId of (neighbors.get(id) ?? [])) {
+      if (!level.has(neighborId)) {
+        level.set(neighborId, cur + 1)
+        bfsQueue.push(neighborId)
+      }
+    }
+  }
+  const maxLevel = level.size > 0 ? Math.max(...level.values()) : 0
+  for (const n of nodes) {
+    if (!level.has(n.id)) level.set(n.id, maxLevel + 1)
+  }
+
+  const levelGroups = new Map<number, string[]>()
+  for (const [id, l] of level) {
+    if (!levelGroups.has(l)) levelGroups.set(l, [])
+    levelGroups.get(l)!.push(id)
+  }
+
+  const RADIUS_PER_LEVEL = 300
+  const posMap = new Map<string, { x: number; y: number }>()
+  for (const [l, group] of levelGroups) {
+    if (l === 0 && group.length === 1) {
+      posMap.set(group[0], { x: 0, y: 0 })
+    } else {
+      const radius = l === 0 ? RADIUS_PER_LEVEL * 0.35 : l * RADIUS_PER_LEVEL
+      group.forEach((id, i) => {
+        const angle = (2 * Math.PI * i) / group.length - Math.PI / 2
+        posMap.set(id, { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius })
+      })
+    }
+  }
+
+  for (const n of nodes) {
+    const pos = posMap.get(n.id)
+    if (pos) { n.fx = pos.x; n.fy = pos.y; n.x = n.fx; n.y = n.fy }
+  }
+  renderedNodes.value = [...nodes]
+  simulation?.alpha(0.05).restart()
+  savePositions()
+}
+
 // ─── 노드 이동 드래그 ────────────────────────────────────
 function startNodeDrag(event: MouseEvent, node: D3Node) {
   event.preventDefault()
+  graphStore.saveSnapshot()
   const startWorld = getSvgPoint(event)
   const isMultiDrag = multiSelectedIds.value.size > 1 && multiSelectedIds.value.has(node.id)
 
@@ -1584,7 +1740,7 @@ function toggleTracking() {
   nodeTracking.value = !nodeTracking.value
 }
 
-defineExpose({ navigateTo, toggleTracking, multiSelectedIds })
+defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLayout: _applyHierarchicalLayout, applyRadialLayout: _applyRadialLayout })
 </script>
 
 <style scoped>
