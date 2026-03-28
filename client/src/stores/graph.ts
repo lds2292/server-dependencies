@@ -536,12 +536,6 @@ export const useGraphStore = defineStore('graph', () => {
 
   function findPath(sourceId: string, targetId: string): string[] | null {
     if (sourceId === targetId) return [sourceId]
-    const serverToL7 = new Map<string, string>()
-    for (const l7 of l7Nodes.value) {
-      for (const memberId of l7.memberServerIds) {
-        serverToL7.set(memberId, l7.id)
-      }
-    }
     const visited = new Set<string>([sourceId])
     const queue: Array<[string, string[]]> = [[sourceId, [sourceId]]]
     while (queue.length > 0) {
@@ -554,21 +548,6 @@ export const useGraphStore = defineStore('graph', () => {
           visited.add(next)
           queue.push([next, [...path, next]])
         }
-      }
-      const l7 = l7Nodes.value.find(n => n.id === current)
-      if (l7) {
-        for (const memberId of l7.memberServerIds) {
-          if (memberId === targetId) return [...path, memberId]
-          if (!visited.has(memberId)) {
-            visited.add(memberId)
-            queue.push([memberId, [...path, memberId]])
-          }
-        }
-      }
-      const parentL7Id = serverToL7.get(current)
-      if (parentL7Id && !visited.has(parentL7Id)) {
-        visited.add(parentL7Id)
-        queue.push([parentL7Id, [...path, parentL7Id]])
       }
     }
     return null

@@ -580,7 +580,7 @@ function onSelectNode(node: AnyNode) {
     applyPath(node)
     return
   }
-  if (pathNodeIds.value.size > 0) onCancelPathMode()
+  if (pathNodeIds.value.size > 0) { applyPath(node); return }
   selectedNode.value = selectedNode.value?.id === node.id ? null : node
 }
 
@@ -588,7 +588,7 @@ function onStartPathFrom(node: AnyNode) {
   if (node.nodeKind === 'l7') return
   pathSource.value = node
   pathMode.value = true
-  pathNodeIds.value = new Set()
+  pathNodeIds.value = new Set([node.id])
   pathLinkIds.value = new Set()
   selectedNode.value = null
 }

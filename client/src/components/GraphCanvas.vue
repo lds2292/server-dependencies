@@ -847,7 +847,7 @@ function linkStroke(link: { id: string }): string {
 }
 
 function linkOpacity(link: { id: string }): number {
-  if (props.pathMode || props.pathLinks.size > 0)
+  if (props.pathMode || props.pathNodes.size > 0)
     return props.pathLinks.has(link.id) ? 1 : 0.1
   if (!showAllFlow.value && props.selectedId &&
       !props.impactedLinks.has(link.id) && !props.outgoingLinks.has(link.id)) return 0.15
@@ -863,7 +863,7 @@ function linkMarker(link: { id: string }): string {
 
 function nodeFilter(node: D3Node): string | undefined {
   if (props.pathNodes.has(node.id)) return 'url(#glow-amber)'
-  if (props.pathMode && hoveredNodeId.value === node.id) return 'url(#glow-amber)'
+  if ((props.pathMode || props.pathNodes.size > 0) && hoveredNodeId.value === node.id) return 'url(#glow-amber)'
   if (props.selectedId === node.id) return 'url(#glow-blue)'
   if (props.cycleNodes.has(node.id)) return 'url(#glow-red)'
   if (props.impactedNodes.has(node.id)) return 'url(#glow-red)'
@@ -873,7 +873,7 @@ function nodeFilter(node: D3Node): string | undefined {
 function nodeOpacity(node: D3Node): number {
   if (props.pathMode || props.pathNodes.size > 0) {
     if (props.pathNodes.has(node.id)) return 1
-    if (props.pathMode && hoveredNodeId.value === node.id) return 1
+    if (hoveredNodeId.value === node.id) return 1
     return 0.15
   }
   return 1
@@ -881,7 +881,7 @@ function nodeOpacity(node: D3Node): number {
 
 function nodeStroke(node: D3Node): string {
   if (props.pathNodes.has(node.id)) return '#f59e0b'
-  if (props.pathMode && hoveredNodeId.value === node.id) return '#f59e0b'
+  if ((props.pathMode || props.pathNodes.size > 0) && hoveredNodeId.value === node.id) return '#f59e0b'
   if (props.cycleNodes.has(node.id)) return '#dc2626'
   if (blockedTarget.value?.id === node.id) return '#ef4444'
   if (connectTarget.value?.id === node.id) return '#22c55e'
@@ -1227,6 +1227,7 @@ function onCanvasSvgMouseDown(event: MouseEvent) {
 function onNodeMouseDown(event: MouseEvent, node: D3Node) {
   contextMenu.value.visible = false
   if (props.readOnly) return
+  if (props.pathMode || props.pathNodes.size > 0) return
   if (event.ctrlKey || event.metaKey) startArrowDrag(event, node)
   else startNodeDrag(event, node)
 }
@@ -1631,19 +1632,19 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds })
 }
 .readonly-hint { background: #1c1217; border-color: #7c3aed; color: #a78bfa; }
 .drop-hint {
-  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
   background: #052e16; border: 1px solid #22c55e; border-radius: 20px;
   padding: 6px 16px; font-size: 13px; color: #86efac;
   pointer-events: none; z-index: 50; white-space: nowrap;
 }
 .drag-hint {
-  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
   background: #0f2044; border: 1px solid #3b82f6; border-radius: 20px;
   padding: 6px 16px; font-size: 13px; color: #93c5fd;
   pointer-events: none; z-index: 50; white-space: nowrap;
 }
 .blocked-hint {
-  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
   background: #1c0a0a; border: 1px solid #ef4444; border-radius: 20px;
   padding: 6px 16px; font-size: 13px; color: #fca5a5;
   pointer-events: none; z-index: 50; white-space: nowrap;
