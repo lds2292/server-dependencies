@@ -21,24 +21,20 @@
         >
           <path d="M0,-5L10,0L0,5" :fill="m.fill" />
         </marker>
-        <!-- 그리드 패턴 -->
-        <pattern id="grid-minor" width="50" height="50" patternUnits="userSpaceOnUse">
-          <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(255,255,255,0.035)" stroke-width="0.5"/>
-        </pattern>
-        <pattern id="grid-major" width="250" height="250" patternUnits="userSpaceOnUse">
-          <rect width="250" height="250" fill="url(#grid-minor)"/>
-          <path d="M 250 0 L 0 0 0 250" fill="none" stroke="rgba(255,255,255,0.09)" stroke-width="1"/>
+        <!-- 닷 그리드 패턴 (Figma/Excalidraw 스타일) -->
+        <pattern id="dot-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+          <circle cx="0" cy="0" r="0.85" fill="rgba(255,255,255,0.18)"/>
         </pattern>
       </defs>
       <g ref="gRef">
         <!-- 그리드 배경 -->
-        <rect v-if="showGrid" x="-50000" y="-50000" width="100000" height="100000" fill="url(#grid-major)" pointer-events="none"/>
+        <rect v-if="showGrid" x="-50000" y="-50000" width="100000" height="100000" fill="url(#dot-grid)" pointer-events="none"/>
 
         <!-- 중심점 마커 -->
         <g v-if="showGrid" pointer-events="none" opacity="0.55">
-          <line x1="-40" y1="0" x2="40" y2="0" stroke="#60a5fa" stroke-width="1.2"/>
-          <line x1="0" y1="-40" x2="0" y2="40" stroke="#60a5fa" stroke-width="1.2"/>
-          <circle cx="0" cy="0" r="4" fill="none" stroke="#60a5fa" stroke-width="1.2"/>
+          <line x1="-40" y1="0" x2="40" y2="0" stroke="#22d3ee" stroke-width="1.2"/>
+          <line x1="0" y1="-40" x2="0" y2="40" stroke="#22d3ee" stroke-width="1.2"/>
+          <circle cx="0" cy="0" r="4" fill="none" stroke="#22d3ee" stroke-width="1.2"/>
         </g>
 
         <!-- L7 멤버 연결선 (의존성 라인보다 먼저 렌더링) -->
@@ -74,6 +70,8 @@
           v-for="link in computedLinks"
           :key="link.id"
           @dblclick.stop="!readOnly && onLinkDblClick(link)"
+          @mouseenter="hoveredLinkId = link.id"
+          @mouseleave="hoveredLinkId = null"
           :style="!readOnly ? 'cursor: pointer' : ''"
         >
           <!-- hit area (클릭 감지용 투명 라인) -->
@@ -91,6 +89,7 @@
               'link-outgoing': !pathLinks.has(link.id) && (showAllFlow || outgoingLinks.has(link.id)),
               'link-impacted': !pathLinks.has(link.id) && !showAllFlow && impactedLinks.has(link.id),
               'link-normal':   !pathLinks.has(link.id) && !showAllFlow && !impactedLinks.has(link.id) && !outgoingLinks.has(link.id),
+              'link-hovered':  hoveredLinkId === link.id && !pathLinks.has(link.id) && !outgoingLinks.has(link.id) && !impactedLinks.has(link.id),
             }"
             :stroke="linkStroke(link)"
             :stroke-width="pathLinks.has(link.id) ? 3 : showAllFlow || impactedLinks.has(link.id) || outgoingLinks.has(link.id) ? 2.5 : 1.5"
@@ -115,7 +114,7 @@
           v-if="arrowPreview"
           :x1="arrowPreview.x1" :y1="arrowPreview.y1"
           :x2="arrowPreview.x2" :y2="arrowPreview.y2"
-          stroke="#60a5fa" stroke-width="2" stroke-dasharray="7,4"
+          stroke="#22d3ee" stroke-width="2" stroke-dasharray="7,4"
           marker-end="url(#arrow-preview)"
           pointer-events="none"
         />
@@ -127,8 +126,8 @@
           :y="Math.min(boxSelect.startY, boxSelect.endY)"
           :width="Math.abs(boxSelect.endX - boxSelect.startX)"
           :height="Math.abs(boxSelect.endY - boxSelect.startY)"
-          fill="rgba(96, 165, 250, 0.08)"
-          stroke="#60a5fa"
+          fill="rgba(6, 182, 212, 0.08)"
+          stroke="#22d3ee"
           stroke-width="1"
           stroke-dasharray="5,3"
           pointer-events="none"
@@ -206,7 +205,7 @@
                     :fill="dbIcon.textColor"
                     font-size="6"
                     font-weight="800"
-                    style="font-family: 'Courier New', Courier, monospace; letter-spacing: 0.3px"
+                    style="font-family: var(--font-mono); letter-spacing: 0.3px"
                     pointer-events="none"
                   >{{ dbIcon.abbr }}</text>
                 </template>
@@ -230,7 +229,7 @@
           </g>
 
           <!-- 노드 텍스트 (우측 텍스트 영역 중앙: x=13) -->
-          <text x="21" dy="-9" text-anchor="middle" class="node-label" :style="node.nodeKind === 'infra' ? 'fill:#0f172a' : ''">{{ truncate(node.name) }}</text>
+          <text x="21" dy="-9" text-anchor="middle" class="node-label" :style="node.nodeKind === 'infra' ? `fill:${cssVar('--bg-base')}` : ''">{{ truncate(node.name) }}</text>
 
           <template v-if="node.nodeKind === 'l7'">
             <text x="21" dy="6" text-anchor="middle" class="node-sub">{{ (node as any).ip || '' }}{{ (node as any).ip && (node as any).natIp ? ' / ' : '' }}{{ (node as any).natIp || '' }}{{ !((node as any).ip) && !((node as any).natIp) ? 'L7 Load Balancer' : '' }}</text>
@@ -256,8 +255,9 @@
           </g>
         </g>
 
-        <!-- glow 필터 (defs 내에 정의) -->
+        <!-- glow 필터 + 엣지 그라디언트 -->
         <defs>
+          <!-- 기존 glow 필터 -->
           <filter id="glow-blue" x="-40%" y="-40%" width="180%" height="180%">
             <feGaussianBlur stdDeviation="4" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
@@ -270,8 +270,33 @@
             <feGaussianBlur stdDeviation="3" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
+          <!-- 노드 타입별 hover glow 필터 -->
+          <filter id="glow-purple" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow-cyan" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow-green" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <!-- 엣지 그라디언트 (출발 노드 색 → 도착 노드 색) -->
+          <linearGradient
+            v-for="g in linkGradients"
+            :key="g.id"
+            :id="g.id"
+            :x1="g.x1" :y1="g.y1"
+            :x2="g.x2" :y2="g.y2"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0%" :stop-color="g.colorStart" stop-opacity="0.8"/>
+            <stop offset="100%" :stop-color="g.colorEnd" stop-opacity="0.8"/>
+          </linearGradient>
           <marker id="arrow-preview" viewBox="0 -5 10 10" refX="10" refY="0" markerWidth="7" markerHeight="7" orient="auto">
-            <path d="M0,-5L10,0L0,5" fill="#60a5fa"/>
+            <path d="M0,-5L10,0L0,5" fill="#22d3ee"/>
           </marker>
         </defs>
       </g>
@@ -325,16 +350,16 @@
     <!-- 우측 상단 색상 범주 Legend -->
     <div class="node-legend">
       <div class="legend-item">
-        <span class="legend-dot" style="background:#1e3a8a;border-color:#475569"></span>Server
+        <span class="legend-dot legend-srv"></span>Server
       </div>
       <div class="legend-item">
-        <span class="legend-dot" style="background:#3b0764;border-color:#7c3aed"></span>L7
+        <span class="legend-dot legend-l7"></span>L7
       </div>
       <div class="legend-item">
-        <span class="legend-dot" style="background:#f0f9ff;border-color:#7dd3fc"></span>INFRA
+        <span class="legend-dot legend-infra"></span>INFRA
       </div>
       <div class="legend-item">
-        <span class="legend-dot" style="background:#052e16;border-color:#16a34a"></span>External
+        <span class="legend-dot legend-ext"></span>External
       </div>
     </div>
 
@@ -697,6 +722,7 @@ const MINIMAP_PAD = 10
 
 const renderedNodes = ref<D3Node[]>([])
 const renderedLinks = ref<D3Link[]>([])
+const hoveredLinkId = ref<string | null>(null)
 
 const markerDefs = [
   { id: 'arrow-default', fill: '#94a3b8' },
@@ -846,18 +872,43 @@ function truncate(text: string, max = 20): string {
 }
 
 // ─── 색상 ───────────────────────────────────────────────
+function cssVar(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
+
+function nodeKindColor(kind: string): string {
+  if (kind === 'l7') return cssVar('--node-l7-color')
+  if (kind === 'infra') return cssVar('--node-infra-color')
+  if (kind === 'external') return cssVar('--node-ext-color')
+  return cssVar('--node-srv-color')
+}
+
+const linkGradients = computed(() =>
+  renderedLinks.value.map(link => {
+    const src = link.source as D3Node
+    const tgt = link.target as D3Node
+    return {
+      id: `link-grad-${(link as any).id}`,
+      x1: src.x ?? 0, y1: src.y ?? 0,
+      x2: tgt.x ?? 0, y2: tgt.y ?? 0,
+      colorStart: nodeKindColor(src.nodeKind ?? 'server'),
+      colorEnd: nodeKindColor(tgt.nodeKind ?? 'server'),
+    }
+  })
+)
+
 function nodeColor(node: D3Node): string {
-  if (node.nodeKind === 'l7') return '#3b0764'
-  if (node.nodeKind === 'infra') return '#f0f9ff'
-  if (node.nodeKind === 'external') return '#052e16'
-  return '#1e3a8a'
+  if (node.nodeKind === 'l7') return cssVar('--node-l7-bg-deep')
+  if (node.nodeKind === 'infra') return cssVar('--node-infra-bg-light')
+  if (node.nodeKind === 'external') return cssVar('--node-ext-bg-deep')
+  return cssVar('--accent-bg-medium')
 }
 
 function linkStroke(link: { id: string }): string {
   if (props.pathLinks.has(link.id)) return '#f59e0b'
   if (!showAllFlow.value && props.impactedLinks.has(link.id)) return '#ef4444'
   if (showAllFlow.value || props.outgoingLinks.has(link.id)) return '#22c55e'
-  return '#94a3b8'
+  return `url(#link-grad-${link.id})`
 }
 
 function linkOpacity(link: { id: string }): number {
@@ -881,6 +932,12 @@ function nodeFilter(node: D3Node): string | undefined {
   if (props.selectedId === node.id) return 'url(#glow-blue)'
   if (props.cycleNodes.has(node.id)) return 'url(#glow-red)'
   if (props.impactedNodes.has(node.id)) return 'url(#glow-red)'
+  if (hoveredNodeId.value === node.id) {
+    if (node.nodeKind === 'l7') return 'url(#glow-purple)'
+    if (node.nodeKind === 'infra') return 'url(#glow-cyan)'
+    if (node.nodeKind === 'external') return 'url(#glow-green)'
+    return 'url(#glow-blue)'
+  }
   return undefined
 }
 
@@ -899,19 +956,19 @@ function nodeStroke(node: D3Node): string {
   if (props.cycleNodes.has(node.id)) return '#dc2626'
   if (blockedTarget.value?.id === node.id) return '#ef4444'
   if (connectTarget.value?.id === node.id) return '#22c55e'
-  if (arrowSource.value?.id === node.id) return '#60a5fa'
+  if (arrowSource.value?.id === node.id) return cssVar('--accent-soft')
 
   if (props.selectedId === node.id) {
     if (node.nodeKind === 'l7') return '#a78bfa'
     if (node.nodeKind === 'infra') return '#0284c7'
     if (node.nodeKind === 'external') return '#4ade80'
-    return '#2563eb'
+    return cssVar('--node-srv-color')
   }
   if (props.impactedNodes.has(node.id)) return '#ef4444'
   if (node.nodeKind === 'l7') return '#7c3aed'
   if (node.nodeKind === 'infra') return '#7dd3fc'
   if (node.nodeKind === 'external') return '#16a34a'
-  return '#475569'
+  return cssVar('--border-strong')
 }
 
 function isHighlighted(node: D3Node): boolean {
@@ -1492,10 +1549,10 @@ const minimapViewport = computed(() => {
 })
 
 function minimapNodeColor(node: { nodeKind?: string }): string {
-  if (node.nodeKind === 'l7') return '#a78bfa'
-  if (node.nodeKind === 'infra') return '#7dd3fc'
-  if (node.nodeKind === 'external') return '#4ade80'
-  return '#60a5fa'
+  if (node.nodeKind === 'l7') return cssVar('--node-l7-color')
+  if (node.nodeKind === 'infra') return cssVar('--node-infra-color')
+  if (node.nodeKind === 'external') return cssVar('--node-ext-color')
+  return cssVar('--node-srv-color')
 }
 
 // ─── 미니맵 드래그 ───────────────────────────────────────
@@ -1571,10 +1628,10 @@ function searchNodeKindLabel(node: D3Node): string {
 }
 
 function searchNodeColor(node: D3Node): string {
-  if (node.nodeKind === 'l7') return '#a78bfa'
-  if (node.nodeKind === 'infra') return '#7dd3fc'
-  if (node.nodeKind === 'external') return '#4ade80'
-  return '#60a5fa'
+  if (node.nodeKind === 'l7') return cssVar('--node-l7-color')
+  if (node.nodeKind === 'infra') return cssVar('--node-infra-color')
+  if (node.nodeKind === 'external') return cssVar('--node-ext-color')
+  return cssVar('--node-srv-color')
 }
 
 function searchNodeIp(node: D3Node): string {
@@ -1664,14 +1721,14 @@ async function exportGraph(format: 'svg' | 'png', transparent = false) {
     bg.setAttribute('y', String(minY))
     bg.setAttribute('width', String(vw))
     bg.setAttribute('height', String(vh))
-    bg.setAttribute('fill', '#0f172a')
+    bg.setAttribute('fill', cssVar('--bg-base'))
     clone.insertBefore(bg, clone.firstChild)
   }
 
   // 스코프된 CSS 텍스트 클래스 인라인
   const style = document.createElementNS('http://www.w3.org/2000/svg', 'style')
   style.textContent = [
-    `text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }`,
+    `text { font-family: var(--font-sans); }`,
     `.node-label { font-size: 12px; fill: #fff; font-weight: 700; }`,
     `.node-ip    { font-size: 10px; fill: rgba(255,255,255,0.75); }`,
     `.node-sub   { font-size: 9px;  fill: rgba(255,255,255,0.65); font-weight: 600; letter-spacing: 0.02em; }`,
@@ -1746,7 +1803,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 <style scoped>
 .graph-container {
   position: relative; width: 100%; height: 100%;
-  background: #0f172a; border-radius: 8px; overflow: hidden;
+  background: var(--bg-base); border-radius: 8px; overflow: hidden;
   user-select: none;
 }
 .graph-svg { width: 100%; height: 100%; }
@@ -1774,6 +1831,10 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .link-normal {
   transition: opacity 0.2s;
 }
+.link-hovered {
+  filter: drop-shadow(0 0 5px rgba(148, 163, 184, 0.6));
+  transition: filter 0.15s;
+}
 
 .graph-node { cursor: grab; }
 .graph-node:active { cursor: grabbing; }
@@ -1782,21 +1843,21 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 
 .mode-hint {
   position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
-  background: #1e293b; border: 1px solid #334155; border-radius: 20px;
-  padding: 5px 14px; font-size: 11px; color: #64748b;
+  background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 20px;
+  padding: 5px 14px; font-size: 11px; color: var(--text-disabled);
   pointer-events: none; z-index: 50; white-space: nowrap;
 }
-.readonly-hint { background: #1c1217; border-color: #7c3aed; color: #a78bfa; }
+.readonly-hint { background: #1c1217; border-color: var(--node-l7-color); color: #a78bfa; }
 .drop-hint {
   position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
-  background: #052e16; border: 1px solid #22c55e; border-radius: 20px;
-  padding: 6px 16px; font-size: 13px; color: #86efac;
+  background: var(--node-ext-bg-deep); border: 1px solid #22c55e; border-radius: 20px;
+  padding: 6px 16px; font-size: 13px; color: var(--color-success-lighter);
   pointer-events: none; z-index: 50; white-space: nowrap;
 }
 .drag-hint {
   position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
-  background: #0f2044; border: 1px solid #3b82f6; border-radius: 20px;
-  padding: 6px 16px; font-size: 13px; color: #93c5fd;
+  background: var(--accent-bg-deep); border: 1px solid var(--accent-focus); border-radius: 20px;
+  padding: 6px 16px; font-size: 13px; color: var(--accent-light);
   pointer-events: none; z-index: 50; white-space: nowrap;
 }
 .blocked-hint {
@@ -1816,52 +1877,52 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .fade-enter-active { transition: opacity 0.2s; }
 .fade-leave-active { transition: opacity 0.4s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
-.hint-source { color: #60a5fa; font-weight: 700; }
+.hint-source { color: var(--accent-soft); font-weight: 700; }
 .hint-target { color: #22c55e; font-weight: 700; }
 .add-node-menu {
-  position: absolute; background: #1e293b; border: 1px solid #334155;
+  position: absolute; background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: 8px; padding: 4px 0; z-index: 110; min-width: 160px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
 .add-node-menu-title {
   padding: 6px 14px 5px; font-size: 11px; font-weight: 700;
-  color: #475569; letter-spacing: 0.05em; text-transform: uppercase;
-  border-bottom: 1px solid #334155; margin-bottom: 3px;
+  color: var(--border-strong); letter-spacing: 0.05em; text-transform: uppercase;
+  border-bottom: 1px solid var(--border-default); margin-bottom: 3px;
 }
 .add-node-menu button {
   display: flex; align-items: center; gap: 8px;
   width: 100%; padding: 7px 14px; background: none;
-  border: none; color: #e2e8f0; text-align: left; cursor: pointer; font-size: 13px;
+  border: none; color: var(--text-secondary); text-align: left; cursor: pointer; font-size: 13px;
 }
-.add-node-menu button:hover { background: #334155; }
+.add-node-menu button:hover { background: var(--border-default); }
 .menu-icon { width: 14px; height: 14px; flex-shrink: 0; }
 
 .context-menu {
-  position: absolute; background: #1e293b; border: 1px solid #334155;
+  position: absolute; background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: 6px; padding: 4px 0; z-index: 100; min-width: 120px;
 }
 .context-menu button {
   display: block; width: 100%; padding: 6px 16px; background: none;
-  border: none; color: #e2e8f0; text-align: left; cursor: pointer; font-size: 13px;
+  border: none; color: var(--text-secondary); text-align: left; cursor: pointer; font-size: 13px;
 }
-.context-menu button:hover { background: #334155; }
+.context-menu button:hover { background: var(--border-default); }
 .submenu-item {
   position: relative; display: flex; align-items: center; justify-content: space-between;
-  padding: 6px 12px 6px 16px; color: #e2e8f0; font-size: 13px; cursor: pointer; user-select: none;
+  padding: 6px 12px 6px 16px; color: var(--text-secondary); font-size: 13px; cursor: pointer; user-select: none;
 }
-.submenu-item:hover { background: #334155; }
-.submenu-arrow { font-size: 9px; color: #94a3b8; margin-left: 8px; }
+.submenu-item:hover { background: var(--border-default); }
+.submenu-arrow { font-size: 9px; color: var(--text-tertiary); margin-left: 8px; }
 .submenu {
   position: absolute; left: 100%; top: -4px;
-  background: #1e293b; border: 1px solid #334155;
+  background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: 6px; padding: 4px 0; min-width: 120px; z-index: 101;
 }
 .submenu button {
   display: flex; align-items: center; gap: 6px;
   width: 100%; padding: 6px 16px; background: none;
-  border: none; color: #e2e8f0; text-align: left; cursor: pointer; font-size: 13px;
+  border: none; color: var(--text-secondary); text-align: left; cursor: pointer; font-size: 13px;
 }
-.submenu button:hover { background: #334155; }
+.submenu button:hover { background: var(--border-default); }
 
 /* 내보내기 모달 */
 .modal-backdrop {
@@ -1869,42 +1930,42 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
   display: flex; align-items: center; justify-content: center; z-index: 300;
 }
 .export-modal {
-  background: #1e293b; border: 1px solid #334155;
+  background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: 10px; padding: 24px; width: 300px;
   display: flex; flex-direction: column; gap: 16px;
 }
-.export-modal h3 { margin: 0; color: #f1f5f9; font-size: 15px; }
+.export-modal h3 { margin: 0; color: var(--text-primary); font-size: 15px; }
 .export-format { display: flex; gap: 8px; }
 .export-format label {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 8px; border: 1px solid #334155; border-radius: 6px;
-  color: #94a3b8; cursor: pointer; font-size: 13px; transition: all 0.15s;
+  padding: 8px; border: 1px solid var(--border-default); border-radius: 6px;
+  color: var(--text-tertiary); cursor: pointer; font-size: 13px; transition: all 0.15s;
 }
-.export-format label.active { border-color: #3b82f6; color: #e2e8f0; background: rgba(59,130,246,0.1); }
+.export-format label.active { border-color: var(--accent-focus); color: var(--text-secondary); background: rgba(59,130,246,0.1); }
 .export-format input[type=radio] { display: none; }
 .export-option {
   display: flex; align-items: center; gap: 8px;
-  color: #e2e8f0; font-size: 13px; cursor: pointer;
+  color: var(--text-secondary); font-size: 13px; cursor: pointer;
 }
-.export-option input[type=checkbox] { accent-color: #3b82f6; width: 14px; height: 14px; }
+.export-option input[type=checkbox] { accent-color: var(--accent-focus); width: 14px; height: 14px; }
 .export-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .btn-primary {
-  padding: 7px 16px; background: #2563eb; color: #fff;
+  padding: 7px 16px; background: var(--accent-primary); color: #fff;
   border: none; border-radius: 6px; cursor: pointer; font-size: 13px;
 }
-.btn-primary:hover { background: #1d4ed8; }
+.btn-primary:hover { background: var(--accent-hover); }
 .btn-secondary {
-  padding: 7px 16px; background: none; color: #94a3b8;
-  border: 1px solid #334155; border-radius: 6px; cursor: pointer; font-size: 13px;
+  padding: 7px 16px; background: none; color: var(--text-tertiary);
+  border: 1px solid var(--border-default); border-radius: 6px; cursor: pointer; font-size: 13px;
 }
-.btn-secondary:hover { background: #334155; color: #e2e8f0; }
+.btn-secondary:hover { background: var(--border-default); color: var(--text-secondary); }
 .context-menu button.danger { color: #ef4444; }
-.context-menu button.disabled-item { color: #475569; cursor: not-allowed; font-style: italic; }
+.context-menu button.disabled-item { color: var(--border-strong); cursor: not-allowed; font-style: italic; }
 .context-menu button.disabled-item:hover { background: none; }
 
 .node-legend {
   position: absolute; top: 12px; right: 12px;
-  background: rgba(15, 23, 42, 0.85); border: 1px solid #334155;
+  background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-default);
   border-radius: 12px; padding: 12px 15px;
   display: flex; flex-direction: column; gap: 8px;
   pointer-events: none; z-index: 50;
@@ -1912,14 +1973,18 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 }
 .legend-item {
   display: flex; align-items: center; gap: 9px;
-  font-size: 15px; color: #94a3b8; font-weight: 600; white-space: nowrap;
+  font-size: 15px; color: var(--text-tertiary); font-weight: 600; white-space: nowrap;
 }
 .legend-dot {
   width: 15px; height: 15px; border-radius: 3px;
   border: 2px solid; flex-shrink: 0;
 }
+.legend-srv   { background: var(--accent-bg-medium);    border-color: var(--node-srv-color); }
+.legend-l7    { background: var(--node-l7-bg-deep);     border-color: var(--node-l7-color); }
+.legend-infra { background: var(--node-infra-bg-light); border-color: var(--node-infra-color); }
+.legend-ext   { background: var(--node-ext-bg-deep);    border-color: var(--node-ext-color); }
 .legend-divider {
-  height: 2px; background: #334155; margin: 3px 0;
+  height: 2px; background: var(--border-default); margin: 3px 0;
 }
 
 .canvas-btns {
@@ -1930,18 +1995,18 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
   left: 12px; bottom: auto; top: 50px;
 }
 .canvas-btns-right .canvas-btn.active {
-  color: #22c55e; border-color: #16a34a;
+  color: #22c55e; border-color: var(--node-ext-color);
 }
 .canvas-btn {
   display: flex; align-items: center; gap: 5px;
-  background: rgba(15, 23, 42, 0.85); border: 1px solid #334155;
+  background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-default);
   border-radius: 20px; padding: 5px 12px;
-  font-size: 11px; color: #64748b; cursor: pointer;
+  font-size: 11px; color: var(--text-disabled); cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
   backdrop-filter: blur(4px);
 }
-.canvas-btn:hover { color: #94a3b8; border-color: #475569; }
-.canvas-btn.active { color: #60a5fa; border-color: #3b82f6; }
+.canvas-btn:hover { color: var(--text-tertiary); border-color: var(--border-strong); }
+.canvas-btn.active { color: var(--accent-soft); border-color: var(--accent-focus); }
 
 .tracking-btn {
   position: absolute; top: 12px; left: 12px; z-index: 50;
@@ -1950,25 +2015,25 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .zoom-controls {
   position: absolute; bottom: 12px; right: 12px;
   display: flex; align-items: center; gap: 4px; z-index: 50;
-  background: rgba(15, 23, 42, 0.85); border: 1px solid #334155;
+  background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-default);
   border-radius: 20px; padding: 4px 10px;
   backdrop-filter: blur(4px);
 }
 .zoom-btn {
-  background: none; border: none; color: #64748b;
+  background: none; border: none; color: var(--text-disabled);
   font-size: 16px; line-height: 1; cursor: pointer;
   padding: 0 4px; transition: color 0.15s;
 }
-.zoom-btn:hover { color: #94a3b8; }
+.zoom-btn:hover { color: var(--text-tertiary); }
 .zoom-input {
   width: 40px; background: none; border: none;
-  color: #94a3b8; font-size: 12px; font-weight: 700;
+  color: var(--text-tertiary); font-size: 12px; font-weight: 700;
   text-align: center; outline: none;
   -moz-appearance: textfield;
 }
 .zoom-input::-webkit-inner-spin-button,
 .zoom-input::-webkit-outer-spin-button { -webkit-appearance: none; }
-.zoom-pct { color: #64748b; font-size: 11px; }
+.zoom-pct { color: var(--text-disabled); font-size: 11px; }
 
 /* 단축키 툴팁 */
 [data-tooltip]::before {
@@ -1977,10 +2042,10 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
   top: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 6px;
-  color: #cbd5e1;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 400;
   padding: 5px 9px;
@@ -1998,10 +2063,10 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
   left: 50%;
   transform: translateX(calc(-50% + 2px));
   margin-top: 22px;
-  background: #334155;
-  border: 1px solid #475569;
+  background: var(--border-default);
+  border: 1px solid var(--border-strong);
   border-radius: 4px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   font-size: 10px;
   font-weight: 700;
   padding: 2px 6px;
@@ -2031,7 +2096,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .minimap {
   position: absolute; bottom: 56px; right: 12px;
   width: 160px; height: 100px; z-index: 50;
-  background: rgba(15, 23, 42, 0.88); border: 1px solid #334155;
+  background: rgba(15, 23, 42, 0.88); border: 1px solid var(--border-default);
   border-radius: 8px; overflow: hidden;
   backdrop-filter: blur(4px);
 }
@@ -2044,21 +2109,21 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 }
 .search-input-wrap {
   display: flex; align-items: center; gap: 6px;
-  background: rgba(15, 23, 42, 0.92); border: 1px solid #334155;
+  background: rgba(15, 23, 42, 0.92); border: 1px solid var(--border-default);
   border-radius: 8px; padding: 0 10px; height: 34px;
   backdrop-filter: blur(6px);
   transition: border-color 0.15s;
 }
 .search-input-wrap:focus-within {
-  border-color: #60a5fa;
+  border-color: var(--accent-soft);
 }
 .search-icon { flex-shrink: 0; }
 .search-input {
   flex: 1; background: none; border: none; outline: none;
-  color: #e2e8f0; font-size: 13px;
+  color: var(--text-secondary); font-size: 13px;
   min-width: 0;
 }
-.search-input::placeholder { color: #475569; }
+.search-input::placeholder { color: var(--border-strong); }
 .search-clear {
   display: flex; align-items: center; justify-content: center;
   background: none; border: none; cursor: pointer; padding: 2px;
@@ -2067,7 +2132,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .search-clear:hover { opacity: 1; }
 .search-dropdown {
   list-style: none; margin: 4px 0 0; padding: 4px 0;
-  background: rgba(15, 23, 42, 0.96); border: 1px solid #334155;
+  background: rgba(15, 23, 42, 0.96); border: 1px solid var(--border-default);
   border-radius: 8px; backdrop-filter: blur(6px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
   max-height: 280px; overflow-y: auto;
@@ -2085,16 +2150,16 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
   min-width: 30px; flex-shrink: 0;
 }
 .search-result-name {
-  flex: 1; font-size: 13px; color: #e2e8f0;
+  flex: 1; font-size: 13px; color: var(--text-secondary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .search-result-ip {
-  font-size: 11px; color: #64748b;
+  font-size: 11px; color: var(--text-disabled);
   white-space: nowrap; flex-shrink: 0;
 }
 .search-no-result {
-  padding: 10px 14px; font-size: 12px; color: #475569;
-  background: rgba(15, 23, 42, 0.96); border: 1px solid #334155;
+  padding: 10px 14px; font-size: 12px; color: var(--border-strong);
+  background: rgba(15, 23, 42, 0.96); border: 1px solid var(--border-default);
   border-radius: 8px; margin-top: 4px; text-align: center;
   backdrop-filter: blur(6px);
 }
@@ -2120,15 +2185,15 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
   transition: border-color 0.15s, color 0.15s;
 }
 .path-cancel-btn:hover { border-color: #f59e0b; color: #fcd34d; }
-.context-menu .context-divider { height: 1px; background: #334155; margin: 3px 0; }
+.context-menu .context-divider { height: 1px; background: var(--border-default); margin: 3px 0; }
 .context-multi-label {
   padding: 4px 10px 2px;
   font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
-  color: #60a5fa; text-transform: uppercase;
+  color: var(--accent-soft); text-transform: uppercase;
 }
-.context-menu button.path-item { color: #fbbf24; }
+.context-menu button.path-item { color: var(--color-warning-light); }
 .context-menu button.path-item:hover { background: rgba(245, 158, 11, 0.1); }
-.context-menu button.path-item-disabled { color: #475569; cursor: not-allowed; }
+.context-menu button.path-item-disabled { color: var(--border-strong); cursor: not-allowed; }
 .context-menu button.path-item-disabled:hover { background: none; }
 
 /* 다중 선택 - marching ants */

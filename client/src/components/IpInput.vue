@@ -106,29 +106,29 @@ function onBlur() {
 .ip-input {
   display: flex;
   align-items: center;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
   border-radius: 6px;
   padding: 0 10px;
   gap: 2px;
   transition: border-color 0.15s;
 }
 .ip-input.focused {
-  border-color: #3b82f6;
+  border-color: var(--accent-focus);
 }
 .octet {
   width: 36px;
   background: transparent;
   border: none;
   outline: none;
-  color: #e2e8f0;
+  color: var(--text-secondary);
   font-size: 13px;
   text-align: center;
   padding: 8px 0;
-  font-family: 'Menlo', 'Consolas', monospace;
+  font-family: var(--font-mono);
 }
 .dot {
-  color: #64748b;
+  color: var(--text-disabled);
   font-size: 14px;
   font-weight: 700;
   user-select: none;

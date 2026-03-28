@@ -169,28 +169,28 @@ onUnmounted(() => document.removeEventListener('mousedown', onOutsideClick))
 .input-wrap {
   display: flex;
   align-items: center;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
   border-radius: 6px;
   padding: 0 10px;
   transition: border-color 0.15s;
 }
-.input-wrap:hover { border-color: #475569; }
-.input-wrap.focused { border-color: #3b82f6; }
+.input-wrap:hover { border-color: var(--border-strong); }
+.input-wrap.focused { border-color: var(--accent-focus); }
 .input-wrap input {
   flex: 1;
   background: transparent;
   border: none;
   outline: none;
-  color: #e2e8f0;
+  color: var(--text-secondary);
   font-size: 13px;
   padding: 8px 0;
 }
-.input-wrap input::placeholder { color: #475569; }
+.input-wrap input::placeholder { color: var(--border-strong); }
 .chevron {
   width: 16px;
   height: 16px;
-  color: #64748b;
+  color: var(--text-disabled);
   flex-shrink: 0;
   cursor: pointer;
   transition: transform 0.15s;
@@ -200,8 +200,8 @@ onUnmounted(() => document.removeEventListener('mousedown', onOutsideClick))
 
 <style>
 .combobox-dropdown {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
   list-style: none;
@@ -216,17 +216,17 @@ onUnmounted(() => document.removeEventListener('mousedown', onOutsideClick))
   gap: 8px;
   padding: 9px 14px;
   font-size: 13px;
-  color: #e2e8f0;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: background 0.1s;
 }
 .combobox-option:hover,
 .combobox-option.focused { background: #273549; }
-.combobox-option.selected { color: #60a5fa; }
+.combobox-option.selected { color: var(--accent-soft); }
 .combobox-option .option-check {
   width: 14px;
   font-size: 12px;
-  color: #60a5fa;
+  color: var(--accent-soft);
   flex-shrink: 0;
 }
 </style>

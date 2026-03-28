@@ -69,39 +69,39 @@ async function onSubmit() {
 <style scoped>
 .auth-page {
   min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  background: #0f172a; padding: 24px;
+  background: var(--bg-base); padding: 24px;
 }
 .auth-card {
   width: 100%; max-width: 400px;
-  background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 36px;
+  background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px; padding: 36px;
 }
 .auth-logo {
   display: block; text-align: center; font-size: 12px; font-weight: 700;
-  color: #60a5fa; text-decoration: none; letter-spacing: 0.05em; margin-bottom: 24px;
+  color: var(--accent-soft); text-decoration: none; letter-spacing: 0.05em; margin-bottom: 24px;
 }
-.auth-title { font-size: 22px; font-weight: 700; color: #f1f5f9; text-align: center; margin: 0 0 28px 0; }
+.auth-title { font-size: 22px; font-weight: 700; color: var(--text-primary); text-align: center; margin: 0 0 28px 0; }
 .auth-form { display: flex; flex-direction: column; gap: 16px; }
 .form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-label { font-size: 12px; font-weight: 600; color: #94a3b8; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text-tertiary); }
 .form-input {
-  background: #0f172a; border: 1px solid #334155; border-radius: 7px;
-  padding: 9px 12px; font-size: 14px; color: #e2e8f0; outline: none;
+  background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 7px;
+  padding: 9px 12px; font-size: 14px; color: var(--text-secondary); outline: none;
   transition: border-color 0.15s;
 }
-.form-input:focus { border-color: #3b82f6; }
-.form-input::placeholder { color: #475569; }
+.form-input:focus { border-color: var(--accent-focus); }
+.form-input::placeholder { color: var(--border-strong); }
 .form-error {
   font-size: 12px; color: #f87171; background: #2d1b1b; border: 1px solid #7f1d1d;
   border-radius: 6px; padding: 8px 12px;
 }
 .btn-submit {
-  background: #2563eb; color: #fff; border: none; border-radius: 7px;
+  background: var(--accent-primary); color: #fff; border: none; border-radius: 7px;
   padding: 10px; font-size: 14px; font-weight: 700; cursor: pointer;
   transition: background 0.15s; margin-top: 4px;
 }
-.btn-submit:hover:not(:disabled) { background: #1d4ed8; }
+.btn-submit:hover:not(:disabled) { background: var(--accent-hover); }
 .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-.auth-link { text-align: center; font-size: 13px; color: #64748b; margin: 20px 0 0 0; }
-.auth-link a { color: #60a5fa; text-decoration: none; }
+.auth-link { text-align: center; font-size: 13px; color: var(--text-disabled); margin: 20px 0 0 0; }
+.auth-link a { color: var(--accent-soft); text-decoration: none; }
 .auth-link a:hover { text-decoration: underline; }
 </style>

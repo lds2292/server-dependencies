@@ -157,31 +157,31 @@ function onSubmit() {
 
 <style scoped>
 .modal-backdrop { position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:200; }
-.modal { background:#1e293b;border:1px solid #334155;border-radius:10px;padding:24px;width:420px;max-width:90vw;max-height:90vh;overflow-y:auto; }
-.modal h3 { margin:0 0 20px;font-size:16px;font-weight:700;color:#f1f5f9; }
+.modal { background:var(--bg-surface);border:1px solid var(--border-default);border-radius:10px;padding:24px;width:420px;max-width:90vw;max-height:90vh;overflow-y:auto; }
+.modal h3 { margin:0 0 20px;font-size:16px;font-weight:700;color:var(--text-primary); }
 form { display:flex;flex-direction:column;gap:14px; }
-label { display:flex;flex-direction:column;gap:5px;font-size:12px;color:#94a3b8;font-weight:600; }
-input,textarea { background:#0f172a;border:1px solid #334155;border-radius:6px;padding:8px 10px;color:#e2e8f0;font-size:13px;outline:none; }
-input:focus,textarea:focus { border-color:#16a34a; }
+label { display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-tertiary);font-weight:600; }
+input,textarea { background:var(--bg-base);border:1px solid var(--border-default);border-radius:6px;padding:8px 10px;color:var(--text-secondary);font-size:13px;outline:none; }
+input:focus,textarea:focus { border-color:var(--node-ext-color); }
 .input-error { border-color:#ef4444!important; }
 .error-msg { color:#ef4444;font-size:11px;font-weight:500; }
 .checkbox-label { flex-direction:row!important;align-items:center;gap:8px;cursor:pointer; }
-.checkbox-label input[type="checkbox"] { width:15px;height:15px;padding:0;cursor:pointer;accent-color:#16a34a;flex-shrink:0; }
+.checkbox-label input[type="checkbox"] { width:15px;height:15px;padding:0;cursor:pointer;accent-color:var(--node-ext-color);flex-shrink:0; }
 .section-row { display:flex;align-items:center;justify-content:space-between; }
-.section-label { font-size:12px;font-weight:600;color:#94a3b8; }
-.btn-add-contact { background:#14532d;color:#86efac;border:1px solid #16a34a;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600; }
+.section-label { font-size:12px;font-weight:600;color:var(--text-tertiary); }
+.btn-add-contact { background:#14532d;color:var(--color-success-lighter);border:1px solid var(--node-ext-color);border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600; }
 .btn-add-contact:hover { background:#166534; }
 .contacts-list { display:flex;flex-direction:column;gap:8px; }
-.contact-item { background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:6px; }
+.contact-item { background:var(--bg-base);border:1px solid var(--border-default);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:6px; }
 .contact-row { display:flex;gap:6px;align-items:center; }
 .contact-name { flex:1; }
-.btn-remove { background:none;border:none;color:#475569;cursor:pointer;font-size:13px;padding:2px 4px;border-radius:3px;flex-shrink:0; }
+.btn-remove { background:none;border:none;color:var(--border-strong);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:3px;flex-shrink:0; }
 .btn-remove:hover { color:#ef4444;background:#3f1f1f; }
-.no-contacts { color:#475569;font-size:12px;text-align:center;margin:4px 0; }
+.no-contacts { color:var(--border-strong);font-size:12px;text-align:center;margin:4px 0; }
 .actions { display:flex;gap:8px;justify-content:flex-end;margin-top:4px; }
-.btn-primary { background:#16a34a;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:600; }
+.btn-primary { background:var(--node-ext-color);color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:600; }
 .btn-primary:hover:not(:disabled) { background:#15803d; }
 .btn-primary:disabled { opacity:0.5;cursor:not-allowed; }
-.btn-secondary { background:#334155;color:#e2e8f0;border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer; }
-.btn-secondary:hover { background:#475569; }
+.btn-secondary { background:var(--border-default);color:var(--text-secondary);border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer; }
+.btn-secondary:hover { background:var(--border-strong); }
 </style>

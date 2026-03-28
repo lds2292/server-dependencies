@@ -12,12 +12,34 @@
     </div>
 
     <div class="settings-body">
-      <div v-if="loading" class="settings-state">불러오는 중...</div>
+      <div v-if="loading" class="settings-skeleton">
+        <div class="sk-section-block">
+          <div class="skeleton sk-section-title"></div>
+          <div class="skeleton sk-field"></div>
+          <div class="skeleton sk-field sk-field-tall"></div>
+        </div>
+        <div class="sk-section-block">
+          <div class="skeleton sk-section-title"></div>
+          <div v-for="i in 3" :key="i" class="sk-member-row">
+            <div class="skeleton sk-circle"></div>
+            <div class="sk-member-info">
+              <div class="skeleton sk-line-lg"></div>
+              <div class="skeleton sk-line-sm"></div>
+            </div>
+          </div>
+        </div>
+      </div>
       <template v-else>
 
         <!-- 프로젝트 정보 -->
         <section class="settings-section">
-          <h2 class="section-title">프로젝트 정보</h2>
+          <h2 class="section-title">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" class="section-icon">
+              <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            프로젝트 정보
+          </h2>
           <div class="form-group">
             <label class="form-label">이름</label>
             <input v-model="editName" class="form-input" maxlength="100" />
@@ -33,7 +55,15 @@
 
         <!-- 멤버 관리 -->
         <section class="settings-section">
-          <h2 class="section-title">멤버 관리</h2>
+          <h2 class="section-title">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" class="section-icon">
+              <circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M1 13c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="12.5" cy="5" r="2" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M12.5 10c1.66 0 3 1.34 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            멤버 관리
+          </h2>
           <div class="members-list">
             <div v-for="member in projectStore.currentProject?.members" :key="member.userId" class="member-row">
               <div class="member-info">
@@ -91,7 +121,13 @@
 
         <!-- 위험 영역 (MASTER only) -->
         <section v-if="projectStore.isMaster" class="settings-section danger-zone">
-          <h2 class="section-title danger-title">위험 영역</h2>
+          <h2 class="section-title danger-title">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" class="section-icon">
+              <path d="M8 1.5L14.5 13.5H1.5L8 1.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M8 6.5v2.5M8 11h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            위험 영역
+          </h2>
           <div class="danger-item">
             <div class="danger-desc">
               <span class="danger-label">프로젝트 삭제</span>
@@ -316,7 +352,7 @@ onMounted(async () => {
 <style scoped>
 .settings-page {
   min-height: 100vh;
-  background: #0f172a;
+  background: var(--bg-base);
   display: flex;
   flex-direction: column;
 }
@@ -328,8 +364,8 @@ onMounted(async () => {
   gap: 12px;
   padding: 0 24px;
   height: 52px;
-  background: #1e293b;
-  border-bottom: 1px solid #334155;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
   flex-shrink: 0;
 }
 .back-btn {
@@ -338,16 +374,16 @@ onMounted(async () => {
   gap: 4px;
   background: none;
   border: none;
-  color: #64748b;
+  color: var(--text-disabled);
   font-size: 13px;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 5px;
   transition: color 0.15s, background 0.15s;
 }
-.back-btn:hover { color: #e2e8f0; background: #334155; }
-.settings-title { font-size: 14px; font-weight: 700; color: #f1f5f9; }
-.project-name-label { font-size: 12px; color: #475569; }
+.back-btn:hover { color: var(--text-secondary); background: var(--border-default); }
+.settings-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.project-name-label { font-size: 12px; color: var(--border-strong); }
 
 /* 본문 */
 .settings-body {
@@ -355,39 +391,73 @@ onMounted(async () => {
   max-width: 720px;
   width: 100%;
   margin: 0 auto;
-  padding: 0 24px 60px;
+  padding: 24px 24px 60px;
+  display: flex; flex-direction: column; gap: 16px;
 }
 .settings-state {
   padding: 60px 0;
   text-align: center;
-  color: #475569;
+  color: var(--border-strong);
   font-size: 14px;
 }
 
+/* 스켈레톤 */
+.settings-skeleton { max-width: 720px; margin: 0 auto; padding: 0 24px 60px; display: flex; flex-direction: column; gap: 40px; }
+.sk-section-block  { display: flex; flex-direction: column; gap: 10px; }
+.sk-section-title  { height: 18px; width: 120px; border-radius: 4px; margin-bottom: 6px; }
+.sk-field          { height: 38px; border-radius: 6px; }
+.sk-field-tall     { height: 76px; }
+.sk-member-row     { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border-default); }
+.sk-circle         { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; }
+.sk-member-info    { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+.sk-line-lg        { height: 13px; width: 50%; border-radius: 4px; }
+.sk-line-sm        { height: 10px; width: 30%; border-radius: 4px; }
+
 /* 섹션 */
 .settings-section {
-  margin-top: 32px;
-  padding-bottom: 32px;
-  border-bottom: 1px solid #1e293b;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  padding: 24px 28px;
 }
-.settings-section:last-child { border-bottom: none; }
 .section-title {
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin: 0 0 16px 0;
+  margin: 0 0 18px 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-left: 10px;
+  position: relative;
 }
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--accent-primary);
+}
+.section-icon {
+  color: var(--accent-soft);
+  flex-shrink: 0;
+}
+.danger-title::before { background: var(--color-danger); }
+.danger-title .section-icon { color: #f87171; }
 
 /* 폼 */
 .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-.form-label { font-size: 12px; font-weight: 600; color: #64748b; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text-disabled); }
 .form-input {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
   border-radius: 7px;
-  color: #e2e8f0;
+  color: var(--text-secondary);
   font-size: 13px;
   padding: 9px 12px;
   outline: none;
@@ -395,41 +465,41 @@ onMounted(async () => {
   width: 100%;
   box-sizing: border-box;
 }
-.form-input:focus { border-color: #3b82f6; }
-.form-input::placeholder { color: #475569; }
+.form-input:focus { border-color: var(--accent-focus); }
+.form-input::placeholder { color: var(--border-strong); }
 .form-textarea { resize: vertical; min-height: 72px; font-family: inherit; }
 
 .btn-save {
   font-size: 12px; font-weight: 700; padding: 7px 20px; border-radius: 7px;
-  border: 1px solid #1d4ed8; background: #1e3a5f; color: #60a5fa;
+  border: 1px solid var(--accent-hover); background: var(--accent-bg); color: var(--accent-soft);
   cursor: pointer; transition: all 0.15s;
 }
-.btn-save:hover:not(:disabled) { background: #1e3a8a; color: #93c5fd; }
+.btn-save:hover:not(:disabled) { background: var(--accent-bg-medium); color: var(--accent-light); }
 .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* 멤버 관리 */
 .members-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
 .member-row {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 12px; background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+  padding: 10px 12px; background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 8px;
 }
 .member-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.member-name { font-size: 13px; font-weight: 600; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.member-email { font-size: 11px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-email { font-size: 11px; color: var(--text-disabled); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .member-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .role-badge {
   font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
   border: 1px solid transparent;
 }
-.role-badge.master  { background: #2d1b69; border-color: #7c3aed; color: #c4b5fd; }
-.role-badge.admin   { background: #0f2044; border-color: #1d4ed8; color: #60a5fa; }
-.role-badge.writer  { background: #052e16; border-color: #16a34a; color: #4ade80; }
-.role-badge.readonly { background: #1c1a09; border-color: #ca8a04; color: #fbbf24; }
+.role-badge.master  { background: #2d1b69; border-color: var(--node-l7-color); color: #c4b5fd; }
+.role-badge.admin   { background: var(--accent-bg-deep); border-color: var(--accent-hover); color: var(--accent-soft); }
+.role-badge.writer  { background: var(--node-ext-bg-deep); border-color: var(--node-ext-color); color: var(--color-success-light); }
+.role-badge.readonly { background: #1c1a09; border-color: #ca8a04; color: var(--color-warning-light); }
 .role-select {
   font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 6px;
-  background: #0f172a; border: 1px solid #334155; color: #94a3b8; cursor: pointer;
+  background: var(--bg-base); border: 1px solid var(--border-default); color: var(--text-tertiary); cursor: pointer;
 }
-.role-select:hover { border-color: #475569; }
+.role-select:hover { border-color: var(--border-strong); }
 .member-remove-btn {
   width: 20px; height: 20px; border-radius: 4px; border: 1px solid #ef444433;
   background: transparent; color: #ef4444; font-size: 13px; line-height: 1;
@@ -439,34 +509,34 @@ onMounted(async () => {
 .member-remove-btn:hover { background: #ef444422; border-color: #ef4444; }
 .member-add-form { display: flex; gap: 8px; align-items: center; }
 .member-input {
-  flex: 1; padding: 7px 10px; background: #0f172a; border: 1px solid #334155;
-  border-radius: 6px; color: #e2e8f0; font-size: 12px; outline: none;
+  flex: 1; padding: 7px 10px; background: var(--bg-base); border: 1px solid var(--border-default);
+  border-radius: 6px; color: var(--text-secondary); font-size: 12px; outline: none;
 }
-.member-input:focus { border-color: #3b82f6; }
+.member-input:focus { border-color: var(--accent-focus); }
 .member-error { font-size: 12px; color: #f87171; margin-top: 8px; }
 .btn-primary {
   font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 6px;
-  border: 1px solid #1d4ed8; background: #1e3a5f; color: #60a5fa; cursor: pointer;
+  border: 1px solid var(--accent-hover); background: var(--accent-bg); color: var(--accent-soft); cursor: pointer;
 }
-.btn-primary:hover { background: #1d4ed8; color: #dbeafe; }
+.btn-primary:hover { background: var(--accent-hover); color: #dbeafe; }
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-.pending-invitations { margin-top: 16px; border-top: 1px solid #1e293b; padding-top: 16px; }
-.pending-invitations-title { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.pending-invitations { margin-top: 16px; border-top: 1px solid var(--bg-surface); padding-top: 16px; }
+.pending-invitations-title { font-size: 11px; font-weight: 600; color: var(--text-disabled); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
 .pending-inv-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
 .pending-inv-info { display: flex; align-items: center; gap: 8px; }
 
 /* 위험 영역 */
 .danger-zone {
   border: 1px solid #450a0a !important;
+  background: #0f0505 !important;
   border-radius: 10px;
-  padding: 20px;
-  margin-top: 32px;
+  padding: 24px 28px;
 }
 .danger-title { color: #f87171 !important; }
 .danger-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .danger-desc { display: flex; flex-direction: column; gap: 4px; }
 .danger-label { font-size: 13px; font-weight: 700; color: #f87171; }
-.danger-hint { font-size: 12px; color: #64748b; }
+.danger-hint { font-size: 12px; color: var(--text-disabled); }
 .btn-danger {
   font-size: 12px; font-weight: 700; padding: 7px 16px; border-radius: 7px;
   border: 1px solid #ef4444; background: #450a0a; color: #fca5a5;
@@ -483,28 +553,28 @@ onMounted(async () => {
   backdrop-filter: blur(2px);
 }
 .delete-dialog {
-  background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+  background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px;
   padding: 24px; width: 340px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
   display: flex; flex-direction: column; gap: 16px;
 }
 .delete-dialog-icon { display: flex; justify-content: center; }
 .delete-dialog-body { display: flex; flex-direction: column; gap: 8px; text-align: center; }
-.delete-dialog-title { font-size: 16px; font-weight: 700; color: #f1f5f9; }
-.delete-dialog-desc { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+.delete-dialog-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.delete-dialog-desc { font-size: 13px; color: var(--text-tertiary); line-height: 1.6; }
 .delete-name-input {
-  background: #0f172a; border: 1px solid #334155; border-radius: 7px;
-  color: #e2e8f0; font-size: 13px; padding: 8px 12px; outline: none;
+  background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 7px;
+  color: var(--text-secondary); font-size: 13px; padding: 8px 12px; outline: none;
   width: 100%; box-sizing: border-box; transition: border-color 0.15s;
 }
 .delete-name-input:focus { border-color: #ef4444; }
-.delete-name-input::placeholder { color: #475569; }
+.delete-name-input::placeholder { color: var(--border-strong); }
 .delete-dialog-actions { display: flex; gap: 8px; }
 .delete-btn-cancel {
   flex: 1; padding: 8px; border-radius: 7px;
-  background: #0f172a; border: 1px solid #334155;
-  color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  background: var(--bg-base); border: 1px solid var(--border-default);
+  color: var(--text-tertiary); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;
 }
-.delete-btn-cancel:hover { border-color: #475569; color: #e2e8f0; }
+.delete-btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 .delete-btn-confirm {
   flex: 1; padding: 8px; border-radius: 7px;
   background: #450a0a; border: 1px solid #ef4444;

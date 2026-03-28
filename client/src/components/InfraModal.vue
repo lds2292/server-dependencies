@@ -96,18 +96,18 @@ function onSubmit() {
 
 <style scoped>
 .modal-backdrop { position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:200; }
-.modal { background:#1e293b;border:1px solid #334155;border-radius:10px;padding:24px;width:380px;max-width:90vw;max-height:90vh;overflow-y:auto; }
-.modal h3 { margin:0 0 20px;font-size:16px;font-weight:700;color:#f1f5f9; }
+.modal { background:var(--bg-surface);border:1px solid var(--border-default);border-radius:10px;padding:24px;width:380px;max-width:90vw;max-height:90vh;overflow-y:auto; }
+.modal h3 { margin:0 0 20px;font-size:16px;font-weight:700;color:var(--text-primary); }
 form { display:flex;flex-direction:column;gap:14px; }
-label { display:flex;flex-direction:column;gap:5px;font-size:12px;color:#94a3b8;font-weight:600; }
-input,textarea { background:#0f172a;border:1px solid #334155;border-radius:6px;padding:8px 10px;color:#e2e8f0;font-size:13px;outline:none; }
+label { display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-tertiary);font-weight:600; }
+input,textarea { background:var(--bg-base);border:1px solid var(--border-default);border-radius:6px;padding:8px 10px;color:var(--text-secondary);font-size:13px;outline:none; }
 input:focus,textarea:focus { border-color:#06b6d4; }
 .input-error { border-color:#ef4444!important; }
 .error-msg { color:#ef4444;font-size:11px;font-weight:500; }
 .actions { display:flex;gap:8px;justify-content:flex-end;margin-top:4px; }
-.btn-primary { background:#0e7490;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:600; }
+.btn-primary { background:var(--node-infra-color);color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:600; }
 .btn-primary:hover:not(:disabled) { background:#0891b2; }
 .btn-primary:disabled { opacity:0.5;cursor:not-allowed; }
-.btn-secondary { background:#334155;color:#e2e8f0;border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer; }
-.btn-secondary:hover { background:#475569; }
+.btn-secondary { background:var(--border-default);color:var(--text-secondary);border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer; }
+.btn-secondary:hover { background:var(--border-strong); }
 </style>

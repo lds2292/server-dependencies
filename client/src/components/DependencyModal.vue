@@ -182,14 +182,14 @@ function onSubmit() {
   display: flex; align-items: center; justify-content: center; z-index: 200;
 }
 .modal {
-  background: #1e293b; border: 1px solid #334155;
+  background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: 10px; padding: 24px; width: 360px; max-width: 90vw;
 }
-.modal h3 { margin: 0 0 20px; font-size: 16px; font-weight: 700; color: #f1f5f9; }
+.modal h3 { margin: 0 0 20px; font-size: 16px; font-weight: 700; color: var(--text-primary); }
 form { display: flex; flex-direction: column; gap: 14px; }
-label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: #94a3b8; font-weight: 600; }
-input { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px 10px; color: #e2e8f0; font-size: 13px; outline: none; }
-input:focus { border-color: #3b82f6; }
+label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--text-tertiary); font-weight: 600; }
+input { background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 6px; padding: 8px 10px; color: var(--text-secondary); font-size: 13px; outline: none; }
+input:focus { border-color: var(--accent-focus); }
 .error { font-size: 12px; color: #ef4444; margin: 0; }
 .checkbox-label {
   flex-direction: row;
@@ -202,18 +202,18 @@ input:focus { border-color: #3b82f6; }
   height: 16px;
   padding: 0;
   cursor: pointer;
-  accent-color: #3b82f6;
+  accent-color: var(--accent-focus);
 }
 .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 .btn-primary {
-  background: #2563eb; color: #fff; border: none;
+  background: var(--accent-primary); color: #fff; border: none;
   border-radius: 6px; padding: 8px 18px; font-size: 13px; cursor: pointer; font-weight: 600;
 }
-.btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-secondary {
-  background: #334155; color: #e2e8f0; border: none;
+  background: var(--border-default); color: var(--text-secondary); border: none;
   border-radius: 6px; padding: 8px 18px; font-size: 13px; cursor: pointer;
 }
-.btn-secondary:hover { background: #475569; }
+.btn-secondary:hover { background: var(--border-strong); }
 </style>

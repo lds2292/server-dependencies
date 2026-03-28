@@ -43,22 +43,39 @@
         </div>
       </template>
 
-      <div v-if="loading" class="audit-state">불러오는 중...</div>
+      <div v-if="loading" class="audit-skeleton">
+        <div v-for="i in 8" :key="i" class="audit-row-skeleton">
+          <div class="skeleton sk-avatar"></div>
+          <div class="sk-content">
+            <div class="skeleton sk-line-main"></div>
+            <div class="skeleton sk-line-sub"></div>
+          </div>
+        </div>
+      </div>
       <div v-else-if="error" class="audit-state error">{{ error }}</div>
-      <div v-else-if="logs.length === 0" class="audit-state">기록된 감사 로그가 없습니다</div>
+      <div v-else-if="logs.length === 0" class="audit-empty">
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="26" cy="26" r="18" stroke="#1e2a3a" stroke-width="1.6"/>
+          <line x1="26" y1="14" x2="26" y2="26" stroke="#2e3f55" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="26" y1="26" x2="33" y2="31" stroke="#2e3f55" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="26" cy="26" r="1.8" fill="#2e3f55"/>
+        </svg>
+        <p class="audit-empty-title">감사 로그가 없습니다</p>
+        <p class="audit-empty-desc">프로젝트 변경 내역이 여기에 기록됩니다</p>
+      </div>
       <template v-else>
         <div v-if="filteredLogs.length === 0" class="audit-state">필터 조건에 맞는 로그가 없습니다</div>
-        <div v-else class="audit-list">
+        <div v-else class="audit-timeline">
           <template v-for="(item, i) in filteredLogs" :key="item.id">
-            <!-- 날짜 구분선 -->
+            <!-- 날짜 구분선 — 타임라인을 끊는 형태 -->
             <div
               v-if="i === 0 || dateLabel(item.createdAt) !== dateLabel(filteredLogs[i - 1].createdAt)"
-              class="audit-date-divider"
+              class="timeline-date-divider"
             >
               {{ dateLabel(item.createdAt) }}
             </div>
             <div
-              :class="['audit-row', {
+              :class="['timeline-item', {
                 failed: item.status !== 'SUCCESS',
                 expanded: expandedId === item.id,
                 clickable: !!parseDetail(item)
@@ -302,7 +319,7 @@ onMounted(async () => {
 <style scoped>
 .audit-page {
   min-height: 100vh;
-  background: #0f172a;
+  background: var(--bg-base);
   display: flex;
   flex-direction: column;
 }
@@ -314,8 +331,8 @@ onMounted(async () => {
   gap: 12px;
   padding: 0 24px;
   height: 52px;
-  background: #1e293b;
-  border-bottom: 1px solid #334155;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
   flex-shrink: 0;
 }
 
@@ -325,24 +342,24 @@ onMounted(async () => {
   gap: 4px;
   background: none;
   border: none;
-  color: #64748b;
+  color: var(--text-disabled);
   font-size: 13px;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 5px;
   transition: color 0.15s, background 0.15s;
 }
-.back-btn:hover { color: #e2e8f0; background: #334155; }
+.back-btn:hover { color: var(--text-secondary); background: var(--border-default); }
 
 .audit-title {
   font-size: 14px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--text-primary);
 }
 
 .project-name {
   font-size: 12px;
-  color: #475569;
+  color: var(--border-strong);
 }
 
 /* 본문 */
@@ -361,13 +378,13 @@ onMounted(async () => {
   display: flex;
   gap: 2px;
   padding: 16px 0 0;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid var(--border-default);
   flex-shrink: 0;
 }
 .audit-tab {
   background: none;
   border: none;
-  color: #64748b;
+  color: var(--text-disabled);
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
@@ -379,11 +396,11 @@ onMounted(async () => {
   align-items: center;
   gap: 5px;
 }
-.audit-tab:hover { color: #94a3b8; }
-.audit-tab.active { color: #60a5fa; border-bottom-color: #3b82f6; }
+.audit-tab:hover { color: var(--text-tertiary); }
+.audit-tab.active { color: var(--accent-soft); border-bottom-color: var(--accent-focus); }
 .tab-count {
-  background: #334155;
-  color: #94a3b8;
+  background: var(--border-default);
+  color: var(--text-tertiary);
   border-radius: 8px;
   font-size: 10px;
   font-weight: 700;
@@ -391,7 +408,7 @@ onMounted(async () => {
   min-width: 16px;
   text-align: center;
 }
-.audit-tab.active .tab-count { background: #1e3a5f; color: #93c5fd; }
+.audit-tab.active .tab-count { background: var(--accent-bg); color: var(--accent-light); }
 
 /* 날짜 필터 */
 .audit-date-filter {
@@ -399,7 +416,7 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid var(--border-default);
   flex-shrink: 0;
   flex-wrap: wrap;
 }
@@ -410,18 +427,18 @@ onMounted(async () => {
 }
 
 .quick-btn {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 5px;
-  color: #64748b;
+  color: var(--text-disabled);
   font-size: 12px;
   font-weight: 600;
   padding: 5px 12px;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
-.quick-btn:hover { color: #e2e8f0; border-color: #475569; }
-.quick-btn.active { background: #1e3a5f; border-color: #3b82f6; color: #60a5fa; }
+.quick-btn:hover { color: var(--text-secondary); border-color: var(--border-strong); }
+.quick-btn.active { background: var(--accent-bg); border-color: var(--accent-focus); color: var(--accent-soft); }
 
 .date-range {
   display: flex;
@@ -430,65 +447,139 @@ onMounted(async () => {
 }
 
 .date-input {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 6px;
-  color: #e2e8f0;
+  color: var(--text-secondary);
   font-size: 12px;
   padding: 5px 8px;
   outline: none;
   cursor: pointer;
 }
-.date-input:focus { border-color: #3b82f6; }
+.date-input:focus { border-color: var(--accent-focus); }
 .date-input::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
-.date-sep { font-size: 12px; color: #475569; }
+.date-sep { font-size: 12px; color: var(--border-strong); }
 .date-reset {
   background: none;
-  border: 1px solid #334155;
+  border: 1px solid var(--border-default);
   border-radius: 5px;
-  color: #64748b;
+  color: var(--text-disabled);
   font-size: 11px;
   padding: 4px 10px;
   cursor: pointer;
   margin-left: 2px;
 }
-.date-reset:hover { border-color: #60a5fa; color: #93c5fd; }
+.date-reset:hover { border-color: var(--accent-soft); color: var(--accent-light); }
 
 /* 상태 */
 .audit-state {
   padding: 60px;
   text-align: center;
   font-size: 13px;
-  color: #475569;
+  color: var(--border-strong);
 }
 .audit-state.error { color: #f87171; }
 
-/* 로그 목록 */
-.audit-list { flex: 1; }
+/* 빈 상태 */
+.audit-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 72px 0; text-align: center; }
+.audit-empty-title { font-size: 15px; font-weight: 600; color: var(--text-disabled); margin: 4px 0 0; }
+.audit-empty-desc  { font-size: 13px; color: var(--border-strong); margin: 0; }
 
-.audit-date-divider {
-  padding: 6px 0;
-  font-size: 11px;
-  font-weight: 700;
-  color: #cbd5e1;
-  background: #0f172a;
-  letter-spacing: 0.04em;
+/* 스켈레톤 */
+.audit-skeleton { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; }
+.audit-row-skeleton {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+}
+.sk-avatar    { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; }
+.sk-content   { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+.sk-line-main { height: 13px; width: 60%; border-radius: 4px; }
+.sk-line-sub  { height: 10px; width: 35%; border-radius: 4px; }
+
+/* ─── 타임라인 ─── */
+.audit-timeline {
+  flex: 1;
+  position: relative;
+  padding-left: 36px;
+}
+
+/* 연속 세로선 */
+.audit-timeline::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, transparent 0%, var(--border-default) 3%, var(--border-default) 97%, transparent 100%);
+}
+
+/* 날짜 구분선 — 타임라인을 끊는 형태 */
+.timeline-date-divider {
   position: sticky;
   top: 0;
-  border-bottom: 1px solid #1e293b;
+  z-index: 2;
+  margin: 4px -36px 2px;
+  padding: 12px 0 8px 36px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11px; font-weight: 700;
+  color: var(--text-tertiary);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  background: var(--bg-base);
+}
+/* 다이아몬드 마커 — 타임라인 선 위에 표시 */
+.timeline-date-divider::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 50%; transform: translateY(-50%) rotate(45deg);
+  width: 10px; height: 10px;
+  background: var(--border-strong);
+  border-radius: 2px;
+  border: 2px solid var(--bg-base);
+}
+/* 날짜 라벨 우측 수평선 */
+.timeline-date-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-default);
+  margin-right: 36px;
 }
 
-.audit-row {
-  padding: 10px 0;
-  border-bottom: 1px solid #1e293b;
-  transition: background 0.1s;
+/* 로그 행 */
+.timeline-item {
+  position: relative;
+  padding: 10px 0 10px 4px;
+  border-radius: 0 6px 6px 0;
+  transition: background 0.12s;
 }
-.audit-row.clickable { cursor: pointer; }
-.audit-row.clickable:hover { background: #1a2744; }
-.audit-row.expanded { background: #1a2744; }
-.audit-row.failed { border-left: 3px solid #ef4444; padding-left: 12px; background: rgba(239,68,68,0.04); }
-.audit-row.failed:hover { background: rgba(239,68,68,0.08); }
-.audit-row.failed.expanded { background: rgba(239,68,68,0.08); }
+.timeline-item + .timeline-item { border-top: 1px solid var(--border-subtle); }
+.timeline-item.clickable { cursor: pointer; }
+.timeline-item.clickable:hover { background: #0c1825; }
+.timeline-item.expanded { background: #0c1825; }
+
+/* 각 항목 dot */
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -27px;
+  top: 50%; transform: translateY(-50%);
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--accent-focus);
+  border: 2px solid var(--bg-base);
+  transition: box-shadow 0.15s;
+}
+.timeline-item.clickable:hover::before { box-shadow: 0 0 0 3px rgba(6,182,212,0.2); }
+.timeline-item.expanded::before        { box-shadow: 0 0 0 3px rgba(6,182,212,0.25); }
+
+/* 실패 행 — dot 빨간색, border-left 제거 */
+.timeline-item.failed { background: rgba(239,68,68,0.03); }
+.timeline-item.failed::before { background: var(--color-danger); }
+.timeline-item.failed.clickable:hover { background: rgba(239,68,68,0.07); }
+.timeline-item.failed.expanded        { background: rgba(239,68,68,0.07); }
+.timeline-item.failed.clickable:hover::before { box-shadow: 0 0 0 3px rgba(239,68,68,0.2); }
+.timeline-item.failed.expanded::before        { box-shadow: 0 0 0 3px rgba(239,68,68,0.25); }
 
 .audit-row-main {
   display: flex;
@@ -499,8 +590,8 @@ onMounted(async () => {
 
 .audit-time {
   font-size: 11px;
-  color: #cbd5e1;
-  font-family: 'Menlo', 'Consolas', monospace;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
   flex-shrink: 0;
   min-width: 40px;
 }
@@ -512,12 +603,12 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 .audit-action-badge.security { background: #1c1a36; color: #a78bfa; }
-.audit-action-badge.member   { background: #0f2340; color: #60a5fa; }
-.audit-action-badge.other    { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+.audit-action-badge.member   { background: #0f2340; color: var(--accent-soft); }
+.audit-action-badge.other    { background: var(--bg-surface); color: var(--text-tertiary); border: 1px solid var(--border-default); }
 
 .audit-user {
   font-size: 12px;
-  color: #cbd5e1;
+  color: var(--text-muted);
   flex-shrink: 1;
   max-width: 280px;
   overflow: hidden;
@@ -533,11 +624,11 @@ onMounted(async () => {
   flex-shrink: 0;
   margin-left: auto;
 }
-.audit-status.success { background: #052e16; color: #4ade80; }
+.audit-status.success { background: var(--node-ext-bg-deep); color: var(--color-success-light); }
 .audit-status.failed  { background: #450a0a; color: #f87171; }
 
 .expand-icon {
-  color: #475569;
+  color: var(--border-strong);
   flex-shrink: 0;
   transition: transform 0.2s ease;
 }
@@ -547,7 +638,7 @@ onMounted(async () => {
 .audit-detail-panel {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #1e3a5f;
+  border-top: 1px solid var(--accent-bg);
   display: grid;
   grid-template-columns: 72px 1fr;
   row-gap: 5px;
@@ -560,23 +651,23 @@ onMounted(async () => {
 
 .detail-label {
   font-size: 11px;
-  color: #475569;
+  color: var(--border-strong);
   white-space: nowrap;
   padding-top: 1px;
 }
 
 .detail-value {
   font-size: 12px;
-  color: #cbd5e1;
+  color: var(--text-muted);
   overflow-wrap: break-word;
   min-width: 0;
 }
 
 .audit-footer {
   padding: 12px 0;
-  border-top: 1px solid #334155;
+  border-top: 1px solid var(--border-default);
   font-size: 11px;
-  color: #475569;
+  color: var(--border-strong);
   text-align: right;
   flex-shrink: 0;
 }

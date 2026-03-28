@@ -148,26 +148,26 @@ onUnmounted(() => document.removeEventListener('mousedown', onOutsideClick))
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
   border-radius: 6px;
   padding: 8px 10px;
-  color: #e2e8f0;
+  color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
   text-align: left;
   transition: border-color 0.15s;
   gap: 6px;
 }
-.select-trigger:hover { border-color: #475569; }
-.select-trigger:focus { outline: none; border-color: #3b82f6; }
-.custom-select.open .select-trigger { border-color: #3b82f6; }
-.select-trigger.placeholder span { color: #475569; }
+.select-trigger:hover { border-color: var(--border-strong); }
+.select-trigger:focus { outline: none; border-color: var(--accent-focus); }
+.custom-select.open .select-trigger { border-color: var(--accent-focus); }
+.select-trigger.placeholder span { color: var(--border-strong); }
 
 .chevron {
   width: 16px;
   height: 16px;
-  color: #64748b;
+  color: var(--text-disabled);
   flex-shrink: 0;
   transition: transform 0.15s;
 }
@@ -177,8 +177,8 @@ onUnmounted(() => document.removeEventListener('mousedown', onOutsideClick))
 <style>
 /* Teleport 대상이 body이므로 scoped 불가 */
 .select-dropdown {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
   overflow: hidden;
@@ -196,17 +196,17 @@ onUnmounted(() => document.removeEventListener('mousedown', onOutsideClick))
   gap: 8px;
   padding: 9px 14px;
   font-size: 13px;
-  color: #e2e8f0;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: background 0.1s;
 }
 .select-option:hover,
 .select-option.focused { background: #273549; }
-.select-option.selected { color: #60a5fa; }
+.select-option.selected { color: var(--accent-soft); }
 .option-check {
   width: 14px;
   font-size: 12px;
-  color: #60a5fa;
+  color: var(--accent-soft);
   flex-shrink: 0;
 }
 </style>

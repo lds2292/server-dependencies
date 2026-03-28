@@ -314,7 +314,7 @@
           </div>
           <div class="delete-dialog-actions">
             <button class="delete-btn-cancel" @click="sampleConfirm = false">취소</button>
-            <button class="delete-btn-confirm" style="background:#0f2044;border-color:#3b82f6;color:#93c5fd" @click="loadSample">불러오기</button>
+            <button class="delete-btn-confirm" style="background:var(--accent-bg-deep);border-color:var(--accent-focus);color:var(--accent-light)" @click="loadSample">불러오기</button>
           </div>
         </div>
       </div>
@@ -333,7 +333,7 @@
           <div class="delete-dialog-body">
             <div class="delete-dialog-title">노드 {{ deleteMultiConfirm.nodeIds.length }}개 삭제</div>
             <div class="delete-dialog-desc">
-              선택된 <strong style="color:#f1f5f9">{{ deleteMultiConfirm.nodeIds.length }}개</strong>의 노드를 삭제합니다.<br/>연결된 의존성도 함께 제거됩니다.
+              선택된 <strong style="color:var(--text-primary)">{{ deleteMultiConfirm.nodeIds.length }}개</strong>의 노드를 삭제합니다.<br/>연결된 의존성도 함께 제거됩니다.
             </div>
           </div>
           <div class="delete-dialog-actions">
@@ -1057,17 +1057,12 @@ watch(() => route.params.id, async (newId) => {
 })
 </script>
 
-<style>
-*, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; }
-</style>
-
 <style scoped>
 .app-layout { display: grid; grid-template-columns: 250px 1fr 270px; height: 100vh; overflow: hidden; transition: grid-template-columns 0.25s ease; }
 .sidebar { height: 100vh; overflow: hidden; }
 .detail-panel {
   height: 100vh; overflow: hidden; position: relative;
-  border-left: 1px solid #1e293b;
+  border-left: 1px solid var(--bg-surface);
   transition: width 0.25s ease;
 }
 .detail-panel.collapsed { overflow: visible; }
@@ -1075,71 +1070,71 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
 .detail-toggle {
   position: absolute; top: 50%; left: -12px; transform: translateY(-50%);
   width: 24px; height: 48px; z-index: 10;
-  background: #1e293b; border: 1px solid #334155; border-radius: 6px;
-  color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 6px;
+  color: var(--text-disabled); cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: color 0.15s, background 0.15s;
 }
-.detail-toggle:hover { background: #273549; color: #94a3b8; }
+.detail-toggle:hover { background: #273549; color: var(--text-tertiary); }
 .main-area { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .toolbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 20px; border-bottom: 1px solid #1e293b; flex-shrink: 0;
+  padding: 10px 20px; border-bottom: 1px solid var(--bg-surface); flex-shrink: 0;
 }
-.app-title { font-size: 15px; font-weight: 700; color: #f1f5f9; letter-spacing: 0.02em; }
+.app-title { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.02em; }
 .toolbar-right { display: flex; align-items: center; gap: 10px; }
 .btn-back {
   font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
-  border: 1px solid #334155; background: #1e293b; color: #94a3b8;
+  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
   cursor: pointer; transition: all 0.15s; white-space: nowrap; text-decoration: none;
 }
-.btn-back:hover { border-color: #475569; color: #e2e8f0; }
+.btn-back:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 .btn-sample {
   font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
-  border: 1px solid #1d4ed8; background: #0f2044; color: #60a5fa;
+  border: 1px solid var(--accent-hover); background: var(--accent-bg-deep); color: var(--accent-soft);
   cursor: pointer; transition: all 0.15s; white-space: nowrap;
 }
-.btn-sample:hover { background: #1e3a8a; border-color: #3b82f6; color: #93c5fd; }
+.btn-sample:hover { background: var(--accent-bg-medium); border-color: var(--accent-focus); color: var(--accent-light); }
 .btn-logout {
   font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
-  border: 1px solid #334155; background: transparent; color: #64748b;
+  border: 1px solid var(--border-default); background: transparent; color: var(--text-disabled);
   cursor: pointer; transition: all 0.15s; white-space: nowrap;
 }
 .btn-logout:hover { border-color: #ef4444; color: #f87171; }
 .btn-readonly {
   position: relative;
   font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
-  border: 1px solid #334155; background: #1e293b; color: #94a3b8;
+  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
   cursor: pointer; transition: all 0.15s; white-space: nowrap;
 }
-.btn-readonly:hover { border-color: #475569; color: #e2e8f0; }
-.btn-readonly.active { background: #2d1b69; border-color: #7c3aed; color: #c4b5fd; }
+.btn-readonly:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+.btn-readonly.active { background: #2d1b69; border-color: var(--node-l7-color); color: #c4b5fd; }
 .autosave-group { display: flex; align-items: center; gap: 4px; }
 .btn-save {
   font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
-  border: 1px solid #334155; background: #1e293b; color: #94a3b8;
+  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
   cursor: pointer; transition: all 0.15s; white-space: nowrap; position: relative;
 }
-.btn-save:hover { border-color: #475569; color: #e2e8f0; }
-.btn-save.dirty { border-color: #f59e0b; color: #fbbf24; background: #1c1200; }
-.btn-save.dirty:hover { background: #292100; border-color: #fbbf24; }
+.btn-save:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+.btn-save.dirty { border-color: #f59e0b; color: var(--color-warning-light); background: #1c1200; }
+.btn-save.dirty:hover { background: #292100; border-color: var(--color-warning-light); }
 .btn-autosave {
   display: flex; align-items: center; gap: 5px;
   font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
-  border: 1px solid #334155; background: #1e293b; color: #64748b;
+  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-disabled);
   cursor: pointer; transition: all 0.15s; white-space: nowrap; position: relative;
 }
-.btn-autosave:hover { border-color: #475569; color: #94a3b8; }
+.btn-autosave:hover { border-color: var(--border-strong); color: var(--text-tertiary); }
 .autosave-dot {
   width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-  background: #475569; transition: background 0.2s;
+  background: var(--border-strong); transition: background 0.2s;
 }
 .autosave-dot.active { background: #22c55e; box-shadow: 0 0 4px rgba(34,197,94,0.6); }
 .select-interval {
   font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 6px;
-  border: 1px solid #334155; background: #1e293b; color: #94a3b8;
+  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
   cursor: pointer; transition: all 0.15s; outline: none;
 }
-.select-interval:hover { border-color: #475569; }
+.select-interval:hover { border-color: var(--border-strong); }
 
 /* 단축키 툴팁 */
 [data-tooltip] { position: relative; }
@@ -1148,10 +1143,10 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 6px;
-  color: #cbd5e1;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 400;
   padding: 5px 9px;
@@ -1168,10 +1163,10 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
   top: calc(100% + 8px);
   right: 0;
   margin-top: 22px;
-  background: #334155;
-  border: 1px solid #475569;
+  background: var(--border-default);
+  border: 1px solid var(--border-strong);
   border-radius: 4px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   font-size: 10px;
   font-weight: 700;
   padding: 2px 6px;
@@ -1209,7 +1204,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
 }
 .loading-spinner {
   width: 40px; height: 40px;
-  border: 3px solid #1e293b;
+  border: 3px solid var(--bg-surface);
   border-top-color: #06b6d4;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
@@ -1227,8 +1222,8 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
   backdrop-filter: blur(2px);
 }
 .delete-dialog {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   padding: 24px;
   width: 340px;
@@ -1242,30 +1237,30 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
   display: flex; flex-direction: column; gap: 8px; text-align: center;
 }
 .delete-dialog-title {
-  font-size: 16px; font-weight: 700; color: #f1f5f9;
+  font-size: 16px; font-weight: 700; color: var(--text-primary);
 }
 .delete-dialog-desc {
-  font-size: 13px; color: #94a3b8; line-height: 1.6;
+  font-size: 13px; color: var(--text-tertiary); line-height: 1.6;
 }
 .delete-node-kind {
-  color: #64748b; font-size: 11px; font-weight: 600;
-  background: #0f172a; border: 1px solid #334155;
+  color: var(--text-disabled); font-size: 11px; font-weight: 600;
+  background: var(--bg-base); border: 1px solid var(--border-default);
   border-radius: 4px; padding: 1px 6px; margin-right: 4px;
   vertical-align: middle;
 }
 .delete-node-name {
-  color: #f1f5f9; font-weight: 700;
+  color: var(--text-primary); font-weight: 700;
 }
 .delete-dialog-actions {
   display: flex; gap: 8px;
 }
 .delete-btn-cancel {
   flex: 1; padding: 8px; border-radius: 7px;
-  background: #0f172a; border: 1px solid #334155;
-  color: #94a3b8; font-size: 13px; font-weight: 600;
+  background: var(--bg-base); border: 1px solid var(--border-default);
+  color: var(--text-tertiary); font-size: 13px; font-weight: 600;
   cursor: pointer; transition: all 0.15s;
 }
-.delete-btn-cancel:hover { border-color: #475569; color: #e2e8f0; }
+.delete-btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 .delete-btn-confirm {
   flex: 1; padding: 8px; border-radius: 7px;
   background: #450a0a; border: 1px solid #ef4444;
@@ -1281,7 +1276,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
   display: flex; align-items: center; justify-content: center;
 }
 .shortcuts-modal {
-  background: #1e293b; border: 1px solid #334155;
+  background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: 14px; padding: 24px 28px; min-width: 360px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.5);
 }
@@ -1289,15 +1284,15 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 20px;
 }
-.shortcuts-title { font-size: 15px; font-weight: 700; color: #f1f5f9; }
+.shortcuts-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
 .shortcuts-close {
   background: none; border: none; cursor: pointer;
-  color: #64748b; padding: 4px; display: flex; align-items: center;
+  color: var(--text-disabled); padding: 4px; display: flex; align-items: center;
 }
-.shortcuts-close:hover { color: #94a3b8; }
+.shortcuts-close:hover { color: var(--text-tertiary); }
 .shortcuts-section-title {
   font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
-  text-transform: uppercase; color: #475569;
+  text-transform: uppercase; color: var(--border-strong);
   margin: 16px 0 8px; padding-bottom: 5px;
   border-bottom: 1px solid #293548;
 }
@@ -1305,13 +1300,13 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
 .shortcuts-grid { display: flex; flex-direction: column; gap: 6px; }
 .shortcut-row {
   display: flex; align-items: center; gap: 12px;
-  font-size: 13px; color: #94a3b8;
+  font-size: 13px; color: var(--text-tertiary);
 }
 .shortcut-row kbd {
-  display: inline-block; background: #0f172a; border: 1px solid #334155;
+  display: inline-block; background: var(--bg-base); border: 1px solid var(--border-default);
   border-radius: 5px; padding: 2px 7px; font-size: 11px; font-weight: 600;
-  color: #cbd5e1; font-family: inherit; white-space: nowrap; flex-shrink: 0;
-  box-shadow: 0 2px 0 #1e293b;
+  color: var(--text-muted); font-family: inherit; white-space: nowrap; flex-shrink: 0;
+  box-shadow: 0 2px 0 var(--bg-surface);
 }
 .shortcuts-fade-enter-active { transition: opacity 0.15s; }
 .shortcuts-fade-leave-active { transition: opacity 0.15s; }
@@ -1321,16 +1316,16 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
 .title-group { display: flex; align-items: center; gap: 8px; }
 .btn-help {
   width: 20px; height: 20px; border-radius: 50%;
-  border: 1px solid #334155; background: #1e293b;
-  color: #64748b; font-size: 11px; font-weight: 700;
+  border: 1px solid var(--border-default); background: var(--bg-surface);
+  color: var(--text-disabled); font-size: 11px; font-weight: 700;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: all 0.15s; flex-shrink: 0; line-height: 1;
 }
-.btn-help:hover { border-color: #60a5fa; color: #60a5fa; background: #0f2044; }
+.btn-help:hover { border-color: var(--accent-soft); color: var(--accent-soft); background: var(--accent-bg-deep); }
 
 /* 도움말 모달 */
 .help-modal {
-  background: #1e293b; border: 1px solid #334155;
+  background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: 14px; padding: 24px 28px;
   width: 700px; max-width: calc(100vw - 40px);
   max-height: calc(100vh - 60px); overflow-y: auto;
@@ -1347,16 +1342,16 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
   font-size: 9px; font-weight: 800; letter-spacing: 0.05em;
   padding: 3px 6px; border-radius: 4px; flex-shrink: 0; margin-top: 1px;
 }
-.help-node-badge.server { background: #1e3a8a; color: #93c5fd; border: 1px solid #1d4ed8; }
-.help-node-badge.l7    { background: #3b0764; color: #d8b4fe; border: 1px solid #7c3aed; }
-.help-node-badge.infra { background: #f0f9ff; color: #0369a1; border: 1px solid #7dd3fc; }
-.help-node-badge.ext   { background: #052e16; color: #86efac; border: 1px solid #16a34a; }
-.help-node-name { font-size: 12px; font-weight: 600; color: #e2e8f0; margin-bottom: 2px; }
-.help-node-desc { font-size: 11px; color: #64748b; line-height: 1.4; }
+.help-node-badge.server { background: var(--accent-bg-medium); color: var(--accent-light); border: 1px solid var(--accent-hover); }
+.help-node-badge.l7    { background: var(--node-l7-bg-deep); color: var(--node-l7-color); border: 1px solid var(--node-l7-color); }
+.help-node-badge.infra { background: #f0f9ff; color: #0369a1; border: 1px solid var(--color-ip-text); }
+.help-node-badge.ext   { background: var(--node-ext-bg-deep); color: var(--color-success-lighter); border: 1px solid var(--node-ext-color); }
+.help-node-name { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; }
+.help-node-desc { font-size: 11px; color: var(--text-disabled); line-height: 1.4; }
 .help-desc-list { display: flex; flex-direction: column; gap: 7px; }
 .help-desc-item {
   display: flex; align-items: flex-start; gap: 8px;
-  font-size: 12px; color: #94a3b8; line-height: 1.5;
+  font-size: 12px; color: var(--text-tertiary); line-height: 1.5;
 }
 .help-dot {
   width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px;
@@ -1368,39 +1363,39 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
 /* 멤버 관리 */
 .btn-members {
   font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
-  border: 1px solid #0e7490; background: #083344; color: #22d3ee;
+  border: 1px solid var(--node-infra-color); background: #083344; color: #22d3ee;
   cursor: pointer; transition: all 0.15s; white-space: nowrap;
 }
 .btn-members:hover { background: #164e63; border-color: #22d3ee; }
 .members-modal {
-  background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+  background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px;
   padding: 20px; min-width: 440px; max-width: 560px; width: 100%;
   display: flex; flex-direction: column; gap: 12px;
 }
 .members-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
 .member-row {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 12px; background: #0f172a; border-radius: 8px; border: 1px solid #1e293b;
+  padding: 10px 12px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--bg-surface);
   gap: 12px;
 }
 .member-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.member-name { font-size: 13px; font-weight: 600; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.member-email { font-size: 11px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-email { font-size: 11px; color: var(--text-disabled); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .member-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .role-badge {
   font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
   border: 1px solid transparent;
 }
-.role-badge.master  { background: #2d1b69; border-color: #7c3aed; color: #c4b5fd; }
-.role-badge.admin   { background: #0f2044; border-color: #1d4ed8; color: #60a5fa; }
-.role-badge.writer  { background: #052e16; border-color: #16a34a; color: #4ade80; }
-.role-badge.readonly { background: #1c1a09; border-color: #ca8a04; color: #fbbf24; }
+.role-badge.master  { background: #2d1b69; border-color: var(--node-l7-color); color: #c4b5fd; }
+.role-badge.admin   { background: var(--accent-bg-deep); border-color: var(--accent-hover); color: var(--accent-soft); }
+.role-badge.writer  { background: var(--node-ext-bg-deep); border-color: var(--node-ext-color); color: var(--color-success-light); }
+.role-badge.readonly { background: #1c1a09; border-color: #ca8a04; color: var(--color-warning-light); }
 .role-select {
   font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 6px;
-  border: 1px solid #334155; background: #0f172a; color: #94a3b8;
+  border: 1px solid var(--border-default); background: var(--bg-base); color: var(--text-tertiary);
   cursor: pointer; outline: none;
 }
-.role-select:hover { border-color: #475569; }
+.role-select:hover { border-color: var(--border-strong); }
 .member-remove-btn {
   width: 20px; height: 20px; border-radius: 4px; border: 1px solid #ef444433;
   background: transparent; color: #ef4444; cursor: pointer; font-size: 11px;
@@ -1409,21 +1404,21 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
 }
 .member-remove-btn:hover { background: #ef444422; border-color: #ef4444; }
 .member-add-form { display: flex; gap: 8px; align-items: center; }
-.pending-invitations { margin-top: 12px; border-top: 1px solid #1e293b; padding-top: 12px; }
-.pending-invitations-title { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.pending-invitations { margin-top: 12px; border-top: 1px solid var(--bg-surface); padding-top: 12px; }
+.pending-invitations-title { font-size: 11px; font-weight: 600; color: var(--text-disabled); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
 .pending-inv-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
 .pending-inv-info { display: flex; align-items: center; gap: 8px; }
 .member-input {
-  flex: 1; padding: 6px 10px; background: #0f172a; border: 1px solid #334155;
-  border-radius: 6px; color: #e2e8f0; font-size: 12px; outline: none;
+  flex: 1; padding: 6px 10px; background: var(--bg-base); border: 1px solid var(--border-default);
+  border-radius: 6px; color: var(--text-secondary); font-size: 12px; outline: none;
 }
-.member-input:focus { border-color: #3b82f6; }
+.member-input:focus { border-color: var(--accent-focus); }
 .member-error { font-size: 12px; color: #f87171; }
 .btn-primary {
   font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 6px;
-  border: 1px solid #1d4ed8; background: #1e40af; color: #bfdbfe;
+  border: 1px solid var(--accent-hover); background: #1e40af; color: #bfdbfe;
   cursor: pointer; transition: all 0.15s; white-space: nowrap;
 }
-.btn-primary:hover { background: #1d4ed8; color: #dbeafe; }
+.btn-primary:hover { background: var(--accent-hover); color: #dbeafe; }
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>

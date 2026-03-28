@@ -3,8 +3,8 @@
     <header class="site-header" :class="{ 'cta-visible': showHeaderCta }">
       <div class="header-brand">
         <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <line x1="4" y1="4" x2="22" y2="22" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round"/>
-          <polyline points="14,22 22,22 22,14" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <line x1="4" y1="4" x2="22" y2="22" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round"/>
+          <polyline points="14,22 22,22 22,14" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           <line x1="28" y1="28" x2="10" y2="10" stroke="#f97316" stroke-width="2.2" stroke-linecap="round"/>
           <polyline points="18,10 10,10 10,18" stroke="#f97316" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           <circle cx="6" cy="26" r="3.5" stroke="#94a3b8" stroke-width="1.4" fill="none"/>
@@ -32,8 +32,8 @@
         <div class="hero-content" :class="{ 'is-visible': isVisible }">
           <div class="hero-logo-mark">
             <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <line x1="4" y1="4" x2="22" y2="22" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round"/>
-              <polyline points="14,22 22,22 22,14" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              <line x1="4" y1="4" x2="22" y2="22" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round"/>
+              <polyline points="14,22 22,22 22,14" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
               <line x1="28" y1="28" x2="10" y2="10" stroke="#f97316" stroke-width="2.2" stroke-linecap="round"/>
               <polyline points="18,10 10,10 10,18" stroke="#f97316" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
               <circle cx="6" cy="26" r="3.5" stroke="#94a3b8" stroke-width="1.4" fill="none"/>
@@ -107,25 +107,25 @@
             <div class="graph-preview">
               <svg viewBox="0 0 480 300" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <!-- edges -->
-                <line x1="90" y1="90" x2="220" y2="148" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="7 3" opacity="0.6" class="edge-animated"/>
-                <line x1="390" y1="90" x2="260" y2="148" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="7 3" opacity="0.6" class="edge-animated edge-rev"/>
+                <line x1="90" y1="90" x2="220" y2="148" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="7 3" opacity="0.6" class="edge-animated"/>
+                <line x1="390" y1="90" x2="260" y2="148" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="7 3" opacity="0.6" class="edge-animated edge-rev"/>
                 <line x1="240" y1="168" x2="120" y2="238" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="7 3" opacity="0.7" class="edge-animated"/>
                 <line x1="240" y1="168" x2="360" y2="238" stroke="#f97316" stroke-width="1.5" stroke-dasharray="7 3" opacity="0.7" class="edge-animated edge-slow"/>
 
                 <!-- L7 left node -->
-                <rect x="57" y="66" width="66" height="48" rx="8" fill="none" stroke="#3b82f6" stroke-width="1.5" class="node-glow"/>
-                <rect x="60" y="69" width="60" height="42" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
-                <text x="90" y="95" text-anchor="middle" fill="#93c5fd" font-size="10" font-weight="700">L7</text>
+                <rect x="57" y="66" width="66" height="48" rx="8" fill="none" stroke="#06b6d4" stroke-width="1.5" class="node-glow"/>
+                <rect x="60" y="69" width="60" height="42" rx="6" fill="#0a2d3a" stroke="#06b6d4" stroke-width="1.5"/>
+                <text x="90" y="95" text-anchor="middle" fill="#67e8f9" font-size="10" font-weight="700">L7</text>
 
                 <!-- L7 right node -->
-                <rect x="357" y="66" width="66" height="48" rx="8" fill="none" stroke="#3b82f6" stroke-width="1.5" class="node-glow" style="animation-delay:-0.8s"/>
-                <rect x="360" y="69" width="60" height="42" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
-                <text x="390" y="95" text-anchor="middle" fill="#93c5fd" font-size="10" font-weight="700">L7</text>
+                <rect x="357" y="66" width="66" height="48" rx="8" fill="none" stroke="#06b6d4" stroke-width="1.5" class="node-glow" style="animation-delay:-0.8s"/>
+                <rect x="360" y="69" width="60" height="42" rx="6" fill="#0a2d3a" stroke="#06b6d4" stroke-width="1.5"/>
+                <text x="390" y="95" text-anchor="middle" fill="#67e8f9" font-size="10" font-weight="700">L7</text>
 
                 <!-- API center node -->
-                <rect x="207" y="144" width="66" height="48" rx="8" fill="none" stroke="#475569" stroke-width="1.5" class="node-glow" style="animation-delay:-1.4s"/>
-                <rect x="210" y="147" width="60" height="42" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
-                <text x="240" y="173" text-anchor="middle" fill="#cbd5e1" font-size="10" font-weight="700">API</text>
+                <rect x="207" y="144" width="66" height="48" rx="8" fill="none" stroke="#2e3f55" stroke-width="1.5" class="node-glow" style="animation-delay:-1.4s"/>
+                <rect x="210" y="147" width="60" height="42" rx="6" fill="#111827" stroke="#2e3f55" stroke-width="1.5"/>
+                <text x="240" y="173" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700">API</text>
 
                 <!-- DB node -->
                 <rect x="87" y="216" width="66" height="48" rx="8" fill="none" stroke="#22c55e" stroke-width="1.5" class="node-glow" style="animation-delay:-0.4s"/>
@@ -150,7 +150,7 @@
       </div>
       <div class="features-grid">
         <div class="feature-card">
-          <div class="feature-card-icon icon-blue">
+          <div class="feature-card-icon icon-srv">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               <rect x="3" y="3" width="7" height="7" rx="2" stroke="#60a5fa" stroke-width="1.8"/>
               <rect x="14" y="3" width="7" height="7" rx="2" stroke="#60a5fa" stroke-width="1.8"/>
@@ -300,7 +300,7 @@ onUnmounted(() => {
 
 <style scoped>
 .hero-page {
-  background: #0f172a;
+  background: var(--bg-base);
   height: 100vh;
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
@@ -322,7 +322,7 @@ onUnmounted(() => {
 }
 .site-header.cta-visible {
   background: rgba(15, 23, 42, 0.92);
-  border-bottom-color: #1e293b;
+  border-bottom-color: var(--bg-surface);
   box-shadow: 0 1px 12px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(10px);
 }
@@ -332,7 +332,7 @@ onUnmounted(() => {
   gap: 8px;
   font-size: 13px;
   font-weight: 700;
-  color: #60a5fa;
+  color: var(--accent-soft);
   letter-spacing: 0.02em;
 }
 .header-actions {
@@ -342,17 +342,17 @@ onUnmounted(() => {
 .btn-primary-sm {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 6px 18px; border-radius: 6px; font-size: 13px; font-weight: 700;
-  background: #2563eb; color: #fff; text-decoration: none;
+  background: var(--accent-primary); color: #fff; text-decoration: none;
   transition: background 0.15s;
 }
-.btn-primary-sm:hover { background: #1d4ed8; }
+.btn-primary-sm:hover { background: var(--accent-hover); }
 .btn-secondary-sm {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 6px 18px; border-radius: 6px; font-size: 13px; font-weight: 700;
-  background: transparent; color: #94a3b8; border: 1px solid #334155;
+  background: transparent; color: var(--text-tertiary); border: 1px solid var(--border-default);
   text-decoration: none; transition: all 0.15s;
 }
-.btn-secondary-sm:hover { border-color: #475569; color: #e2e8f0; }
+.btn-secondary-sm:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 
 /* ---- Hero section ---- */
 .hero-section {
@@ -442,8 +442,8 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   width: 64px; height: 64px;
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid #334155;
+  background: rgba(17, 24, 39, 0.85);
+  border: 1px solid var(--border-default);
   border-radius: 16px;
   margin-bottom: 24px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.04);
@@ -455,9 +455,9 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-  color: #93c5fd;
-  background: rgba(30, 58, 95, 0.6);
-  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: var(--accent-light);
+  background: rgba(8, 65, 90, 0.6);
+  border: 1px solid rgba(8, 145, 178, 0.35);
   padding: 5px 14px;
   border-radius: 999px;
   margin-bottom: 28px;
@@ -467,41 +467,41 @@ onUnmounted(() => {
   content: '';
   width: 6px; height: 6px;
   border-radius: 50%;
-  background: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  background: var(--accent-focus);
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.3);
   animation: badgePulse 2s ease-in-out infinite;
   flex-shrink: 0;
 }
 @keyframes badgePulse {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
-  50%       { box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.0); }
+  0%, 100% { box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.3); }
+  50%       { box-shadow: 0 0 0 5px rgba(6, 182, 212, 0.0); }
 }
 
 .hero-title {
   font-size: 56px; font-weight: 800; line-height: 1.12;
-  color: #f1f5f9; margin: 0 0 20px 0; letter-spacing: -0.03em;
+  color: var(--text-primary); margin: 0 0 20px 0; letter-spacing: -0.03em;
 }
 .hero-desc {
-  font-size: 15px; line-height: 1.7; color: #94a3b8; margin: 0 0 32px 0;
+  font-size: 15px; line-height: 1.7; color: var(--text-tertiary); margin: 0 0 32px 0;
 }
 .hero-features { display: flex; flex-direction: column; gap: 10px; margin-bottom: 40px; }
-.feature-item { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #cbd5e1; }
-.feature-icon { color: #3b82f6; font-size: 14px; width: 20px; text-align: center; }
+.feature-item { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-muted); }
+.feature-icon { color: var(--accent-focus); font-size: 14px; width: 20px; text-align: center; }
 .hero-actions { display: flex; gap: 12px; }
 .btn-primary {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 700;
-  background: #2563eb; color: #fff; border: none; cursor: pointer;
+  background: var(--accent-primary); color: #fff; border: none; cursor: pointer;
   text-decoration: none; transition: background 0.15s;
 }
-.btn-primary:hover { background: #1d4ed8; }
+.btn-primary:hover { background: var(--accent-hover); }
 .btn-secondary {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 10px 28px; border-radius: 8px; font-size: 14px; font-weight: 700;
-  background: transparent; color: #94a3b8; border: 1px solid #334155;
+  background: transparent; color: var(--text-tertiary); border: 1px solid var(--border-default);
   cursor: pointer; text-decoration: none; transition: all 0.15s;
 }
-.btn-secondary:hover { border-color: #475569; color: #e2e8f0; }
+.btn-secondary:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 
 /* ---- Graph window ---- */
 .graph-window {
@@ -509,13 +509,13 @@ onUnmounted(() => {
   max-width: 520px;
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid #334155;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(59, 130, 246, 0.1);
+  border: 1px solid var(--border-default);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(6, 182, 212, 0.1);
 }
 .graph-window-bar {
   height: 32px;
-  background: #1e293b;
-  border-bottom: 1px solid #0f172a;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--bg-base);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -529,7 +529,7 @@ onUnmounted(() => {
 .dot-green  { background: #28c840; }
 
 .graph-preview {
-  background: #0f172a;
+  background: var(--bg-base);
   aspect-ratio: 16 / 10;
 }
 .graph-preview svg { width: 100%; height: 100%; display: block; }
@@ -595,11 +595,11 @@ onUnmounted(() => {
   margin-bottom: 56px;
 }
 .features-title {
-  font-size: 34px; font-weight: 800; color: #f1f5f9;
+  font-size: 34px; font-weight: 800; color: var(--text-primary);
   margin: 0 0 14px 0; letter-spacing: -0.02em;
 }
 .features-subtitle {
-  font-size: 15px; color: #94a3b8; margin: 0; line-height: 1.6;
+  font-size: 15px; color: var(--text-tertiary); margin: 0; line-height: 1.6;
 }
 .features-grid {
   display: grid;
@@ -607,66 +607,62 @@ onUnmounted(() => {
   gap: 20px;
 }
 .feature-card {
-  background: linear-gradient(145deg, #1e293b 0%, #162032 100%);
-  border: 1px solid #263348;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 16px;
-  padding: 28px;
+  padding: 28px 28px 28px 32px;
   position: relative;
   overflow: hidden;
   transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
-/* 상단 shimmer */
+/* 좌측 3px 컬러 바 */
 .feature-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
-  pointer-events: none;
+  left: 0; top: 16px; bottom: 16px;
+  width: 3px; border-radius: 0 2px 2px 0;
+  opacity: 0.3;
+  transition: opacity 0.2s, top 0.2s, bottom 0.2s;
 }
-/* hover 시 accent color bar */
-.feature-card::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  border-radius: 16px 16px 0 0;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.feature-card:nth-child(1)::after { background: #3b82f6; }
-.feature-card:nth-child(2)::after { background: #f97316; }
-.feature-card:nth-child(3)::after { background: #4ade80; }
-.feature-card:nth-child(4)::after { background: #a78bfa; }
-.feature-card:nth-child(5)::after { background: #22d3ee; }
-.feature-card:nth-child(6)::after { background: #34d399; }
+.feature-card:nth-child(1)::before { background: var(--accent-focus); }
+.feature-card:nth-child(2)::before { background: #f97316; }
+.feature-card:nth-child(3)::before { background: var(--color-success-light); }
+.feature-card:nth-child(4)::before { background: #a78bfa; }
+.feature-card:nth-child(5)::before { background: #22d3ee; }
+.feature-card:nth-child(6)::before { background: #34d399; }
 .feature-card:hover {
-  border-color: #334155;
+  border-color: var(--border-strong);
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
 }
-.feature-card:hover::after { opacity: 1; }
+.feature-card:hover::before { opacity: 1; top: 0; bottom: 0; }
 
 .feature-card-icon {
   width: 48px; height: 48px;
   border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 20px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  transition: filter 0.2s, box-shadow 0.2s;
 }
-.icon-blue    { background: rgba(59, 130, 246, 0.12); }
+.icon-srv    { background: rgba(59, 130, 246, 0.12); }
 .icon-orange  { background: rgba(249, 115, 22, 0.12); }
 .icon-green   { background: rgba(74, 222, 128, 0.12); }
 .icon-purple  { background: rgba(167, 139, 250, 0.12); }
 .icon-cyan    { background: rgba(34, 211, 238, 0.12); }
 .icon-emerald { background: rgba(52, 211, 153, 0.12); }
+.feature-card:hover .icon-srv    { background: rgba(59, 130, 246, 0.22);  box-shadow: 0 0 18px rgba(59, 130, 246, 0.2); }
+.feature-card:hover .icon-orange  { background: rgba(249, 115, 22, 0.22);  box-shadow: 0 0 18px rgba(249, 115, 22, 0.2); }
+.feature-card:hover .icon-green   { background: rgba(74, 222, 128, 0.22);  box-shadow: 0 0 18px rgba(74, 222, 128, 0.2); }
+.feature-card:hover .icon-purple  { background: rgba(167, 139, 250, 0.22); box-shadow: 0 0 18px rgba(167, 139, 250, 0.2); }
+.feature-card:hover .icon-cyan    { background: rgba(34, 211, 238, 0.22);  box-shadow: 0 0 18px rgba(34, 211, 238, 0.2); }
+.feature-card:hover .icon-emerald { background: rgba(52, 211, 153, 0.22);  box-shadow: 0 0 18px rgba(52, 211, 153, 0.2); }
 
 .feature-card-title {
-  font-size: 15px; font-weight: 700; color: #e2e8f0;
+  font-size: 15px; font-weight: 700; color: var(--text-secondary);
   margin: 0 0 8px 0;
 }
 .feature-card-desc {
-  font-size: 13px; color: #64748b; line-height: 1.6;
+  font-size: 13px; color: var(--text-disabled); line-height: 1.6;
   margin: 0 0 14px 0;
 }
 .feature-card-list {
@@ -674,7 +670,7 @@ onUnmounted(() => {
   display: flex; flex-direction: column; gap: 5px;
 }
 .feature-card-list li {
-  font-size: 12px; color: #64748b;
+  font-size: 12px; color: var(--text-disabled);
   padding-left: 16px;
   position: relative;
 }
@@ -683,8 +679,8 @@ onUnmounted(() => {
   position: absolute;
   left: 2px; top: 4px;
   width: 5px; height: 5px;
-  border-right: 1.5px solid #475569;
-  border-bottom: 1.5px solid #475569;
+  border-right: 1.5px solid var(--border-strong);
+  border-bottom: 1.5px solid var(--border-strong);
   transform: rotate(-45deg);
 }
 
@@ -693,7 +689,7 @@ onUnmounted(() => {
   text-align: center;
 }
 .features-cta-text {
-  font-size: 16px; color: #94a3b8; margin: 0 0 24px 0;
+  font-size: 16px; color: var(--text-tertiary); margin: 0 0 24px 0;
 }
 .features-cta-actions {
   display: flex; gap: 12px; justify-content: center;

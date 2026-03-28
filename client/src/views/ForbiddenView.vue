@@ -21,7 +21,7 @@ const router = useRouter()
 <style scoped>
 .forbidden-page {
   min-height: 100vh;
-  background: #0f172a;
+  background: var(--bg-base);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -31,8 +31,8 @@ const router = useRouter()
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 16px;
   padding: 48px 56px;
   text-align: center;
@@ -40,11 +40,11 @@ const router = useRouter()
 .forbidden-title {
   font-size: 20px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--text-primary);
 }
 .forbidden-desc {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   line-height: 1.7;
 }
 .forbidden-btn {
@@ -53,14 +53,14 @@ const router = useRouter()
   font-weight: 700;
   padding: 9px 24px;
   border-radius: 8px;
-  border: 1px solid #334155;
-  background: #0f172a;
-  color: #e2e8f0;
+  border: 1px solid var(--border-default);
+  background: var(--bg-base);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 .forbidden-btn:hover {
-  border-color: #3b82f6;
-  color: #60a5fa;
+  border-color: var(--accent-focus);
+  color: var(--accent-soft);
 }
 </style>

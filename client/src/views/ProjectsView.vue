@@ -4,8 +4,8 @@
       <div class="projects-logo">
         <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
           <!-- 좌상단 → 우하단 방향 화살표 (파랑) -->
-          <line x1="4" y1="4" x2="22" y2="22" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round"/>
-          <polyline points="14,22 22,22 22,14" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <line x1="4" y1="4" x2="22" y2="22" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round"/>
+          <polyline points="14,22 22,22 22,14" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           <!-- 우하단 → 좌상단 방향 화살표 (주황) -->
           <line x1="28" y1="28" x2="10" y2="10" stroke="#f97316" stroke-width="2.2" stroke-linecap="round"/>
           <polyline points="18,10 10,10 10,18" stroke="#f97316" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
@@ -63,10 +63,35 @@
         <button class="btn-new" @click="showCreate = true">+ 새 프로젝트</button>
       </div>
 
-      <div v-if="loading" class="projects-empty">불러오는 중...</div>
+      <div v-if="loading" class="projects-grid">
+        <div v-for="i in 4" :key="i" class="project-card-skeleton">
+          <div class="skeleton sk-graph"></div>
+          <div class="sk-body">
+            <div class="skeleton sk-title"></div>
+            <div class="skeleton sk-desc"></div>
+            <div class="sk-meta">
+              <div class="skeleton sk-badge"></div>
+              <div class="skeleton sk-date"></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div v-else-if="projectStore.projects.length === 0" class="projects-empty">
-        <p>아직 프로젝트가 없습니다.</p>
+        <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="36" cy="36" r="10" stroke="#2e3f55" stroke-width="1.8"/>
+          <circle cx="12" cy="18" r="6" stroke="#1e2a3a" stroke-width="1.4"/>
+          <circle cx="60" cy="18" r="6" stroke="#1e2a3a" stroke-width="1.4"/>
+          <circle cx="12" cy="54" r="6" stroke="#1e2a3a" stroke-width="1.4"/>
+          <circle cx="60" cy="54" r="6" stroke="#1e2a3a" stroke-width="1.4"/>
+          <line x1="18" y1="22" x2="28" y2="29" stroke="#1e2a3a" stroke-width="1.2"/>
+          <line x1="54" y1="22" x2="44" y2="29" stroke="#1e2a3a" stroke-width="1.2"/>
+          <line x1="18" y1="50" x2="28" y2="43" stroke="#1e2a3a" stroke-width="1.2"/>
+          <line x1="54" y1="50" x2="44" y2="43" stroke="#1e2a3a" stroke-width="1.2"/>
+          <circle cx="36" cy="36" r="3" fill="#2e3f55"/>
+        </svg>
+        <p class="empty-title">아직 프로젝트가 없습니다</p>
+        <p class="empty-desc">팀과 함께 서버 의존성을 시각화해보세요</p>
         <button class="btn-new" @click="showCreate = true">첫 번째 프로젝트 만들기</button>
       </div>
 
@@ -81,9 +106,9 @@
           <div class="project-card-graph">
             <svg width="72" height="80" viewBox="0 0 72 80" fill="none" xmlns="http://www.w3.org/2000/svg">
               <!-- 노드 1 (상단) -->
-              <rect x="16" y="6" width="40" height="14" rx="3" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1"/>
-              <line x1="20" y1="13" x2="28" y2="13" stroke="#3b82f6" stroke-width="0.8" opacity="0.5"/>
-              <line x1="20" y1="10" x2="32" y2="10" stroke="#60a5fa" stroke-width="0.7" opacity="0.4"/>
+              <rect x="16" y="6" width="40" height="14" rx="3" fill="#0a2d3a" stroke="#06b6d4" stroke-width="1"/>
+              <line x1="20" y1="13" x2="28" y2="13" stroke="#06b6d4" stroke-width="0.8" opacity="0.5"/>
+              <line x1="20" y1="10" x2="32" y2="10" stroke="#22d3ee" stroke-width="0.7" opacity="0.4"/>
               <!-- 노드 2 (중좌) -->
               <rect x="2" y="34" width="30" height="13" rx="3" fill="#1c1a09" stroke="#ca8a04" stroke-width="1"/>
               <line x1="6" y1="40" x2="12" y2="40" stroke="#ca8a04" stroke-width="0.8" opacity="0.5"/>
@@ -91,13 +116,13 @@
               <rect x="40" y="34" width="30" height="13" rx="3" fill="#052e16" stroke="#16a34a" stroke-width="1"/>
               <line x1="44" y1="40" x2="50" y2="40" stroke="#16a34a" stroke-width="0.8" opacity="0.5"/>
               <!-- 노드 4 (하단) -->
-              <rect x="16" y="62" width="40" height="13" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+              <rect x="16" y="62" width="40" height="13" rx="3" fill="#111827" stroke="#2e3f55" stroke-width="1"/>
               <line x1="20" y1="68" x2="28" y2="68" stroke="#94a3b8" stroke-width="0.8" opacity="0.4"/>
               <!-- 화살표 연결선 -->
-              <line x1="28" y1="20" x2="17" y2="34" stroke="#3b82f6" stroke-width="1" opacity="0.5"/>
-              <polygon points="14,32 20,31 18,37" fill="#3b82f6" opacity="0.5"/>
-              <line x1="44" y1="20" x2="55" y2="34" stroke="#3b82f6" stroke-width="1" opacity="0.5"/>
-              <polygon points="58,32 52,31 54,37" fill="#3b82f6" opacity="0.5"/>
+              <line x1="28" y1="20" x2="17" y2="34" stroke="#06b6d4" stroke-width="1" opacity="0.5"/>
+              <polygon points="14,32 20,31 18,37" fill="#06b6d4" opacity="0.5"/>
+              <line x1="44" y1="20" x2="55" y2="34" stroke="#06b6d4" stroke-width="1" opacity="0.5"/>
+              <polygon points="58,32 52,31 54,37" fill="#06b6d4" opacity="0.5"/>
               <line x1="17" y1="47" x2="28" y2="62" stroke="#64748b" stroke-width="1" opacity="0.5"/>
               <polygon points="31,60 25,59 26,65" fill="#64748b" opacity="0.5"/>
               <line x1="55" y1="47" x2="44" y2="62" stroke="#64748b" stroke-width="1" opacity="0.5"/>
@@ -137,7 +162,7 @@
       <div v-if="showLogoutConfirm" class="modal-overlay" @click.self="showLogoutConfirm = false">
         <div class="modal-card" style="max-width:340px">
           <h2 class="modal-title">로그아웃</h2>
-          <p style="font-size:13px;color:#94a3b8;margin:0 0 20px">로그아웃 하시겠습니까?</p>
+          <p style="font-size:13px;color:var(--text-tertiary);margin:0 0 20px">로그아웃 하시겠습니까?</p>
           <div class="modal-actions">
             <button type="button" class="btn-cancel" @click="showLogoutConfirm = false">취소</button>
             <button type="button" class="btn-confirm btn-confirm-danger" @click="onLogout">로그아웃</button>
@@ -258,101 +283,123 @@ function formatDate(iso: string): string {
 </script>
 
 <style scoped>
-.projects-page { min-height: 100vh; background: #0f172a; }
+.projects-page { min-height: 100vh; background: var(--bg-base); }
 .projects-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 32px; border-bottom: 1px solid #1e293b;
+  padding: 14px 32px; border-bottom: 1px solid var(--bg-surface);
 }
 .projects-logo {
   display: flex; align-items: center; gap: 8px;
-  font-size: 13px; font-weight: 700; color: #60a5fa; letter-spacing: 0.04em;
+  font-size: 13px; font-weight: 700; color: var(--accent-soft); letter-spacing: 0.04em;
 }
 .header-right { display: flex; align-items: center; gap: 12px; }
-.user-info { font-size: 12px; color: #64748b; }
+.user-info { font-size: 12px; color: var(--text-disabled); }
 .btn-logout {
   font-size: 11px; padding: 4px 10px; border-radius: 6px;
-  border: 1px solid #334155; background: transparent; color: #64748b;
+  border: 1px solid var(--border-default); background: transparent; color: var(--text-disabled);
   cursor: pointer; transition: all 0.15s;
 }
 .btn-logout:hover { border-color: #ef4444; color: #f87171; }
 .projects-body { max-width: 960px; margin: 0 auto; padding: 40px 32px; }
 .projects-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
-.projects-title { font-size: 22px; font-weight: 700; color: #f1f5f9; margin: 0; }
+.projects-title { font-size: 22px; font-weight: 700; color: var(--text-primary); margin: 0; }
 .btn-new {
   font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 7px;
-  border: 1px solid #1d4ed8; background: #1e3a5f; color: #60a5fa;
+  border: 1px solid var(--accent-hover); background: var(--accent-bg); color: var(--accent-soft);
   cursor: pointer; transition: all 0.15s;
 }
-.btn-new:hover { background: #1e3a8a; color: #93c5fd; }
-.projects-empty { text-align: center; padding: 60px 0; color: #475569; font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.btn-new:hover { background: var(--accent-bg-medium); color: var(--accent-light); }
+.projects-empty { text-align: center; padding: 72px 0; color: var(--border-strong); font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.empty-title { font-size: 15px; font-weight: 600; color: var(--text-tertiary); margin: 6px 0 0; }
+.empty-desc  { font-size: 13px; color: var(--border-strong); margin: 0 0 6px; }
 .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
+.project-card-skeleton {
+  display: flex; gap: 16px; align-items: flex-start;
+  background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 10px;
+  padding: 16px;
+}
+.sk-graph  { width: 72px; height: 80px; border-radius: 6px; flex-shrink: 0; }
+.sk-body   { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.sk-title  { height: 16px; width: 55%; border-radius: 4px; }
+.sk-desc   { height: 11px; width: 80%; border-radius: 4px; }
+.sk-meta   { display: flex; gap: 8px; margin-top: 12px; }
+.sk-badge  { height: 18px; width: 52px; border-radius: 10px; }
+.sk-date   { height: 11px; width: 70px; border-radius: 4px; align-self: center; }
 .project-card {
-  background: #1e293b; border: 1px solid #334155; border-radius: 10px;
-  cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 10px;
+  cursor: pointer; transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
   display: flex; flex-direction: row; overflow: hidden; min-height: 110px;
 }
-.project-card:hover { border-color: #3b82f6; background: #243044; }
+.project-card:hover {
+  border-color: var(--accent-focus); background: #0e1a28;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+}
 .project-card-graph {
   width: 88px; flex-shrink: 0;
-  background: #131f35; border-right: 1px solid #334155;
+  background: #0a1624; border-right: 1px solid var(--border-default);
   display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s;
+  overflow: hidden;
 }
+.project-card-graph svg { transition: transform 0.25s ease, opacity 0.25s ease; opacity: 0.75; }
+.project-card:hover .project-card-graph { background: #061222; }
+.project-card:hover .project-card-graph svg { transform: scale(1.1); opacity: 1; }
 .project-card-content { flex: 1; padding: 16px 18px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
 .project-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.project-name { font-size: 15px; font-weight: 700; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-name { font-size: 15px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .btn-card-settings {
-  color: #94a3b8; background: transparent; border: none; cursor: pointer;
+  color: var(--text-tertiary); background: transparent; border: none; cursor: pointer;
   padding: 2px; border-radius: 4px; transition: color 0.15s; display: flex; align-items: center; flex-shrink: 0;
 }
-.btn-card-settings:hover { color: #e2e8f0; }
-.project-desc { font-size: 12px; color: #64748b; margin: 0 0 10px 0; line-height: 1.5; flex: 1; }
+.btn-card-settings:hover { color: var(--text-secondary); }
+.project-desc { font-size: 12px; color: var(--text-disabled); margin: 0 0 10px 0; line-height: 1.5; flex: 1; }
 .project-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.project-members { font-size: 11px; color: #94a3b8; margin-left: auto; }
-.project-date { font-size: 11px; color: #94a3b8; }
+.project-members { font-size: 11px; color: var(--text-tertiary); margin-left: auto; }
+.project-date { font-size: 11px; color: var(--text-tertiary); }
 .role-badge {
   font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
   border: 1px solid transparent; flex-shrink: 0;
 }
-.role-badge.master   { background: #2d1b69; border-color: #7c3aed; color: #c4b5fd; }
-.role-badge.admin    { background: #0f2044; border-color: #1d4ed8; color: #60a5fa; }
-.role-badge.writer   { background: #052e16; border-color: #16a34a; color: #4ade80; }
-.role-badge.readonly { background: #1c1a09; border-color: #ca8a04; color: #fbbf24; }
+.role-badge.master   { background: #2d1b69; border-color: var(--node-l7-color); color: #c4b5fd; }
+.role-badge.admin    { background: var(--accent-bg-deep); border-color: var(--accent-hover); color: var(--accent-soft); }
+.role-badge.writer   { background: var(--node-ext-bg-deep); border-color: var(--node-ext-color); color: var(--color-success-light); }
+.role-badge.readonly { background: #1c1a09; border-color: #ca8a04; color: var(--color-warning-light); }
 /* 모달 */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.6);
   display: flex; align-items: center; justify-content: center; z-index: 1000;
 }
 .modal-card {
-  background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+  background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px;
   padding: 28px; width: 100%; max-width: 380px;
 }
-.modal-title { font-size: 16px; font-weight: 700; color: #f1f5f9; margin: 0 0 20px 0; }
+.modal-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0 0 20px 0; }
 .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-.form-label { font-size: 12px; font-weight: 600; color: #94a3b8; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text-tertiary); }
 .form-input {
-  background: #0f172a; border: 1px solid #334155; border-radius: 7px;
-  padding: 9px 12px; font-size: 14px; color: #e2e8f0; outline: none; transition: border-color 0.15s;
+  background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 7px;
+  padding: 9px 12px; font-size: 14px; color: var(--text-secondary); outline: none; transition: border-color 0.15s;
 }
-.form-input:focus { border-color: #3b82f6; }
-.form-input::placeholder { color: #475569; }
+.form-input:focus { border-color: var(--accent-focus); }
+.form-input::placeholder { color: var(--border-strong); }
 .form-error { font-size: 12px; color: #f87171; margin-bottom: 12px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 .btn-cancel {
   padding: 8px 16px; border-radius: 6px; font-size: 13px;
-  border: 1px solid #334155; background: transparent; color: #94a3b8; cursor: pointer;
+  border: 1px solid var(--border-default); background: transparent; color: var(--text-tertiary); cursor: pointer;
 }
-.btn-cancel:hover { border-color: #475569; color: #e2e8f0; }
+.btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 .btn-confirm {
   padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700;
-  border: none; background: #2563eb; color: #fff; cursor: pointer; transition: background 0.15s;
+  border: none; background: var(--accent-primary); color: #fff; cursor: pointer; transition: background 0.15s;
 }
-.btn-confirm:hover:not(:disabled) { background: #1d4ed8; }
+.btn-confirm:hover:not(:disabled) { background: var(--accent-hover); }
 .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-confirm-danger { background: #991b1b; }
 .btn-confirm-danger:hover:not(:disabled) { background: #b91c1c; }
 /* 초대 배너 */
 .invitations-banner {
-  background: #1a1f2e; border-bottom: 1px solid #2a3347;
+  background: var(--bg-elevated); border-bottom: 1px solid var(--border-default);
 }
 .invitations-banner-inner {
   max-width: 960px; margin: 0 auto; padding: 16px 32px;
@@ -364,21 +411,21 @@ function formatDate(iso: string): string {
 .invitations-list { display: flex; flex-direction: column; gap: 8px; }
 .invitation-item {
   display: flex; align-items: center; justify-content: space-between;
-  background: #0f172a; border: 1px solid #2a3347; border-radius: 8px;
+  background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 8px;
   padding: 10px 14px;
 }
 .invitation-info { display: flex; flex-direction: column; gap: 2px; }
-.invitation-project { font-size: 13px; font-weight: 700; color: #e2e8f0; }
-.invitation-meta { font-size: 11px; color: #64748b; }
+.invitation-project { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+.invitation-meta { font-size: 11px; color: var(--text-disabled); }
 .invitation-actions { display: flex; gap: 6px; }
 .btn-accept {
   font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 5px;
-  border: none; background: #1d4ed8; color: #fff; cursor: pointer; transition: background 0.15s;
+  border: none; background: var(--accent-hover); color: #fff; cursor: pointer; transition: background 0.15s;
 }
-.btn-accept:hover { background: #2563eb; }
+.btn-accept:hover { background: var(--accent-primary); }
 .btn-reject {
   font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 5px;
-  border: 1px solid #334155; background: transparent; color: #64748b; cursor: pointer; transition: all 0.15s;
+  border: 1px solid var(--border-default); background: transparent; color: var(--text-disabled); cursor: pointer; transition: all 0.15s;
 }
 .btn-reject:hover { border-color: #ef4444; color: #f87171; }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
