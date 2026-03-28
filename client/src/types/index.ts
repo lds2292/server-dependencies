@@ -8,8 +8,6 @@ export interface Server {
   internalIps: string[]
   natIps: string[]
   description: string
-  hasFirewall?: boolean
-  firewallUrl?: string
 }
 
 export interface L7Node {
@@ -61,6 +59,8 @@ export interface Dependency {
   target: string
   type: DependencyType
   description?: string
+  hasFirewall?: boolean
+  firewallUrl?: string
 }
 
 export interface GraphData {
@@ -84,4 +84,6 @@ export interface D3Link {
   target: string | D3Node
   type: DependencyType
   description?: string
+  hasFirewall?: boolean
+  firewallUrl?: string
 }

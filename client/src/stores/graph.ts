@@ -254,6 +254,12 @@ export const useGraphStore = defineStore('graph', () => {
     saveSnapshot()
     dependencies.value = dependencies.value.filter(d => d.id !== id)
   }
+  function updateDependency(id: string, data: Partial<Omit<Dependency, 'id' | 'source' | 'target'>>) {
+    const idx = dependencies.value.findIndex(d => d.id === id)
+    if (idx === -1) return
+    saveSnapshot()
+    dependencies.value[idx] = { ...dependencies.value[idx], ...data }
+  }
 
   function findNodeById(id: string): AnyNode | undefined {
     return servers.value.find(s => s.id === id)
@@ -416,7 +422,7 @@ export const useGraphStore = defineStore('graph', () => {
     addL7Node, updateL7Node, deleteL7Node,
     addInfraNode, updateInfraNode, deleteInfraNode,
     addExternalNode, updateExternalNode, deleteExternalNode,
-    addDependency, removeDependency,
+    addDependency, removeDependency, updateDependency,
     findNodeById, getImpactedNodes, getCycleNodes, findPath, exportJSON, importJSON, loadData,
     undo, redo, beginBatch, endBatch, canUndo, canRedo,
     setProject, saveGraph, savePositions, flushPositions, getPositions, syncExternalNodes,

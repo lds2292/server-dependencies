@@ -70,22 +70,45 @@
         </g>
 
         <!-- 의존성 링크 -->
-        <line
+        <g
           v-for="link in computedLinks"
           :key="link.id"
-          :x1="link.x1" :y1="link.y1"
-          :x2="link.x2" :y2="link.y2"
-          :class="{
-            'link-amber':    pathLinks.has(link.id),
-            'link-outgoing': !pathLinks.has(link.id) && (showAllFlow || outgoingLinks.has(link.id)),
-            'link-impacted': !pathLinks.has(link.id) && !showAllFlow && impactedLinks.has(link.id),
-            'link-normal':   !pathLinks.has(link.id) && !showAllFlow && !impactedLinks.has(link.id) && !outgoingLinks.has(link.id),
-          }"
-          :stroke="linkStroke(link)"
-          :stroke-width="pathLinks.has(link.id) ? 3 : showAllFlow || impactedLinks.has(link.id) || outgoingLinks.has(link.id) ? 2.5 : 1.5"
-          :opacity="linkOpacity(link)"
-          :marker-end="`url(#${linkMarker(link)})`"
-        />
+          @dblclick.stop="!readOnly && onLinkDblClick(link)"
+          :style="!readOnly ? 'cursor: pointer' : ''"
+        >
+          <!-- hit area (클릭 감지용 투명 라인) -->
+          <line
+            :x1="link.x1" :y1="link.y1"
+            :x2="link.x2" :y2="link.y2"
+            stroke="transparent" stroke-width="12"
+          />
+          <!-- 시각 라인 -->
+          <line
+            :x1="link.x1" :y1="link.y1"
+            :x2="link.x2" :y2="link.y2"
+            :class="{
+              'link-amber':    pathLinks.has(link.id),
+              'link-outgoing': !pathLinks.has(link.id) && (showAllFlow || outgoingLinks.has(link.id)),
+              'link-impacted': !pathLinks.has(link.id) && !showAllFlow && impactedLinks.has(link.id),
+              'link-normal':   !pathLinks.has(link.id) && !showAllFlow && !impactedLinks.has(link.id) && !outgoingLinks.has(link.id),
+            }"
+            :stroke="linkStroke(link)"
+            :stroke-width="pathLinks.has(link.id) ? 3 : showAllFlow || impactedLinks.has(link.id) || outgoingLinks.has(link.id) ? 2.5 : 1.5"
+            :opacity="linkOpacity(link)"
+            :marker-end="`url(#${linkMarker(link)})`"
+            pointer-events="none"
+          />
+          <!-- 방화벽 자물쇠 아이콘 -->
+          <g
+            v-if="link.hasFirewall"
+            :transform="`translate(${(link.x1 + link.x2) / 2}, ${(link.y1 + link.y2) / 2})`"
+            pointer-events="none"
+          >
+            <circle r="8" fill="#1e293b" stroke="#f59e0b" stroke-width="1.2"/>
+            <rect x="-4" y="-1" width="8" height="6" rx="1" fill="none" stroke="#f59e0b" stroke-width="1.1"/>
+            <path d="M -2.5 -1 L -2.5 -3.5 A 2.5 2.5 0 0 1 2.5 -3.5 L 2.5 -1" fill="none" stroke="#f59e0b" stroke-width="1.1" stroke-linecap="round"/>
+          </g>
+        </g>
 
         <!-- 드래그 미리보기 화살표 -->
         <line
@@ -654,6 +677,7 @@ const emit = defineEmits<{
   addNodeAt: [nodeKind: 'server' | 'l7' | 'infra' | 'external']
   startPathFrom: [node: AnyNode]
   cancelPathMode: []
+  linkDblClick: [linkId: string]
 }>()
 
 const container = ref<HTMLDivElement>()
@@ -1240,6 +1264,9 @@ function onNodeClick(node: AnyNode) {
   contextMenu.value.visible = false
   multiSelectedIds.value = new Set()
   emit('nodeClick', node)
+}
+function onLinkDblClick(link: { id: string }) {
+  emit('linkDblClick', link.id)
 }
 function onNodeContextMenu(event: MouseEvent, node: AnyNode) {
   canvasContextMenu.value.visible = false

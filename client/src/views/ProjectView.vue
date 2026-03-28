@@ -93,6 +93,7 @@
           @add-node-at="onAddNodeAt"
           @start-path-from="onStartPathFrom"
           @cancel-path-mode="onCancelPathMode"
+          @link-dbl-click="onLinkDblClick"
         />
       </div>
     </main>
@@ -112,6 +113,7 @@
           :read-only="readOnly"
           :current-project-id="projectStore.currentProject?.id ?? ''"
           @remove-dependency="store.removeDependency"
+          @edit-dependency="openEditDepModal"
           @add-dependency="openAddDepModal"
           @clear-selection="selectedNode = null"
           @navigate-to="graphCanvasRef?.navigateTo($event)"
@@ -476,8 +478,10 @@
       :default-source="depModal.defaultSource"
       :default-target="depModal.defaultTarget"
       :existing-dependencies="store.dependencies"
+      :editing-dep="depModal.editingDep"
       @close="depModal.visible = false"
       @submit="onDepModalSubmit"
+      @update="onDepModalUpdate"
     />
   </div>
 </template>
@@ -523,7 +527,7 @@ const allNodes = computed<AnyNode[]>(() => [
 ])
 
 const d3Links = computed<D3Link[]>(() =>
-  store.dependencies.map(d => ({ id: d.id, source: d.source, target: d.target, type: d.type, description: d.description }))
+  store.dependencies.map(d => ({ id: d.id, source: d.source, target: d.target, type: d.type, description: d.description, hasFirewall: d.hasFirewall, firewallUrl: d.firewallUrl }))
 )
 
 const filteredLinks = computed<D3Link[]>(() => {
@@ -775,7 +779,7 @@ watch(readOnly, resetAutosaveTimer)
 onBeforeUnmount(() => { store.flushPositions() })
 
 // Dependency Modal
-const depModal = ref<{ visible: boolean; defaultSource: string; defaultTarget: string }>({ visible: false, defaultSource: '', defaultTarget: '' })
+const depModal = ref<{ visible: boolean; defaultSource: string; defaultTarget: string; editingDep?: Dependency }>({ visible: false, defaultSource: '', defaultTarget: '' })
 function onAddNodeAt(nodeKind: 'server' | 'l7' | 'infra' | 'external') {
   if (nodeKind === 'l7') openAddL7Modal()
   else if (nodeKind === 'infra') openAddInfraModal()
@@ -784,6 +788,7 @@ function onAddNodeAt(nodeKind: 'server' | 'l7' | 'infra' | 'external') {
 }
 
 function openAddDepModal(node?: AnyNode) { depModal.value = { visible: true, defaultSource: node?.id ?? '', defaultTarget: '' } }
+function openEditDepModal(dep: Dependency) { depModal.value = { visible: true, defaultSource: '', defaultTarget: '', editingDep: dep } }
 function onQuickConnect(source: AnyNode, target: AnyNode) {
   const isDuplicate = store.dependencies.some(d => d.source === source.id && d.target === target.id)
   if (isDuplicate) {
@@ -796,6 +801,15 @@ function onDepModalSubmit(data: Omit<Dependency, 'id'>) {
   const result = store.addDependency(data)
   if (!result) showToast('이미 동일한 의존성이 존재합니다')
   depModal.value.visible = false
+}
+function onDepModalUpdate(id: string, data: Partial<Omit<Dependency, 'id' | 'source' | 'target'>>) {
+  store.updateDependency(id, data)
+  depModal.value.visible = false
+}
+function onLinkDblClick(linkId: string) {
+  if (readOnly.value) return
+  const dep = store.dependencies.find(d => d.id === linkId)
+  if (dep) openEditDepModal(dep)
 }
 
 // ─── 샘플 데이터 ─────────────────────────────────────────

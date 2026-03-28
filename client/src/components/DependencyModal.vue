@@ -1,7 +1,7 @@
 <template>
   <div class="modal-backdrop" @mousedown.self="backdropDown = true" @mouseup.self="backdropDown && $emit('close')" @mouseup="backdropDown = false">
     <div class="modal">
-      <h3>의존성 추가</h3>
+      <h3>{{ editingDep ? '의존성 수정' : '의존성 추가' }}</h3>
       <form @submit.prevent="onSubmit">
         <label>
           출발 노드 (source) *
@@ -9,6 +9,7 @@
             v-model="form.source"
             :options="nodeOptions"
             placeholder="서버 / L7 선택..."
+            :disabled="!!editingDep"
           />
         </label>
         <label>
@@ -17,6 +18,7 @@
             v-model="form.target"
             :options="targetOptions"
             placeholder="서버 / L7 선택..."
+            :disabled="!!editingDep"
           />
         </label>
         <p v-if="form.source && form.source === form.target" class="error">
@@ -36,6 +38,18 @@
           설명
           <input v-model="form.description" placeholder="예: REST API 호출" />
         </label>
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="form.hasFirewall" />
+          방화벽 오픈 필요
+        </label>
+        <label v-if="form.hasFirewall">
+          방화벽 오픈요청 URL
+          <input
+            v-model="form.firewallUrl"
+            type="url"
+            placeholder="https://firewall.example.com/request/..."
+          />
+        </label>
         <div class="actions">
           <button type="button" class="btn-secondary" @click="$emit('close')">취소</button>
           <button
@@ -43,7 +57,7 @@
             class="btn-primary"
             :disabled="!form.source || !form.target || form.source === form.target || isDuplicate || isDbToServerBlocked"
           >
-            추가
+            {{ editingDep ? '저장' : '추가' }}
           </button>
         </div>
       </form>
@@ -63,12 +77,16 @@ const props = defineProps<{
   defaultSource?: string
   defaultTarget?: string
   existingDependencies?: Dependency[]
+  editingDep?: Dependency
 }>()
 
 const emit = defineEmits<{
   close: []
   submit: [data: Omit<Dependency, 'id'>]
+  update: [id: string, data: Partial<Omit<Dependency, 'id' | 'source' | 'target'>>]
 }>()
+
+const editingDep = computed(() => props.editingDep)
 
 const nodeOptions = computed(() =>
   props.nodes.map(n => ({
@@ -119,10 +137,12 @@ function resolveInitialTarget(): string {
 }
 
 const form = reactive({
-  source: props.defaultSource ?? '',
-  target: resolveInitialTarget(),
-  type: defaultTypeForTarget(resolveInitialTarget()) as DependencyType,
-  description: '',
+  source: props.editingDep?.source ?? props.defaultSource ?? '',
+  target: props.editingDep?.target ?? resolveInitialTarget(),
+  type: (props.editingDep?.type ?? defaultTypeForTarget(resolveInitialTarget())) as DependencyType,
+  description: props.editingDep?.description ?? '',
+  hasFirewall: props.editingDep?.hasFirewall ?? false,
+  firewallUrl: props.editingDep?.firewallUrl ?? '',
 })
 
 watch(() => form.target, (targetId) => {
@@ -135,13 +155,24 @@ watch(() => form.source, () => {
 })
 
 const isDuplicate = computed(() =>
+  !props.editingDep &&
   !!form.source && !!form.target && form.source !== form.target &&
   (props.existingDependencies ?? []).some(d => d.source === form.source && d.target === form.target)
 )
 
 function onSubmit() {
   if (form.source === form.target || isDuplicate.value) return
-  emit('submit', { ...form })
+  const firewallUrl = form.hasFirewall ? form.firewallUrl : ''
+  if (props.editingDep) {
+    emit('update', props.editingDep.id, {
+      type: form.type,
+      description: form.description,
+      hasFirewall: form.hasFirewall,
+      firewallUrl,
+    })
+  } else {
+    emit('submit', { ...form, firewallUrl })
+  }
 }
 </script>
 
@@ -160,6 +191,19 @@ label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color:
 input { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px 10px; color: #e2e8f0; font-size: 13px; outline: none; }
 input:focus { border-color: #3b82f6; }
 .error { font-size: 12px; color: #ef4444; margin: 0; }
+.checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
 .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 .btn-primary {
   background: #2563eb; color: #fff; border: none;

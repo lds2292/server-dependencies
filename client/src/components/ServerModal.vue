@@ -36,18 +36,6 @@
           설명
           <textarea v-model="form.description" rows="3" placeholder="서버 설명..." />
         </label>
-        <label class="checkbox-label">
-          <input type="checkbox" v-model="form.hasFirewall" />
-          방화벽 오픈 필요
-        </label>
-        <label v-if="form.hasFirewall">
-          방화벽 오픈요청 URL
-          <input
-            v-model="form.firewallUrl"
-            type="url"
-            placeholder="https://firewall.example.com/request/..."
-          />
-        </label>
         <div class="actions">
           <button type="button" class="btn-secondary" @click="$emit('close')">취소</button>
           <button type="submit" class="btn-primary" :disabled="isDuplicate">{{ isEdit ? '저장' : '추가' }}</button>
@@ -92,8 +80,6 @@ const form = reactive<Omit<Server, 'id'> & { internalIps: string[]; natIps: stri
   internalIps: props.server?.internalIps ? [...props.server.internalIps] : [],
   natIps: props.server?.natIps ? [...props.server.natIps] : [],
   description: props.server?.description ?? '',
-  hasFirewall: props.server?.hasFirewall ?? false,
-  firewallUrl: props.server?.firewallUrl ?? '',
 })
 
 function onSubmit() {

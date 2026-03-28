@@ -30,10 +30,6 @@
             </div>
             <span v-if="!(selectedNode as any).natIps?.length" class="detail-row mono">-</span>
           </div>
-          <p v-if="(selectedNode as any).hasFirewall" class="detail-firewall">
-            🔒 방화벽 오픈 필요
-            <a v-if="(selectedNode as any).firewallUrl" :href="(selectedNode as any).firewallUrl" target="_blank" class="fw-link">요청 링크</a>
-          </p>
         </template>
 
         <!-- L7 전용 -->
@@ -144,6 +140,9 @@
           <li v-for="d in outgoing" :key="d.id" class="nav-item" @click="$emit('navigateTo', d.target)">
             <span :class="['dep-type', d.type]">{{ d.type }}</span>
             {{ getNodeName(d.target) }}
+            <a v-if="d.hasFirewall && d.firewallUrl" :href="d.firewallUrl" target="_blank" class="fw-badge" @click.stop title="방화벽 오픈 필요">FW</a>
+            <span v-else-if="d.hasFirewall" class="fw-badge no-link" title="방화벽 오픈 필요">FW</span>
+            <button v-if="!readOnly" class="edit-dep" @click.stop="$emit('editDependency', d)" title="수정">✎</button>
             <button v-if="!readOnly" class="del-dep" @click.stop="$emit('removeDependency', d.id)">✕</button>
           </li>
           <li v-if="outgoing.length === 0" class="empty">없음</li>
@@ -156,6 +155,9 @@
           <li v-for="d in incoming" :key="d.id" class="nav-item" @click="$emit('navigateTo', d.source)">
             <span :class="['dep-type', d.type]">{{ d.type }}</span>
             {{ getNodeName(d.source) }}
+            <a v-if="d.hasFirewall && d.firewallUrl" :href="d.firewallUrl" target="_blank" class="fw-badge" @click.stop title="방화벽 오픈 필요">FW</a>
+            <span v-else-if="d.hasFirewall" class="fw-badge no-link" title="방화벽 오픈 필요">FW</span>
+            <button v-if="!readOnly" class="edit-dep" @click.stop="$emit('editDependency', d)" title="수정">✎</button>
             <button v-if="!readOnly" class="del-dep" @click.stop="$emit('removeDependency', d.id)">✕</button>
           </li>
           <li v-if="incoming.length === 0" class="empty">없음</li>
@@ -260,6 +262,7 @@ async function onUnmask() {
 
 defineEmits<{
   removeDependency: [id: string]
+  editDependency: [dep: Dependency]
   addDependency: [node: AnyNode]
   clearSelection: []
   navigateTo: [id: string]
@@ -366,12 +369,26 @@ li:hover { background: #273549; }
 .dep-type.tcp { background: #1e1b4b; color: #a5b4fc; }
 .dep-type.websocket { background: #14290a; color: #86efac; }
 .dep-type.other { background: #1c1917; color: #9ca3af; }
+.fw-badge {
+  font-size: 9px; font-weight: 800; padding: 1px 4px; border-radius: 3px;
+  background: #422006; color: #fb923c; flex-shrink: 0; text-decoration: none;
+}
+a.fw-badge:hover { background: #7c2d12; color: #fdba74; }
+.fw-badge.no-link { cursor: default; }
+.edit-dep {
+  background: none; border: none; color: #3b82f6;
+  cursor: pointer; font-size: 12px; padding: 2px 4px; border-radius: 3px;
+  opacity: 0; transition: opacity 0.1s, background 0.1s;
+}
+li:hover .edit-dep { opacity: 1; }
+.edit-dep:hover { color: #93c5fd; background: #1e3a5f; }
 .del-dep {
-  margin-left: auto; background: none; border: none; color: #475569;
-  cursor: pointer; font-size: 11px; padding: 2px 4px; border-radius: 3px; opacity: 0;
+  margin-left: auto; background: none; border: none; color: #ef4444;
+  cursor: pointer; font-size: 11px; padding: 2px 4px; border-radius: 3px;
+  opacity: 0; transition: opacity 0.1s, background 0.1s;
 }
 li:hover .del-dep { opacity: 1; }
-.del-dep:hover { color: #ef4444; background: #3f1f1f; }
+.del-dep:hover { color: #fca5a5; background: #3f1f1f; }
 .impact-item { color: #fca5a5; }
 .empty { color: #475569; font-size: 12px; padding: 2px 5px; }
 .nav-item { cursor: pointer; }
@@ -382,13 +399,13 @@ li:hover .del-dep { opacity: 1; }
 .contact-copy-row { display: flex; align-items: center; gap: 4px; }
 .btn-copy {
   display: inline-flex; align-items: center; justify-content: center;
-  background: none; border: 1px solid transparent; border-radius: 3px;
-  color: #475569; cursor: pointer; padding: 2px 3px; flex-shrink: 0;
-  transition: color 0.1s, border-color 0.1s;
+  background: #0f172a; border: 1px solid #334155; border-radius: 3px;
+  color: #94a3b8; cursor: pointer; padding: 2px 3px; flex-shrink: 0;
+  transition: color 0.1s, border-color 0.1s, background 0.1s;
 }
-.btn-copy:hover { color: #06b6d4; border-color: #164e63; }
+.btn-copy:hover { color: #22d3ee; border-color: #0e7490; background: #082f49; }
 .copy-toast {
-  position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
   background: #0c4a6e; border: 1px solid #0e7490; border-radius: 6px;
   padding: 5px 14px; font-size: 12px; color: #7dd3fc; font-weight: 600;
   pointer-events: none; white-space: nowrap; z-index: 10;
