@@ -97,6 +97,7 @@ model GraphData {
   data      Json
   contacts  Json?
   positions Json?
+  version   Int      @default(0)
   updatedAt DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -113,6 +114,7 @@ model AuditLog {
   ipAddress   String?
   userAgent   String?
   failReason  String?
+  detail      String?
   createdAt   DateTime @default(now())
 
   user    User?    @relation(fields: [userId], references: [id])

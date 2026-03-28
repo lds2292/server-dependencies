@@ -128,9 +128,11 @@ export async function unmasksContacts(req: Request, res: Response): Promise<void
     if (contacts === null) {
       res.status(404).json({ error: '노드를 찾을 수 없습니다.' }); return
     }
+    const nodeName = await graphService.getExternalNodeName(id, nodeId)
     await auditLogService.createAuditLog({
       userId, projectId: id, action: 'UNMASK_CONTACTS', status: 'SUCCESS',
       nodeId, ipAddress, userAgent,
+      detail: JSON.stringify({ nodeName: nodeName ?? nodeId, contacts: contacts.map(c => c.name) }),
     })
     logger.info('PROJECT unmasksContacts success', { projectId: id, userId, nodeId, ipAddress })
     res.json({ contacts })

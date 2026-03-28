@@ -21,6 +21,7 @@ export async function sendInvitation(req: Request, res: Response): Promise<void>
     const invitation = await invitationService.sendInvitation(req.params.id, req.user!.userId, identifier, role)
     await auditLogService.createAuditLog({
       userId: req.user!.userId, projectId: req.params.id, action: 'INVITATION_SENT', status: 'SUCCESS',
+      detail: JSON.stringify({ identifier }),
     }).catch(() => {})
     logger.info('INVITATION sent', { projectId: req.params.id, inviterId: req.user!.userId, identifier, role })
     res.status(201).json(invitation)

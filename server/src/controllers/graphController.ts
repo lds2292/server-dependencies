@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import * as graphService from '../services/graphService'
+import { ConflictError } from '../services/graphService'
 import * as projectService from '../services/projectService'
 import logger from '../lib/logger'
 
@@ -29,11 +30,17 @@ export async function getGraph(req: Request, res: Response): Promise<void> {
 
 export async function saveGraph(req: Request, res: Response): Promise<void> {
   if (!await assertProjectAccess(req.params.id, req.user!.userId, res)) return
+  const { version: clientVersion, ...graphData } = req.body
   try {
-    await graphService.saveGraph(req.params.id, req.body)
-    logger.info('GRAPH saved', { projectId: req.params.id, userId: req.user!.userId })
-    res.status(204).send()
+    const result = await graphService.saveGraph(req.params.id, graphData, clientVersion ?? 0)
+    logger.info('GRAPH saved', { projectId: req.params.id, userId: req.user!.userId, version: result.version })
+    res.status(200).json({ version: result.version })
   } catch (err) {
+    if (err instanceof ConflictError) {
+      logger.warn('GRAPH conflict', { projectId: req.params.id, userId: req.user!.userId })
+      res.status(409).json({ code: 'CONFLICT', current: err.current })
+      return
+    }
     logger.error('GRAPH saveGraph error', { projectId: req.params.id, userId: req.user!.userId, error: (err as Error).message })
     res.status(500).json({ error: '서버 오류가 발생했습니다.' })
   }

@@ -64,6 +64,7 @@
             data-shortcut="E"
             :disabled="!projectStore.canWrite"
           >{{ readOnly ? 'Read Only' : 'Edit' }}</button>
+          <button v-if="projectStore.canAdmin" class="btn-members" @click="router.push({ name: 'auditLogs', params: { id: projectStore.currentProject!.id } })">감사 로그</button>
           <button v-if="projectStore.canAdmin" class="btn-members" @click="onOpenMembersModal">멤버 관리</button>
           <button class="btn-logout" @click="showLogoutConfirm = true">로그아웃</button>
         </div>
@@ -378,6 +379,14 @@
         <div class="loading-spinner"></div>
       </div>
     </transition>
+    <!-- 충돌 해결 모달 -->
+    <GraphConflictModal
+      v-if="store.conflictState"
+      :conflicts="store.conflictState.conflicts"
+      @resolve="store.resolveConflicts"
+      @dismiss="store.dismissConflict"
+    />
+
     <!-- 로그아웃 확인 모달 -->
     <transition name="toast-fade">
       <div v-if="showLogoutConfirm" class="delete-overlay" @click.self="showLogoutConfirm = false">
@@ -483,6 +492,8 @@
       @submit="onDepModalSubmit"
       @update="onDepModalUpdate"
     />
+
+
   </div>
 </template>
 
@@ -495,6 +506,7 @@ import { useAuthStore } from '../stores/auth'
 import type { ProjectMemberRole } from '../api/projectApi'
 import { sampleData } from '../data/sampleData'
 import GraphCanvas from '../components/GraphCanvas.vue'
+import GraphConflictModal from '../components/GraphConflictModal.vue'
 import ServerPanel from '../components/ServerPanel.vue'
 import ServerModal from '../components/ServerModal.vue'
 import L7Modal from '../components/L7Modal.vue'
@@ -764,19 +776,20 @@ let autosaveTimer: ReturnType<typeof setInterval> | null = null
 function resetAutosaveTimer() {
   if (autosaveTimer) { clearInterval(autosaveTimer); autosaveTimer = null }
   if (!readOnly.value && store.autosaveEnabled) {
-    autosaveTimer = setInterval(() => { store.flushPositions() }, store.autosaveInterval * 1000)
+    autosaveTimer = setInterval(() => { store.saveGraph(); store.flushPositions() }, store.autosaveInterval * 1000)
   }
 }
 
 async function manualSave() {
   if (readOnly.value) return
-  await store.flushPositions()
+  await Promise.all([store.saveGraph(), store.flushPositions()])
   showToast('저장되었습니다.', 'success')
 }
 
 watch([() => store.autosaveEnabled, () => store.autosaveInterval], resetAutosaveTimer)
+watch(() => store.saveError, (err) => { if (err) showToast(err) })
 watch(readOnly, resetAutosaveTimer)
-onBeforeUnmount(() => { store.flushPositions() })
+onBeforeUnmount(() => { store.saveGraph(); store.flushPositions() })
 
 // Dependency Modal
 const depModal = ref<{ visible: boolean; defaultSource: string; defaultTarget: string; editingDep?: Dependency }>({ visible: false, defaultSource: '', defaultTarget: '' })
@@ -901,6 +914,7 @@ function handleKeyDown(e: KeyboardEvent) {
 // ─── 멤버 관리 ───────────────────────────────────────────
 const showLogoutConfirm = ref(false)
 const showMembersModal = ref(false)
+
 
 async function onOpenMembersModal() {
   showMembersModal.value = true

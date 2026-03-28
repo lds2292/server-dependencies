@@ -30,6 +30,15 @@ interface ExternalNode {
   [key: string]: unknown
 }
 
+export class ConflictError extends Error {
+  code = 'CONFLICT' as const
+  current: GraphDataJson & { version: number }
+  constructor(current: GraphDataJson & { version: number }) {
+    super('Graph data conflict')
+    this.current = current
+  }
+}
+
 function maskEmail(email: string): string {
   const atIdx = email.indexOf('@')
   if (atIdx < 1) return email
@@ -37,16 +46,12 @@ function maskEmail(email: string): string {
 }
 
 function maskPhone(phone: string): string {
-  // Mobile: 01XXXXXXXXXX (10-11자리) → 010-****-5678
   if (/^01[016789]\d{7,8}$/.test(phone))
     return `${phone.slice(0, 3)}-****-${phone.slice(-4)}`
-  // Seoul: 02XXXXXXX(X) (9-10자리) → 02-****-4567
   if (/^02\d{7,8}$/.test(phone))
     return `${phone.slice(0, 2)}-****-${phone.slice(-4)}`
-  // Regional: 0[3-9]XXXXXXXXX (10-11자리) → 031-****-4567
   if (/^0[3-9]\d{8,9}$/.test(phone))
     return `${phone.slice(0, 3)}-****-${phone.slice(-4)}`
-  // Service: 1[5-6]XXXXXX (8자리) → 1544-****
   if (/^1[5-6]\d{6}$/.test(phone))
     return `${phone.slice(0, 4)}-****`
   return phone
@@ -106,7 +111,9 @@ function decryptGraphData(data: GraphDataJson): GraphDataJson {
 
 export async function getGraph(projectId: string) {
   const record = await prisma.graphData.findUnique({ where: { projectId } })
-  if (!record) return { servers: [], l7Nodes: [], infraNodes: [], externalNodes: [], dependencies: [] }
+  if (!record) {
+    return { servers: [], l7Nodes: [], infraNodes: [], externalNodes: [], dependencies: [], version: 0 }
+  }
   const graphData = decryptGraphData(record.data as unknown as GraphDataJson)
   const contactsMap = (record.contacts ?? {}) as unknown as Record<string, ExternalContact[]>
   const merged: GraphDataJson = {
@@ -116,7 +123,7 @@ export async function getGraph(projectId: string) {
       contacts: contactsMap[node.id] ?? [],
     })),
   }
-  return maskGraphContacts(merged)
+  return { ...maskGraphContacts(merged), version: record.version }
 }
 
 export async function getRawNodeContacts(projectId: string, nodeId: string): Promise<ExternalContact[] | null> {
@@ -124,6 +131,14 @@ export async function getRawNodeContacts(projectId: string, nodeId: string): Pro
   if (!record) return null
   const contacts = (record.contacts ?? {}) as unknown as Record<string, ExternalContact[]>
   return contacts[nodeId] ?? null
+}
+
+export async function getExternalNodeName(projectId: string, nodeId: string): Promise<string | null> {
+  const record = await prisma.graphData.findUnique({ where: { projectId }, select: { data: true } })
+  if (!record) return null
+  const graphData = decryptGraphData(record.data as unknown as GraphDataJson)
+  const node = ((graphData.externalNodes ?? []) as ExternalNode[]).find(n => n.id === nodeId)
+  return node ? (node.name as string ?? null) : null
 }
 
 export async function saveNodeContacts(projectId: string, nodeId: string, contacts: ExternalContact[]) {
@@ -136,8 +151,7 @@ export async function saveNodeContacts(projectId: string, nodeId: string, contac
   })
 }
 
-export async function saveGraph(projectId: string, data: GraphDataJson) {
-  // contacts를 data에서 strip (contacts 컬럼에서 별도 관리)
+export async function saveGraph(projectId: string, data: GraphDataJson, clientVersion: number): Promise<{ version: number }> {
   const strippedData: GraphDataJson = {
     ...data,
     externalNodes: ((data.externalNodes ?? []) as ExternalNode[]).map(
@@ -145,31 +159,43 @@ export async function saveGraph(projectId: string, data: GraphDataJson) {
     ),
   }
   const encrypted = encryptGraphData(strippedData)
-
-  // 삭제된 노드의 고아 contacts 정리
   const activeNodeIds = new Set(((data.externalNodes ?? []) as ExternalNode[]).map(n => n.id))
-  const record = await prisma.graphData.findUnique({ where: { projectId }, select: { contacts: true } })
-  let contactsUpdate: Record<string, ExternalContact[]> | undefined
-  if (record?.contacts) {
-    const existing = record.contacts as unknown as Record<string, ExternalContact[]>
-    const cleaned = Object.fromEntries(
-      Object.entries(existing).filter(([id]) => activeNodeIds.has(id))
-    )
-    contactsUpdate = cleaned
+
+  const existing = await prisma.graphData.findUnique({
+    where: { projectId },
+    select: { version: true, contacts: true },
+  })
+
+  if (!existing) {
+    await prisma.graphData.create({
+      data: { projectId, data: encrypted as object, contacts: {}, version: 1 },
+    })
+    return { version: 1 }
   }
 
-  return prisma.graphData.upsert({
+  if (existing.version !== clientVersion) {
+    const current = await getGraph(projectId)
+    throw new ConflictError(current as GraphDataJson & { version: number })
+  }
+
+  let contactsUpdate: Record<string, ExternalContact[]> | undefined
+  if (existing.contacts) {
+    const existingContacts = existing.contacts as unknown as Record<string, ExternalContact[]>
+    contactsUpdate = Object.fromEntries(
+      Object.entries(existingContacts).filter(([id]) => activeNodeIds.has(id))
+    )
+  }
+
+  const newVersion = existing.version + 1
+  await prisma.graphData.update({
     where: { projectId },
-    update: {
+    data: {
       data: encrypted as object,
+      version: newVersion,
       ...(contactsUpdate !== undefined ? { contacts: contactsUpdate as object } : {}),
     },
-    create: {
-      projectId,
-      data: encrypted as object,
-      contacts: {},
-    },
   })
+  return { version: newVersion }
 }
 
 export async function getPositions(projectId: string) {

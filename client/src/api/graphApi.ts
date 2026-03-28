@@ -3,12 +3,19 @@ import type { GraphData, ExternalContact } from '../types'
 
 export type PositionMap = Record<string, { x: number; y: number }>
 
+export type GraphDataWithVersion = GraphData & { version: number }
+
+export type SaveGraphConflict = {
+  code: 'CONFLICT'
+  current: GraphDataWithVersion
+}
+
 export const graphApi = {
   getGraph(projectId: string) {
-    return http.get<GraphData>(`/projects/${projectId}/graph`)
+    return http.get<GraphDataWithVersion>(`/projects/${projectId}/graph`)
   },
-  saveGraph(projectId: string, data: GraphData) {
-    return http.put(`/projects/${projectId}/graph`, data)
+  saveGraph(projectId: string, data: GraphData, version: number) {
+    return http.put<{ version: number }>(`/projects/${projectId}/graph`, { ...data, version })
   },
   getPositions(projectId: string) {
     return http.get<PositionMap>(`/projects/${projectId}/graph/positions`)

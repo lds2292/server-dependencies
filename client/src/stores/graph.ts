@@ -1,15 +1,35 @@
 import { defineStore } from 'pinia'
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import type { Server, L7Node, InfraNode, ExternalServiceNode, AnyNode, Dependency, GraphData } from '../types'
-import { graphApi, type PositionMap } from '../api/graphApi'
+import { graphApi, type PositionMap, type GraphDataWithVersion } from '../api/graphApi'
 
 type Snapshot = {
   data: GraphData
   positions: PositionMap
 }
 
+export interface ConflictItem {
+  id: string
+  nodeType: 'server' | 'l7' | 'infra' | 'external' | 'dependency'
+  label: string
+  mine: unknown | null
+  server: unknown | null
+}
+
+export interface ConflictState {
+  conflicts: ConflictItem[]
+  merged: GraphData
+  serverVersion: number
+}
+
 function generateId(): string {
-  return crypto.randomUUID()
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+  })
 }
 
 function migrateDependencyTypes(data: GraphData): GraphData {
@@ -22,6 +42,129 @@ function migrateDependencyTypes(data: GraphData): GraphData {
   }
 }
 
+function deepEqual(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b)
+}
+
+type NodeLike = { id: string; name?: string }
+
+function mergeNodeArrays<T extends NodeLike>(
+  base: T[],
+  mine: T[],
+  server: T[],
+  nodeType: ConflictItem['nodeType']
+): { result: T[]; conflicts: ConflictItem[] } {
+  const baseMap = new Map(base.map(n => [n.id, n]))
+  const mineMap = new Map(mine.map(n => [n.id, n]))
+  const serverMap = new Map(server.map(n => [n.id, n]))
+
+  const allIds = new Set([...baseMap.keys(), ...mineMap.keys(), ...serverMap.keys()])
+  const result: T[] = []
+  const conflicts: ConflictItem[] = []
+
+  for (const id of allIds) {
+    const b = baseMap.get(id)
+    const m = mineMap.get(id)
+    const s = serverMap.get(id)
+
+    if (!b) {
+      // 새로 추가된 노드
+      if (m && s) {
+        if (deepEqual(m, s)) {
+          result.push(m)
+        } else {
+          conflicts.push({ id, nodeType, label: m.name ?? id, mine: m, server: s })
+          result.push(m)
+        }
+      } else if (m) {
+        result.push(m)
+      } else if (s) {
+        result.push(s)
+      }
+      continue
+    }
+
+    const mineChanged = m !== undefined && !deepEqual(b, m)
+    const serverChanged = s !== undefined && !deepEqual(b, s)
+    const iDeletedIt = m === undefined
+    const serverDeletedIt = s === undefined
+
+    if (iDeletedIt && serverDeletedIt) {
+      continue
+    }
+    if (iDeletedIt && serverChanged) {
+      conflicts.push({ id, nodeType, label: (s as T).name ?? id, mine: null, server: s ?? null })
+      result.push(s!)
+      continue
+    }
+    if (serverDeletedIt && mineChanged) {
+      conflicts.push({ id, nodeType, label: (m as T).name ?? id, mine: m ?? null, server: null })
+      result.push(m!)
+      continue
+    }
+    if (iDeletedIt) {
+      continue
+    }
+    if (serverDeletedIt) {
+      continue
+    }
+
+    if (!mineChanged && !serverChanged) {
+      result.push(b)
+    } else if (!mineChanged && serverChanged) {
+      result.push(s!)
+    } else if (mineChanged && !serverChanged) {
+      result.push(m!)
+    } else {
+      if (deepEqual(m, s)) {
+        result.push(m!)
+      } else {
+        conflicts.push({ id, nodeType, label: (m as T).name ?? id, mine: m ?? null, server: s ?? null })
+        result.push(m!)
+      }
+    }
+  }
+
+  return { result, conflicts }
+}
+
+function mergeGraphData(
+  base: GraphData,
+  mine: GraphData,
+  server: GraphData
+): { merged: GraphData; conflicts: ConflictItem[] } {
+  const cast = <T>(arr: unknown[]): T[] => arr as T[]
+  const asNL = <T extends NodeLike>(arr: T[]): NodeLike[] => arr as unknown as NodeLike[]
+
+  const servers = mergeNodeArrays(asNL(base.servers ?? []), asNL(mine.servers ?? []), asNL(server.servers ?? []), 'server')
+  const l7Nodes = mergeNodeArrays(asNL(base.l7Nodes ?? []), asNL(mine.l7Nodes ?? []), asNL(server.l7Nodes ?? []), 'l7')
+  const infraNodes = mergeNodeArrays(asNL(base.infraNodes ?? []), asNL(mine.infraNodes ?? []), asNL(server.infraNodes ?? []), 'infra')
+  const externalNodes = mergeNodeArrays(asNL(base.externalNodes ?? []), asNL(mine.externalNodes ?? []), asNL(server.externalNodes ?? []), 'external')
+  const dependencies = mergeNodeArrays(
+    asNL(base.dependencies ?? []),
+    asNL(mine.dependencies ?? []),
+    asNL(server.dependencies ?? []),
+    'dependency'
+  )
+
+  return {
+    merged: {
+      servers: cast<Server>(servers.result),
+      l7Nodes: cast<L7Node>(l7Nodes.result),
+      infraNodes: cast<InfraNode>(infraNodes.result),
+      externalNodes: cast<ExternalServiceNode>(externalNodes.result),
+      dependencies: cast<Dependency>(dependencies.result),
+    },
+    conflicts: [
+      ...servers.conflicts,
+      ...l7Nodes.conflicts,
+      ...infraNodes.conflicts,
+      ...externalNodes.conflicts,
+      ...dependencies.conflicts,
+    ],
+  }
+}
+
 export const useGraphStore = defineStore('graph', () => {
   const currentProjectId = ref<string | null>(null)
   const servers = ref<Server[]>([])
@@ -30,6 +173,11 @@ export const useGraphStore = defineStore('graph', () => {
   const externalNodes = ref<ExternalServiceNode[]>([])
   const dependencies = ref<Dependency[]>([])
   const currentPositions = ref<PositionMap>({})
+
+  const currentVersion = ref<number>(0)
+  const baseSnapshot = ref<GraphData>({ servers: [], l7Nodes: [], infraNodes: [], externalNodes: [], dependencies: [] })
+  const conflictState = ref<ConflictState | null>(null)
+  const saveError = ref<string | null>(null)
 
   // --- Undo / Redo ---
   const MAX_HISTORY = 100
@@ -53,6 +201,16 @@ export const useGraphStore = defineStore('graph', () => {
     }
   }
 
+  function currentGraphData(): GraphData {
+    return {
+      servers: JSON.parse(JSON.stringify(servers.value)),
+      l7Nodes: JSON.parse(JSON.stringify(l7Nodes.value)),
+      infraNodes: JSON.parse(JSON.stringify(infraNodes.value)),
+      externalNodes: JSON.parse(JSON.stringify(externalNodes.value)),
+      dependencies: JSON.parse(JSON.stringify(dependencies.value)),
+    }
+  }
+
   function saveSnapshot() {
     if (batchActive) return
     undoStack.value.push(currentSnapshot())
@@ -67,6 +225,14 @@ export const useGraphStore = defineStore('graph', () => {
     infraNodes.value = snap.data.infraNodes ?? []
     externalNodes.value = snap.data.externalNodes ?? []
     dependencies.value = snap.data.dependencies ?? []
+  }
+
+  function applyGraphData(data: GraphData) {
+    servers.value = data.servers ?? []
+    l7Nodes.value = data.l7Nodes ?? []
+    infraNodes.value = data.infraNodes ?? []
+    externalNodes.value = data.externalNodes ?? []
+    dependencies.value = data.dependencies ?? []
   }
 
   function undo(): boolean {
@@ -92,25 +258,72 @@ export const useGraphStore = defineStore('graph', () => {
     batchActive = false
   }
 
-  // --- API 저장 (debounced) ---
-  let saveTimer: ReturnType<typeof setTimeout> | null = null
-
-  function scheduleSave() {
-    if (!currentProjectId.value) return
-    if (saveTimer) clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => { saveGraph() }, 1500)
-  }
-
+  // --- API 저장 ---
   async function saveGraph(): Promise<void> {
     if (!currentProjectId.value) return
-    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
-    await graphApi.saveGraph(currentProjectId.value, {
-      servers: servers.value,
-      l7Nodes: l7Nodes.value,
-      infraNodes: infraNodes.value,
-      externalNodes: externalNodes.value,
-      dependencies: dependencies.value,
-    })
+    if (conflictState.value) return
+
+    const data = currentGraphData()
+    if (deepEqual(data, baseSnapshot.value)) return
+
+    try {
+      const res = await graphApi.saveGraph(currentProjectId.value, data, currentVersion.value)
+      currentVersion.value = res.data.version
+      baseSnapshot.value = data
+      saveError.value = null
+    } catch (err: unknown) {
+      const e = err as { response?: { status?: number; data?: { code?: string; current?: GraphDataWithVersion } } }
+      if (e.response?.status === 409 && e.response.data?.code === 'CONFLICT') {
+        const serverData = e.response.data.current!
+        const { version: serverVersion, ...serverGraphData } = serverData
+        const { merged, conflicts } = mergeGraphData(baseSnapshot.value, data, serverGraphData)
+
+        if (conflicts.length === 0) {
+          // 자동 병합 성공 - 재저장
+          applyGraphData(merged)
+          currentVersion.value = serverVersion
+          await saveGraph()
+        } else {
+          conflictState.value = { conflicts, merged, serverVersion }
+        }
+        return
+      }
+      saveError.value = '저장 중 오류가 발생했습니다.'
+      throw err
+    }
+  }
+
+  function resolveConflicts(resolutions: Record<string, 'mine' | 'server'>): void {
+    if (!conflictState.value) return
+    const { conflicts, merged, serverVersion } = conflictState.value
+    const finalData: GraphData = JSON.parse(JSON.stringify(merged))
+
+    for (const conflict of conflicts) {
+      const chosen = (resolutions[conflict.id] ?? 'mine') === 'mine' ? conflict.mine : conflict.server
+
+      if (conflict.nodeType === 'dependency') {
+        finalData.dependencies = (finalData.dependencies ?? []).filter(d => d.id !== conflict.id)
+        if (chosen !== null) finalData.dependencies.push(chosen as Dependency)
+      } else {
+        const arrayKey = (conflict.nodeType === 'server' ? 'servers'
+          : conflict.nodeType === 'l7' ? 'l7Nodes'
+          : conflict.nodeType === 'infra' ? 'infraNodes'
+          : 'externalNodes') as 'servers' | 'l7Nodes' | 'infraNodes' | 'externalNodes'
+        const arr = (finalData[arrayKey] ?? []) as unknown as NodeLike[]
+        const idx = arr.findIndex(n => n.id === conflict.id)
+        if (idx !== -1) arr.splice(idx, 1)
+        if (chosen !== null) arr.push(chosen as unknown as NodeLike)
+      }
+    }
+
+    applyGraphData(finalData)
+    currentVersion.value = serverVersion
+    conflictState.value = null
+    saveGraph()
+  }
+
+  function dismissConflict(): void {
+    conflictState.value = null
   }
 
   // --- 포지션 저장 (메모리 버퍼링) ---
@@ -143,25 +356,23 @@ export const useGraphStore = defineStore('graph', () => {
     return currentPositions.value
   }
 
-  watch(
-    [servers, l7Nodes, infraNodes, externalNodes, dependencies],
-    () => { scheduleSave() },
-    { deep: true }
-  )
-
   // --- 프로젝트 로드 ---
   async function setProject(projectId: string): Promise<void> {
     currentProjectId.value = projectId
+    conflictState.value = null
     const [graphRes, posRes] = await Promise.all([
       graphApi.getGraph(projectId),
       graphApi.getPositions(projectId),
     ])
-    servers.value = graphRes.data.servers ?? []
-    l7Nodes.value = graphRes.data.l7Nodes ?? []
-    infraNodes.value = graphRes.data.infraNodes ?? []
-    externalNodes.value = graphRes.data.externalNodes ?? []
-    dependencies.value = graphRes.data.dependencies ?? []
+    const { version, ...graphData } = graphRes.data
+    servers.value = graphData.servers ?? []
+    l7Nodes.value = graphData.l7Nodes ?? []
+    infraNodes.value = graphData.infraNodes ?? []
+    externalNodes.value = graphData.externalNodes ?? []
+    dependencies.value = graphData.dependencies ?? []
     currentPositions.value = posRes.data
+    currentVersion.value = version
+    baseSnapshot.value = JSON.parse(JSON.stringify(graphData))
     undoStack.value = []
     redoStack.value = []
   }
@@ -325,7 +536,6 @@ export const useGraphStore = defineStore('graph', () => {
 
   function findPath(sourceId: string, targetId: string): string[] | null {
     if (sourceId === targetId) return [sourceId]
-    // L7 memberServerIds 역방향 맵: serverId -> l7Id
     const serverToL7 = new Map<string, string>()
     for (const l7 of l7Nodes.value) {
       for (const memberId of l7.memberServerIds) {
@@ -336,7 +546,6 @@ export const useGraphStore = defineStore('graph', () => {
     const queue: Array<[string, string[]]> = [[sourceId, [sourceId]]]
     while (queue.length > 0) {
       const [current, path] = queue.shift()!
-      // dependency 엣지 탐색
       for (const dep of dependencies.value) {
         if (dep.source !== current) continue
         const next = dep.target
@@ -346,7 +555,6 @@ export const useGraphStore = defineStore('graph', () => {
           queue.push([next, [...path, next]])
         }
       }
-      // 현재 노드가 L7이면 memberServerIds도 탐색
       const l7 = l7Nodes.value.find(n => n.id === current)
       if (l7) {
         for (const memberId of l7.memberServerIds) {
@@ -357,7 +565,6 @@ export const useGraphStore = defineStore('graph', () => {
           }
         }
       }
-      // 현재 노드가 L7에 속한 멤버라면 해당 L7도 탐색 경로에 포함
       const parentL7Id = serverToL7.get(current)
       if (parentL7Id && !visited.has(parentL7Id)) {
         visited.add(parentL7Id)
@@ -409,7 +616,6 @@ export const useGraphStore = defineStore('graph', () => {
     })
   }
 
-  // 외부 서비스 contacts 저장 후 서버에서 최신 상태로 갱신 (마스킹 포함)
   async function syncExternalNodes(): Promise<void> {
     if (!currentProjectId.value) return
     const res = await graphApi.getGraph(currentProjectId.value)
@@ -418,6 +624,7 @@ export const useGraphStore = defineStore('graph', () => {
 
   return {
     servers, l7Nodes, infraNodes, externalNodes, dependencies, currentProjectId,
+    conflictState, saveError,
     addServer, updateServer, deleteServer,
     addL7Node, updateL7Node, deleteL7Node,
     addInfraNode, updateInfraNode, deleteInfraNode,
@@ -426,6 +633,7 @@ export const useGraphStore = defineStore('graph', () => {
     findNodeById, getImpactedNodes, getCycleNodes, findPath, exportJSON, importJSON, loadData,
     undo, redo, beginBatch, endBatch, canUndo, canRedo,
     setProject, saveGraph, savePositions, flushPositions, getPositions, syncExternalNodes,
+    resolveConflicts, dismissConflict,
     positionsDirty, autosaveEnabled, autosaveInterval, setAutosaveEnabled, setAutosaveInterval,
   }
 })

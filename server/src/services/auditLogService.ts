@@ -1,4 +1,5 @@
 import prisma from '../prisma'
+import { decrypt, isEncrypted } from './cryptoService'
 
 export type AuditAction =
   | 'UNMASK_CONTACTS'
@@ -9,6 +10,10 @@ export type AuditAction =
   | 'MEMBER_REMOVED'
   | 'MEMBER_ROLE_CHANGED'
   | 'OWNERSHIP_TRANSFERRED'
+  | 'INVITATION_SENT'
+  | 'INVITATION_CANCELLED'
+  | 'INVITATION_ACCEPTED'
+  | 'INVITATION_REJECTED'
 export type AuditStatus = 'SUCCESS' | 'FAILED'
 
 interface CreateAuditLogParams {
@@ -21,6 +26,7 @@ interface CreateAuditLogParams {
   ipAddress?: string
   userAgent?: string
   failReason?: string
+  detail?: string
 }
 
 export async function createAuditLog(params: CreateAuditLogParams): Promise<void> {
@@ -34,8 +40,8 @@ export async function createAuditLog(params: CreateAuditLogParams): Promise<void
   })
 }
 
-export async function getAuditLogs(projectId: string, limit = 100) {
-  return prisma.auditLog.findMany({
+export async function getAuditLogs(projectId: string, limit = 200) {
+  const logs = await prisma.auditLog.findMany({
     where: { projectId },
     orderBy: { createdAt: 'desc' },
     take: limit,
@@ -43,4 +49,16 @@ export async function getAuditLogs(projectId: string, limit = 100) {
       user: { select: { id: true, username: true, email: true } },
     },
   })
+
+  return logs.map(log => ({
+    ...log,
+    email: log.email && isEncrypted(log.email) ? decrypt(log.email) : log.email,
+    user: log.user
+      ? {
+          ...log.user,
+          username: isEncrypted(log.user.username) ? decrypt(log.user.username) : log.user.username,
+          email: isEncrypted(log.user.email) ? decrypt(log.user.email) : log.user.email,
+        }
+      : null,
+  }))
 }

@@ -33,6 +33,19 @@ export interface ProjectPendingInvitation {
   invitee: { id: string; username: string; email: string }
 }
 
+export interface AuditLog {
+  id: string
+  action: string
+  status: string
+  nodeId?: string
+  email?: string
+  ipAddress?: string
+  failReason?: string
+  detail?: string
+  createdAt: string
+  user?: { id: string; username: string; email: string }
+}
+
 export interface Project {
   id: string
   name: string
@@ -88,5 +101,8 @@ export const projectApi = {
   },
   unmasksContacts(projectId: string, nodeId: string, password: string) {
     return http.post<{ contacts: ExternalContact[] }>(`/projects/${projectId}/contacts/unmask`, { nodeId, password })
+  },
+  getAuditLogs(id: string) {
+    return http.get<{ logs: AuditLog[] }>(`/projects/${id}/audit-logs`)
   },
 }
