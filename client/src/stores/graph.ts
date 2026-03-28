@@ -360,6 +360,11 @@ export const useGraphStore = defineStore('graph', () => {
   async function setProject(projectId: string): Promise<void> {
     currentProjectId.value = projectId
     conflictState.value = null
+    servers.value = []
+    l7Nodes.value = []
+    infraNodes.value = []
+    externalNodes.value = []
+    dependencies.value = []
     const [graphRes, posRes] = await Promise.all([
       graphApi.getGraph(projectId),
       graphApi.getPositions(projectId),
@@ -601,6 +606,17 @@ export const useGraphStore = defineStore('graph', () => {
     externalNodes.value = res.data.externalNodes ?? []
   }
 
+  function resetGraph(): void {
+    currentProjectId.value = null
+    servers.value = []
+    l7Nodes.value = []
+    infraNodes.value = []
+    externalNodes.value = []
+    dependencies.value = []
+    conflictState.value = null
+    saveError.value = null
+  }
+
   return {
     servers, l7Nodes, infraNodes, externalNodes, dependencies, currentProjectId,
     conflictState, saveError,
@@ -611,7 +627,7 @@ export const useGraphStore = defineStore('graph', () => {
     addDependency, removeDependency, updateDependency,
     findNodeById, getImpactedNodes, getCycleNodes, findPath, exportJSON, importJSON, loadData,
     undo, redo, beginBatch, endBatch, canUndo, canRedo,
-    setProject, saveGraph, savePositions, flushPositions, getPositions, syncExternalNodes,
+    setProject, resetGraph, saveGraph, savePositions, flushPositions, getPositions, syncExternalNodes,
     resolveConflicts, dismissConflict,
     positionsDirty, autosaveEnabled, autosaveInterval, setAutosaveEnabled, setAutosaveInterval,
   }

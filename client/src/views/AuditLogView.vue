@@ -161,7 +161,7 @@ const TABS: { key: TabKey; label: string }[] = [
 ]
 
 const SECURITY_ACTIONS = new Set([
-  'LOGIN_SUCCESS', 'LOGIN_FAILED', 'LOGOUT', 'UNMASK_CONTACTS',
+  'UNMASK_CONTACTS',
 ])
 const MEMBER_ACTIONS = new Set([
   'MEMBER_ADDED', 'MEMBER_REMOVED', 'MEMBER_ROLE_CHANGED', 'OWNERSHIP_TRANSFERRED',
@@ -470,7 +470,7 @@ onMounted(async () => {
   padding: 6px 0;
   font-size: 11px;
   font-weight: 700;
-  color: #475569;
+  color: #cbd5e1;
   background: #0f172a;
   letter-spacing: 0.04em;
   position: sticky;
@@ -499,7 +499,7 @@ onMounted(async () => {
 
 .audit-time {
   font-size: 11px;
-  color: #475569;
+  color: #cbd5e1;
   font-family: 'Menlo', 'Consolas', monospace;
   flex-shrink: 0;
   min-width: 40px;

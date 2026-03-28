@@ -1024,10 +1024,14 @@ onMounted(async () => {
   const projectId = route.params.id as string
   isLoading.value = true
   try {
-    await projectStore.loadProject(projectId)
+    if (projectStore.currentProject?.id !== projectId) {
+      await projectStore.loadProject(projectId)
+    }
     await store.setProject(projectId)
-  } catch {
-    router.push({ name: 'projects' })
+  } catch (err: unknown) {
+    const status = (err as { response?: { status?: number } }).response?.status
+    if (status === 403) router.push({ name: 'forbidden' })
+    else router.push({ name: 'projects' })
   } finally {
     isLoading.value = false
   }
@@ -1036,6 +1040,7 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
   if (autosaveTimer) { clearInterval(autosaveTimer); autosaveTimer = null }
+  store.resetGraph()
 })
 
 watch(() => route.params.id, async (newId) => {

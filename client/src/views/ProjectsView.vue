@@ -77,24 +77,56 @@
           class="project-card"
           @click="router.push({ name: 'project', params: { id: project.id } })"
         >
-          <div class="project-card-header">
-            <span class="project-name">{{ project.name }}</span>
-            <button
-              v-if="project.ownerId === auth.user?.id"
-              class="btn-delete-project"
-              @click.stop="onDeleteProject(project.id)"
-              title="프로젝트 삭제"
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <line x1="1" y1="1" x2="11" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <line x1="11" y1="1" x2="1" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
-            </button>
+          <!-- 좌측 그래프 SVG 패널 -->
+          <div class="project-card-graph">
+            <svg width="72" height="80" viewBox="0 0 72 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- 노드 1 (상단) -->
+              <rect x="16" y="6" width="40" height="14" rx="3" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1"/>
+              <line x1="20" y1="13" x2="28" y2="13" stroke="#3b82f6" stroke-width="0.8" opacity="0.5"/>
+              <line x1="20" y1="10" x2="32" y2="10" stroke="#60a5fa" stroke-width="0.7" opacity="0.4"/>
+              <!-- 노드 2 (중좌) -->
+              <rect x="2" y="34" width="30" height="13" rx="3" fill="#1c1a09" stroke="#ca8a04" stroke-width="1"/>
+              <line x1="6" y1="40" x2="12" y2="40" stroke="#ca8a04" stroke-width="0.8" opacity="0.5"/>
+              <!-- 노드 3 (중우) -->
+              <rect x="40" y="34" width="30" height="13" rx="3" fill="#052e16" stroke="#16a34a" stroke-width="1"/>
+              <line x1="44" y1="40" x2="50" y2="40" stroke="#16a34a" stroke-width="0.8" opacity="0.5"/>
+              <!-- 노드 4 (하단) -->
+              <rect x="16" y="62" width="40" height="13" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+              <line x1="20" y1="68" x2="28" y2="68" stroke="#94a3b8" stroke-width="0.8" opacity="0.4"/>
+              <!-- 화살표 연결선 -->
+              <line x1="28" y1="20" x2="17" y2="34" stroke="#3b82f6" stroke-width="1" opacity="0.5"/>
+              <polygon points="14,32 20,31 18,37" fill="#3b82f6" opacity="0.5"/>
+              <line x1="44" y1="20" x2="55" y2="34" stroke="#3b82f6" stroke-width="1" opacity="0.5"/>
+              <polygon points="58,32 52,31 54,37" fill="#3b82f6" opacity="0.5"/>
+              <line x1="17" y1="47" x2="28" y2="62" stroke="#64748b" stroke-width="1" opacity="0.5"/>
+              <polygon points="31,60 25,59 26,65" fill="#64748b" opacity="0.5"/>
+              <line x1="55" y1="47" x2="44" y2="62" stroke="#64748b" stroke-width="1" opacity="0.5"/>
+              <polygon points="41,60 47,59 46,65" fill="#64748b" opacity="0.5"/>
+            </svg>
           </div>
-          <p v-if="project.description" class="project-desc">{{ project.description }}</p>
-          <div class="project-meta">
-            <span class="project-members">멤버 {{ project.members.length }}명</span>
-            <span class="project-date">{{ formatDate(project.updatedAt) }}</span>
+
+          <!-- 우측 콘텐츠 -->
+          <div class="project-card-content">
+            <div class="project-card-header">
+              <span class="project-name">{{ project.name }}</span>
+              <button
+                v-if="isAdminOf(project)"
+                class="btn-card-settings"
+                @click.stop="router.push({ name: 'projectSettings', params: { id: project.id } })"
+                title="프로젝트 설정"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+              </button>
+            </div>
+            <p v-if="project.description" class="project-desc">{{ project.description }}</p>
+            <div class="project-meta">
+              <span :class="['role-badge', myRoleIn(project).toLowerCase()]">{{ roleLabel(myRoleIn(project)) }}</span>
+              <span class="project-members">멤버 {{ project.members.length }}명</span>
+              <span class="project-date">{{ formatDate(project.updatedAt) }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -212,9 +244,12 @@ async function onCreateProject() {
   }
 }
 
-async function onDeleteProject(id: string) {
-  if (!confirm('프로젝트를 삭제하면 모든 그래프 데이터가 함께 삭제됩니다.')) return
-  try { await projectStore.deleteProject(id) } catch { /* ignore */ }
+function isAdminOf(project: { members: { userId: string; role: string }[] }): boolean {
+  return project.members.some(m => m.userId === auth.user?.id && (m.role === 'MASTER' || m.role === 'ADMIN'))
+}
+
+function myRoleIn(project: { members: { userId: string; role: string }[] }): ProjectMemberRole {
+  return (project.members.find(m => m.userId === auth.user?.id)?.role ?? 'READONLY') as ProjectMemberRole
 }
 
 function formatDate(iso: string): string {
@@ -250,23 +285,38 @@ function formatDate(iso: string): string {
 }
 .btn-new:hover { background: #1e3a8a; color: #93c5fd; }
 .projects-empty { text-align: center; padding: 60px 0; color: #475569; font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
-.projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
 .project-card {
-  background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 20px;
+  background: #1e293b; border: 1px solid #334155; border-radius: 10px;
   cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  display: flex; flex-direction: row; overflow: hidden; min-height: 110px;
 }
 .project-card:hover { border-color: #3b82f6; background: #243044; }
-.project-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.project-name { font-size: 15px; font-weight: 700; color: #f1f5f9; }
-.btn-delete-project {
-  color: #475569; background: transparent; border: none; cursor: pointer;
-  padding: 2px; border-radius: 4px; transition: color 0.15s;
+.project-card-graph {
+  width: 88px; flex-shrink: 0;
+  background: #131f35; border-right: 1px solid #334155;
+  display: flex; align-items: center; justify-content: center;
 }
-.btn-delete-project:hover { color: #ef4444; }
-.project-desc { font-size: 12px; color: #64748b; margin: 0 0 12px 0; line-height: 1.5; }
-.project-meta { display: flex; align-items: center; justify-content: space-between; }
-.project-members { font-size: 11px; color: #475569; }
-.project-date { font-size: 11px; color: #475569; }
+.project-card-content { flex: 1; padding: 16px 18px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
+.project-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.project-name { font-size: 15px; font-weight: 700; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.btn-card-settings {
+  color: #94a3b8; background: transparent; border: none; cursor: pointer;
+  padding: 2px; border-radius: 4px; transition: color 0.15s; display: flex; align-items: center; flex-shrink: 0;
+}
+.btn-card-settings:hover { color: #e2e8f0; }
+.project-desc { font-size: 12px; color: #64748b; margin: 0 0 10px 0; line-height: 1.5; flex: 1; }
+.project-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.project-members { font-size: 11px; color: #94a3b8; margin-left: auto; }
+.project-date { font-size: 11px; color: #94a3b8; }
+.role-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid transparent; flex-shrink: 0;
+}
+.role-badge.master   { background: #2d1b69; border-color: #7c3aed; color: #c4b5fd; }
+.role-badge.admin    { background: #0f2044; border-color: #1d4ed8; color: #60a5fa; }
+.role-badge.writer   { background: #052e16; border-color: #16a34a; color: #4ade80; }
+.role-badge.readonly { background: #1c1a09; border-color: #ca8a04; color: #fbbf24; }
 /* 모달 */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.6);
