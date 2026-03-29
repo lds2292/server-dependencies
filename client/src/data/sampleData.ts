@@ -20,6 +20,10 @@ export const sampleData: GraphData = {
     { id: 'sample-d3', nodeKind: 'infra', name: 'session-db', infraType: 'Redis', host: '10.0.10.13', port: '6379', description: '세션 캐시' },
     { id: 'sample-d4', nodeKind: 'infra', name: 'analytics-db', infraType: 'MongoDB', host: '10.0.10.14', port: '27017', description: '분석 데이터 DB' },
   ],
+  dnsNodes: [
+    { id: 'sample-dns1', nodeKind: 'dns' as const, name: 'api.example.com', dnsType: 'A', recordValue: '10.0.0.10', ttl: 300, provider: 'Route53', description: 'API 도메인' },
+    { id: 'sample-dns2', nodeKind: 'dns' as const, name: 'www.example.com', dnsType: 'CNAME', recordValue: 'cdn.example.com', ttl: 3600, provider: 'CloudFlare', description: '웹 프론트 도메인' },
+  ],
   externalNodes: [
     { id: 'sample-e1', nodeKind: 'external', name: 'Slack', contacts: [{ name: '인프라팀', email: 'infra@company.com' }], description: '팀 알림 채널' },
     { id: 'sample-e2', nodeKind: 'external', name: 'Payment Gateway', hasFirewall: true, contacts: [{ name: '결제팀', email: 'payment@company.com' }], description: 'PG사 결제 연동' },
@@ -41,5 +45,7 @@ export const sampleData: GraphData = {
     { id: 'sample-dep13', source: 'sample-s7', target: 'sample-e3', type: 'http',  description: 'SMS 발송' },
     { id: 'sample-dep14', source: 'sample-s1', target: 'sample-s7', type: 'http',  description: '알림 서비스 호출' },
     { id: 'sample-dep15', source: 'sample-s1', target: 'sample-e2', type: 'http',  description: '결제 처리' },
+    { id: 'sample-dep-dns1', source: 'sample-dns1', target: 'sample-l1', type: 'dns', description: 'API 도메인 -> L7' },
+    { id: 'sample-dep-dns2', source: 'sample-dns2', target: 'sample-s3', type: 'dns', description: '웹 도메인 -> 웹서버' },
   ],
 }

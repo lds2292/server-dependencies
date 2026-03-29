@@ -30,6 +30,9 @@
         <p v-else-if="isDbToServerBlocked" class="error">
           인프라 노드는 서버 노드에 의존성을 추가할 수 없습니다.
         </p>
+        <p v-else-if="isDnsTargetBlocked" class="error">
+          DNS 노드는 의존성의 대상이 될 수 없습니다.
+        </p>
         <label>
           연결 유형
           <CustomSelect v-model="form.type" :options="typeOptions" />
@@ -55,7 +58,7 @@
           <button
             type="submit"
             class="btn-primary"
-            :disabled="!form.source || !form.target || form.source === form.target || isDuplicate || isDbToServerBlocked"
+            :disabled="!form.source || !form.target || form.source === form.target || isDuplicate || isDbToServerBlocked || isDnsTargetBlocked"
           >
             {{ editingDep ? '저장' : '추가' }}
           </button>
@@ -91,7 +94,7 @@ const editingDep = computed(() => props.editingDep)
 const nodeOptions = computed(() =>
   props.nodes.map(n => ({
     value: n.id,
-    label: n.nodeKind === 'l7' ? `[L7] ${n.name}` : (n.nodeKind === 'infra' ? `[INFRA] ${n.name}` : n.name),
+    label: n.nodeKind === 'l7' ? `[L7] ${n.name}` : n.nodeKind === 'infra' ? `[INFRA] ${n.name}` : n.nodeKind === 'dns' ? `[DNS] ${n.name}` : n.name,
   }))
 )
 
@@ -103,6 +106,14 @@ const targetOptions = computed(() => {
       .filter(n => n.nodeKind === 'infra')
       .map(n => ({ value: n.id, label: `[INFRA] ${n.name}` }))
   }
+  if (sourceNode.value?.nodeKind === 'dns') {
+    return props.nodes
+      .filter(n => n.nodeKind !== 'infra')
+      .map(n => ({
+        value: n.id,
+        label: n.nodeKind === 'l7' ? `[L7] ${n.name}` : n.nodeKind === 'dns' ? `[DNS] ${n.name}` : n.name,
+      }))
+  }
   return nodeOptions.value
 })
 
@@ -110,6 +121,12 @@ const isDbToServerBlocked = computed(() => {
   if (!form.source || !form.target) return false
   const target = props.nodes.find(n => n.id === form.target)
   return sourceNode.value?.nodeKind === 'infra' && (!target?.nodeKind || target.nodeKind === 'server')
+})
+
+const isDnsTargetBlocked = computed(() => {
+  if (!form.source || !form.target) return false
+  const target = props.nodes.find(n => n.id === form.target)
+  return target?.nodeKind === 'dns'
 })
 
 const typeOptions = [
@@ -122,7 +139,9 @@ const typeOptions = [
 function defaultTypeForTarget(targetId: string): DependencyType {
   const target = props.nodes.find(n => n.id === targetId)
   if (!target) return 'http'
-  return target.nodeKind === 'infra' ? 'tcp' : 'http'
+  if (target.nodeKind === 'infra') return 'tcp'
+  if (target.nodeKind === 'dns') return 'dns'
+  return 'http'
 }
 
 function resolveInitialTarget(): string {
@@ -161,7 +180,7 @@ const isDuplicate = computed(() =>
 )
 
 function onSubmit() {
-  if (form.source === form.target || isDuplicate.value) return
+  if (form.source === form.target || isDuplicate.value || isDbToServerBlocked.value || isDnsTargetBlocked.value) return
   const firewallUrl = form.hasFirewall ? form.firewallUrl : ''
   if (props.editingDep) {
     emit('update', props.editingDep.id, {
@@ -185,12 +204,12 @@ function onSubmit() {
   background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: 10px; padding: 24px; width: 360px; max-width: 90vw;
 }
-.modal h3 { margin: 0 0 20px; font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.modal h3 { margin: 0 0 20px; font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); }
 form { display: flex; flex-direction: column; gap: 14px; }
-label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--text-tertiary); font-weight: 600; }
-input { background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 6px; padding: 8px 10px; color: var(--text-secondary); font-size: 13px; outline: none; }
+label { display: flex; flex-direction: column; gap: 5px; font-size: var(--text-xs); color: var(--text-tertiary); font-weight: 600; }
+input { background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 6px; padding: 8px 10px; color: var(--text-secondary); font-size: var(--text-sm); outline: none; }
 input:focus { border-color: var(--accent-focus); }
-.error { font-size: 12px; color: #ef4444; margin: 0; }
+.error { font-size: var(--text-xs); color: #ef4444; margin: 0; }
 .checkbox-label {
   flex-direction: row;
   align-items: center;
@@ -207,13 +226,13 @@ input:focus { border-color: var(--accent-focus); }
 .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 .btn-primary {
   background: var(--accent-primary); color: #fff; border: none;
-  border-radius: 6px; padding: 8px 18px; font-size: 13px; cursor: pointer; font-weight: 600;
+  border-radius: 6px; padding: 8px 18px; font-size: var(--text-sm); cursor: pointer; font-weight: 600;
 }
 .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-secondary {
   background: var(--border-default); color: var(--text-secondary); border: none;
-  border-radius: 6px; padding: 8px 18px; font-size: 13px; cursor: pointer;
+  border-radius: 6px; padding: 8px 18px; font-size: var(--text-sm); cursor: pointer;
 }
 .btn-secondary:hover { background: var(--border-strong); }
 </style>

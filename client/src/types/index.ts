@@ -1,4 +1,4 @@
-export type DependencyType = 'http' | 'tcp' | 'websocket' | 'other'
+export type DependencyType = 'http' | 'tcp' | 'websocket' | 'dns' | 'other'
 
 export interface Server {
   id: string
@@ -30,6 +30,17 @@ export interface InfraNode {
   description?: string
 }
 
+export interface DnsNode {
+  id: string
+  nodeKind: 'dns'
+  name: string
+  dnsType: string
+  recordValue?: string
+  ttl?: number
+  provider?: string
+  description?: string
+}
+
 export interface ExternalContact {
   name: string
   phone?: string
@@ -47,7 +58,7 @@ export interface ExternalServiceNode {
   description?: string
 }
 
-export type AnyNode = Server | L7Node | InfraNode | ExternalServiceNode
+export type AnyNode = Server | L7Node | InfraNode | ExternalServiceNode | DnsNode
 
 export function isL7(node: AnyNode): node is L7Node {
   return node.nodeKind === 'l7'
@@ -68,6 +79,7 @@ export interface GraphData {
   l7Nodes?: L7Node[]
   infraNodes?: InfraNode[]
   externalNodes?: ExternalServiceNode[]
+  dnsNodes?: DnsNode[]
   dependencies: Dependency[]
 }
 

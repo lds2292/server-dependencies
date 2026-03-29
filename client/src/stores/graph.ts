@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Server, L7Node, InfraNode, ExternalServiceNode, AnyNode, Dependency, GraphData } from '../types'
+import type { Server, L7Node, InfraNode, ExternalServiceNode, DnsNode, AnyNode, Dependency, GraphData } from '../types'
 import { graphApi, type PositionMap, type GraphDataWithVersion } from '../api/graphApi'
 
 type Snapshot = {
@@ -10,7 +10,7 @@ type Snapshot = {
 
 export interface ConflictItem {
   id: string
-  nodeType: 'server' | 'l7' | 'infra' | 'external' | 'dependency'
+  nodeType: 'server' | 'l7' | 'infra' | 'external' | 'dns' | 'dependency'
   label: string
   mine: unknown | null
   server: unknown | null
@@ -140,6 +140,7 @@ function mergeGraphData(
   const l7Nodes = mergeNodeArrays(asNL(base.l7Nodes ?? []), asNL(mine.l7Nodes ?? []), asNL(server.l7Nodes ?? []), 'l7')
   const infraNodes = mergeNodeArrays(asNL(base.infraNodes ?? []), asNL(mine.infraNodes ?? []), asNL(server.infraNodes ?? []), 'infra')
   const externalNodes = mergeNodeArrays(asNL(base.externalNodes ?? []), asNL(mine.externalNodes ?? []), asNL(server.externalNodes ?? []), 'external')
+  const dnsNodes = mergeNodeArrays(asNL(base.dnsNodes ?? []), asNL(mine.dnsNodes ?? []), asNL(server.dnsNodes ?? []), 'dns')
   const dependencies = mergeNodeArrays(
     asNL(base.dependencies ?? []),
     asNL(mine.dependencies ?? []),
@@ -153,6 +154,7 @@ function mergeGraphData(
       l7Nodes: cast<L7Node>(l7Nodes.result),
       infraNodes: cast<InfraNode>(infraNodes.result),
       externalNodes: cast<ExternalServiceNode>(externalNodes.result),
+      dnsNodes: cast<DnsNode>(dnsNodes.result),
       dependencies: cast<Dependency>(dependencies.result),
     },
     conflicts: [
@@ -160,6 +162,7 @@ function mergeGraphData(
       ...l7Nodes.conflicts,
       ...infraNodes.conflicts,
       ...externalNodes.conflicts,
+      ...dnsNodes.conflicts,
       ...dependencies.conflicts,
     ],
   }
@@ -171,11 +174,12 @@ export const useGraphStore = defineStore('graph', () => {
   const l7Nodes = ref<L7Node[]>([])
   const infraNodes = ref<InfraNode[]>([])
   const externalNodes = ref<ExternalServiceNode[]>([])
+  const dnsNodes = ref<DnsNode[]>([])
   const dependencies = ref<Dependency[]>([])
   const currentPositions = ref<PositionMap>({})
 
   const currentVersion = ref<number>(0)
-  const baseSnapshot = ref<GraphData>({ servers: [], l7Nodes: [], infraNodes: [], externalNodes: [], dependencies: [] })
+  const baseSnapshot = ref<GraphData>({ servers: [], l7Nodes: [], infraNodes: [], externalNodes: [], dnsNodes: [], dependencies: [] })
   const conflictState = ref<ConflictState | null>(null)
   const saveError = ref<string | null>(null)
 
@@ -196,6 +200,7 @@ export const useGraphStore = defineStore('graph', () => {
         l7Nodes: JSON.parse(JSON.stringify(l7Nodes.value)),
         infraNodes: JSON.parse(JSON.stringify(infraNodes.value)),
         externalNodes: JSON.parse(JSON.stringify(externalNodes.value)),
+        dnsNodes: JSON.parse(JSON.stringify(dnsNodes.value)),
         dependencies: JSON.parse(JSON.stringify(dependencies.value)),
       },
       positions: JSON.parse(JSON.stringify(currentPositions.value)),
@@ -208,6 +213,7 @@ export const useGraphStore = defineStore('graph', () => {
       l7Nodes: JSON.parse(JSON.stringify(l7Nodes.value)),
       infraNodes: JSON.parse(JSON.stringify(infraNodes.value)),
       externalNodes: JSON.parse(JSON.stringify(externalNodes.value)),
+      dnsNodes: JSON.parse(JSON.stringify(dnsNodes.value)),
       dependencies: JSON.parse(JSON.stringify(dependencies.value)),
     }
   }
@@ -226,6 +232,7 @@ export const useGraphStore = defineStore('graph', () => {
     l7Nodes.value = snap.data.l7Nodes ?? []
     infraNodes.value = snap.data.infraNodes ?? []
     externalNodes.value = snap.data.externalNodes ?? []
+    dnsNodes.value = snap.data.dnsNodes ?? []
     dependencies.value = snap.data.dependencies ?? []
   }
 
@@ -234,6 +241,7 @@ export const useGraphStore = defineStore('graph', () => {
     l7Nodes.value = data.l7Nodes ?? []
     infraNodes.value = data.infraNodes ?? []
     externalNodes.value = data.externalNodes ?? []
+    dnsNodes.value = data.dnsNodes ?? []
     dependencies.value = data.dependencies ?? []
   }
 
@@ -310,7 +318,8 @@ export const useGraphStore = defineStore('graph', () => {
         const arrayKey = (conflict.nodeType === 'server' ? 'servers'
           : conflict.nodeType === 'l7' ? 'l7Nodes'
           : conflict.nodeType === 'infra' ? 'infraNodes'
-          : 'externalNodes') as 'servers' | 'l7Nodes' | 'infraNodes' | 'externalNodes'
+          : conflict.nodeType === 'dns' ? 'dnsNodes'
+          : 'externalNodes') as 'servers' | 'l7Nodes' | 'infraNodes' | 'externalNodes' | 'dnsNodes'
         const arr = (finalData[arrayKey] ?? []) as unknown as NodeLike[]
         const idx = arr.findIndex(n => n.id === conflict.id)
         if (idx !== -1) arr.splice(idx, 1)
@@ -366,6 +375,7 @@ export const useGraphStore = defineStore('graph', () => {
     l7Nodes.value = []
     infraNodes.value = []
     externalNodes.value = []
+    dnsNodes.value = []
     dependencies.value = []
     const [graphRes, posRes] = await Promise.all([
       graphApi.getGraph(projectId),
@@ -376,6 +386,7 @@ export const useGraphStore = defineStore('graph', () => {
     l7Nodes.value = graphData.l7Nodes ?? []
     infraNodes.value = graphData.infraNodes ?? []
     externalNodes.value = graphData.externalNodes ?? []
+    dnsNodes.value = (graphData as GraphData).dnsNodes ?? []
     dependencies.value = graphData.dependencies ?? []
     currentPositions.value = posRes.data
     currentVersion.value = version
@@ -459,6 +470,24 @@ export const useGraphStore = defineStore('graph', () => {
     dependencies.value = dependencies.value.filter(d => d.source !== id && d.target !== id)
   }
 
+  // --- DNS CRUD ---
+  function addDnsNode(data: Omit<DnsNode, 'id'>): DnsNode {
+    saveSnapshot()
+    const n: DnsNode = { ...data, id: generateId() }
+    dnsNodes.value.push(n)
+    return n
+  }
+  function updateDnsNode(id: string, data: Partial<Omit<DnsNode, 'id'>>) {
+    saveSnapshot()
+    const idx = dnsNodes.value.findIndex(n => n.id === id)
+    if (idx !== -1) Object.assign(dnsNodes.value[idx], data)
+  }
+  function deleteDnsNode(id: string) {
+    saveSnapshot()
+    dnsNodes.value = dnsNodes.value.filter(n => n.id !== id)
+    dependencies.value = dependencies.value.filter(d => d.source !== id && d.target !== id)
+  }
+
   // --- Dependency CRUD ---
   function addDependency(data: Omit<Dependency, 'id'>): Dependency | null {
     const exists = dependencies.value.some(d => d.source === data.source && d.target === data.target)
@@ -484,17 +513,37 @@ export const useGraphStore = defineStore('graph', () => {
       ?? l7Nodes.value.find(n => n.id === id)
       ?? infraNodes.value.find(n => n.id === id)
       ?? externalNodes.value.find(n => n.id === id)
+      ?? dnsNodes.value.find(n => n.id === id)
   }
 
   function getImpactedNodes(targetId: string): Set<string> {
+    // L7 memberServerIds lookup
+    const memberToL7 = new Map<string, string>()
+    const l7ToMembers = new Map<string, string[]>()
+    for (const l7 of l7Nodes.value) {
+      l7ToMembers.set(l7.id, l7.memberServerIds)
+      for (const mid of l7.memberServerIds) {
+        memberToL7.set(mid, l7.id)
+      }
+    }
+
     const impacted = new Set<string>()
     const queue = [targetId]
     while (queue.length > 0) {
       const current = queue.shift()!
+      // Target IDs to check: current + its L7 members
+      const targetIds = [current]
+      const members = l7ToMembers.get(current)
+      if (members) targetIds.push(...members)
+
       dependencies.value.forEach(d => {
-        if (d.target === current && !impacted.has(d.source)) {
-          impacted.add(d.source)
-          queue.push(d.source)
+        if (!targetIds.includes(d.target)) return
+        let src = d.source
+        const parentL7 = memberToL7.get(src)
+        if (parentL7) src = parentL7
+        if (!impacted.has(src) && src !== targetId) {
+          impacted.add(src)
+          queue.push(src)
         }
       })
     }
@@ -507,12 +556,42 @@ export const useGraphStore = defineStore('graph', () => {
       ...l7Nodes.value.map(n => n.id),
       ...infraNodes.value.map(n => n.id),
       ...externalNodes.value.map(n => n.id),
+      ...dnsNodes.value.map(n => n.id),
     ]
+    // L7 memberServerIds lookup
+    const memberToL7 = new Map<string, string>()
+    const l7ToMembers = new Map<string, string[]>()
+    for (const l7 of l7Nodes.value) {
+      l7ToMembers.set(l7.id, l7.memberServerIds)
+      for (const mid of l7.memberServerIds) {
+        memberToL7.set(mid, l7.id)
+      }
+    }
+
     const adj = new Map<string, string[]>()
     for (const id of allIds) adj.set(id, [])
     for (const dep of dependencies.value) {
-      const neighbors = adj.get(dep.source)
-      if (neighbors) neighbors.push(dep.target)
+      // Resolve source: if member of L7, attribute edge to L7
+      const src = memberToL7.get(dep.source) ?? dep.source
+      // Resolve target: if member of L7, attribute edge to L7
+      const tgt = memberToL7.get(dep.target) ?? dep.target
+      if (src === tgt) continue // skip intra-L7 edges
+      const neighbors = adj.get(src)
+      if (neighbors && !neighbors.includes(tgt)) neighbors.push(tgt)
+    }
+    // Also add edges from L7 members' outgoing to L7's adjacency
+    for (const l7 of l7Nodes.value) {
+      for (const mid of l7.memberServerIds) {
+        const memberNeighbors = adj.get(mid)
+        if (memberNeighbors) {
+          const l7Neighbors = adj.get(l7.id)
+          if (l7Neighbors) {
+            for (const n of memberNeighbors) {
+              if (!l7Neighbors.includes(n)) l7Neighbors.push(n)
+            }
+          }
+        }
+      }
     }
     const visited = new Set<string>()
     const inStack = new Set<string>()
@@ -543,13 +622,33 @@ export const useGraphStore = defineStore('graph', () => {
 
   function findPath(sourceId: string, targetId: string): string[] | null {
     if (sourceId === targetId) return [sourceId]
+
+    // L7 memberServerIds lookup: member -> L7 id, L7 id -> member ids
+    const memberToL7 = new Map<string, string>()
+    const l7ToMembers = new Map<string, string[]>()
+    for (const l7 of l7Nodes.value) {
+      l7ToMembers.set(l7.id, l7.memberServerIds)
+      for (const mid of l7.memberServerIds) {
+        memberToL7.set(mid, l7.id)
+      }
+    }
+
     const visited = new Set<string>([sourceId])
     const queue: Array<[string, string[]]> = [[sourceId, [sourceId]]]
     while (queue.length > 0) {
       const [current, path] = queue.shift()!
+      // Collect source IDs to check: current node + its L7 members (if L7)
+      const sourceIds = [current]
+      const members = l7ToMembers.get(current)
+      if (members) sourceIds.push(...members)
+
       for (const dep of dependencies.value) {
-        if (dep.source !== current) continue
-        const next = dep.target
+        if (!sourceIds.includes(dep.source)) continue
+        let next = dep.target
+        // If target is a member of an L7, treat the L7 as the next node
+        const parentL7 = memberToL7.get(next)
+        if (parentL7 && !path.includes(parentL7)) next = parentL7
+
         if (next === targetId) return [...path, next]
         if (!visited.has(next)) {
           visited.add(next)
@@ -564,7 +663,7 @@ export const useGraphStore = defineStore('graph', () => {
     const data: GraphData = {
       servers: servers.value, l7Nodes: l7Nodes.value,
       infraNodes: infraNodes.value, externalNodes: externalNodes.value,
-      dependencies: dependencies.value,
+      dnsNodes: dnsNodes.value, dependencies: dependencies.value,
     }
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -579,6 +678,7 @@ export const useGraphStore = defineStore('graph', () => {
     l7Nodes.value = data.l7Nodes ?? []
     infraNodes.value = data.infraNodes ?? []
     externalNodes.value = data.externalNodes ?? []
+    dnsNodes.value = data.dnsNodes ?? []
     dependencies.value = data.dependencies ?? []
   }
 
@@ -593,6 +693,7 @@ export const useGraphStore = defineStore('graph', () => {
           l7Nodes.value = data.l7Nodes ?? []
           infraNodes.value = data.infraNodes ?? []
           externalNodes.value = data.externalNodes ?? []
+          dnsNodes.value = data.dnsNodes ?? []
           dependencies.value = data.dependencies ?? []
           resolve()
         } catch { reject(new Error('유효하지 않은 JSON 파일입니다.')) }
@@ -614,18 +715,20 @@ export const useGraphStore = defineStore('graph', () => {
     l7Nodes.value = []
     infraNodes.value = []
     externalNodes.value = []
+    dnsNodes.value = []
     dependencies.value = []
     conflictState.value = null
     saveError.value = null
   }
 
   return {
-    servers, l7Nodes, infraNodes, externalNodes, dependencies, currentProjectId,
+    servers, l7Nodes, infraNodes, externalNodes, dnsNodes, dependencies, currentProjectId,
     conflictState, saveError,
     addServer, updateServer, deleteServer,
     addL7Node, updateL7Node, deleteL7Node,
     addInfraNode, updateInfraNode, deleteInfraNode,
     addExternalNode, updateExternalNode, deleteExternalNode,
+    addDnsNode, updateDnsNode, deleteDnsNode,
     addDependency, removeDependency, updateDependency,
     findNodeById, getImpactedNodes, getCycleNodes, findPath, exportJSON, importJSON, loadData,
     undo, redo, beginBatch, endBatch, canUndo, canRedo, saveSnapshot, positionRestoreVersion,

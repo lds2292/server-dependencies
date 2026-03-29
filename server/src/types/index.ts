@@ -9,5 +9,6 @@ export interface GraphDataJson {
   l7Nodes: unknown[]
   infraNodes: unknown[]
   externalNodes: unknown[]
+  dnsNodes: unknown[]
   dependencies: unknown[]
 }

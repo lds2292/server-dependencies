@@ -112,6 +112,10 @@ const FIELD_LABELS: Record<string, string> = {
   infraType: '인프라 타입',
   host: '호스트',
   port: '포트',
+  dnsType: 'DNS 레코드 타입',
+  recordValue: '레코드 값',
+  ttl: 'TTL',
+  provider: 'DNS 관리',
   description: '설명',
   hasFirewall: '방화벽 여부',
   firewallUrl: '방화벽 URL',
@@ -136,7 +140,7 @@ function deepEqual(a: unknown, b: unknown): boolean {
 
 function nodeTypeLabel(type: ConflictItem['nodeType']): string {
   const map: Record<ConflictItem['nodeType'], string> = {
-    server: 'Server', l7: 'L7', infra: 'Infra', external: 'External', dependency: 'Dependency',
+    server: 'Server', l7: 'L7', infra: 'Infra', external: 'External', dns: 'DNS', dependency: 'Dependency',
   }
   return map[type]
 }
@@ -190,6 +194,7 @@ function onDismiss() {
 .conflict-modal {
   background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px;
   width: 100%; max-width: 640px; max-height: 82vh;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
   display: flex; flex-direction: column;
   overflow: hidden;
 }
@@ -199,8 +204,8 @@ function onDismiss() {
   display: flex; flex-direction: column; gap: 4px;
   flex-shrink: 0;
 }
-.conflict-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
-.conflict-subtitle { font-size: 12px; color: var(--text-disabled); }
+.conflict-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); }
+.conflict-subtitle { font-size: var(--text-xs); color: var(--text-disabled); }
 
 .conflict-list {
   overflow-y: auto; padding: 14px 24px;
@@ -217,19 +222,19 @@ function onDismiss() {
   background: var(--accent-bg); border-radius: 4px; padding: 2px 6px;
   text-transform: uppercase; flex-shrink: 0;
 }
-.conflict-node-name { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.conflict-node-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); }
 
 /* 삭제 충돌 */
 .deletion-info { display: flex; flex-direction: column; gap: 8px; }
-.deletion-msg { font-size: 12px; color: #f87171; }
+.deletion-msg { font-size: var(--text-xs); color: #f87171; }
 
 /* diff 테이블 */
 .diff-table {
   width: 100%; border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 .diff-table th {
-  padding: 5px 10px; font-size: 11px; font-weight: 600;
+  padding: 5px 10px; font-size: var(--text-xs); font-weight: 600;
   color: var(--text-disabled); text-align: left; border-bottom: 1px solid var(--bg-surface);
 }
 .th-field { width: 28%; }
@@ -260,9 +265,9 @@ function onDismiss() {
   transition: border-color 0.15s;
 }
 .choice-btn:hover { border-color: var(--border-strong); }
-.choice-btn.active { border-color: var(--accent-focus); background: rgba(59,130,246,0.08); }
+.choice-btn.active { border-color: var(--accent-focus); background: var(--accent-bg); }
 .choice-badge {
-  font-size: 11px; font-weight: 700; border-radius: 4px;
+  font-size: var(--text-xs); font-weight: 700; border-radius: 4px;
   padding: 2px 7px; display: inline-block;
 }
 .choice-badge.mine { background: #14532d; color: var(--color-success-light); }
@@ -276,7 +281,7 @@ function onDismiss() {
   flex-shrink: 0;
 }
 .btn-bulk {
-  font-size: 11px; color: var(--text-disabled); background: none;
+  font-size: var(--text-xs); color: var(--text-disabled); background: none;
   border: 1px solid var(--border-default); border-radius: 5px;
   padding: 4px 10px; cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
@@ -291,14 +296,14 @@ function onDismiss() {
 }
 .btn-cancel {
   background: none; border: 1px solid var(--border-default); border-radius: 7px;
-  padding: 7px 16px; font-size: 13px; color: var(--text-tertiary); cursor: pointer;
+  padding: 7px 16px; font-size: var(--text-sm); color: var(--text-tertiary); cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
 .btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 .btn-confirm {
   background: var(--accent-primary); border: none; border-radius: 7px;
-  padding: 7px 20px; font-size: 13px; font-weight: 700; color: #fff;
+  padding: 7px 20px; font-size: var(--text-sm); font-weight: 700; color: #fff;
   cursor: pointer; transition: background 0.15s;
 }
-.btn-confirm:hover { background: var(--accent-hover); }
+.btn-confirm:hover { background: var(--accent-hover); box-shadow: 0 0 12px rgba(217,119,6,0.35); }
 </style>

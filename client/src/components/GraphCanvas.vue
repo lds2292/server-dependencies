@@ -21,9 +21,13 @@
         >
           <path d="M0,-5L10,0L0,5" :fill="m.fill" />
         </marker>
-        <!-- 닷 그리드 패턴 (Figma/Excalidraw 스타일) -->
-        <pattern id="dot-grid" width="24" height="24" patternUnits="userSpaceOnUse">
-          <circle cx="0" cy="0" r="0.85" fill="rgba(255,255,255,0.18)"/>
+        <!-- 블루프린트 그리드 패턴 (미세 선 + 주요 선) -->
+        <pattern id="micro-grid" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+          <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+        </pattern>
+        <pattern id="dot-grid" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
+          <rect width="120" height="120" fill="url(#micro-grid)"/>
+          <path d="M 120 0 L 0 0 0 120" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="0.5"/>
         </pattern>
       </defs>
       <g ref="gRef">
@@ -31,10 +35,10 @@
         <rect v-if="showGrid" x="-50000" y="-50000" width="100000" height="100000" fill="url(#dot-grid)" pointer-events="none"/>
 
         <!-- 중심점 마커 -->
-        <g v-if="showGrid" pointer-events="none" opacity="0.55">
-          <line x1="-40" y1="0" x2="40" y2="0" stroke="#22d3ee" stroke-width="1.2"/>
-          <line x1="0" y1="-40" x2="0" y2="40" stroke="#22d3ee" stroke-width="1.2"/>
-          <circle cx="0" cy="0" r="4" fill="none" stroke="#22d3ee" stroke-width="1.2"/>
+        <g v-if="showGrid" pointer-events="none" opacity="0.7">
+          <line x1="-40" y1="0" x2="40" y2="0" stroke="#f59e0b" stroke-width="1.2"/>
+          <line x1="0" y1="-40" x2="0" y2="40" stroke="#f59e0b" stroke-width="1.2"/>
+          <circle cx="0" cy="0" r="4" fill="none" stroke="#f59e0b" stroke-width="1.2"/>
         </g>
 
         <!-- L7 멤버 연결선 (의존성 라인보다 먼저 렌더링) -->
@@ -50,18 +54,18 @@
           <!-- 메인 라인 -->
           <line
             :x1="ml.x1" :y1="ml.y1" :x2="ml.x2" :y2="ml.y2"
-            :stroke="(pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId)) ? '#f59e0b' : '#a78bfa'"
+            :stroke="(pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId)) ? '#f59e0b' : '#b494f7'"
             :stroke-width="(pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId)) ? 3 : 2"
             stroke-dasharray="6,4" stroke-linecap="round" opacity="0.85"
           />
           <!-- 끝점 커넥터 (L7 쪽) -->
           <circle :cx="ml.x1" :cy="ml.y1" r="4"
             :fill="(pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId)) ? '#f59e0b' : '#7c3aed'"
-            :stroke="(pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId)) ? '#fcd34d' : '#a78bfa'"
+            :stroke="(pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId)) ? '#fcd34d' : '#b494f7'"
             stroke-width="1.5" opacity="0.9"/>
           <!-- 끝점 커넥터 (서버 쪽) -->
           <circle :cx="ml.x2" :cy="ml.y2" r="3"
-            :fill="(pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId)) ? '#f59e0b' : '#a78bfa'"
+            :fill="(pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId)) ? '#f59e0b' : '#b494f7'"
             opacity="0.85"/>
         </g>
 
@@ -114,7 +118,7 @@
           v-if="arrowPreview"
           :x1="arrowPreview.x1" :y1="arrowPreview.y1"
           :x2="arrowPreview.x2" :y2="arrowPreview.y2"
-          stroke="#22d3ee" stroke-width="2" stroke-dasharray="7,4"
+          stroke="#f59e0b" stroke-width="2" stroke-dasharray="7,4"
           marker-end="url(#arrow-preview)"
           pointer-events="none"
         />
@@ -126,8 +130,8 @@
           :y="Math.min(boxSelect.startY, boxSelect.endY)"
           :width="Math.abs(boxSelect.endX - boxSelect.startX)"
           :height="Math.abs(boxSelect.endY - boxSelect.startY)"
-          fill="rgba(6, 182, 212, 0.08)"
-          stroke="#22d3ee"
+          fill="rgba(217, 119, 6, 0.08)"
+          stroke="#f59e0b"
           stroke-width="1"
           stroke-dasharray="5,3"
           pointer-events="none"
@@ -164,6 +168,11 @@
               <path v-if="dbIcon" d="M -60,-37 L -80,-37 A 6,6 0 0 0 -86,-31 L -86,31 A 6,6 0 0 0 -80,37 L -60,37 Z" :fill="dbIcon.bgColor" pointer-events="none"/>
             </template>
           </template>
+          <template v-if="node.nodeKind === 'dns'">
+            <template v-for="dnsIcon in [getDnsIconInfo((node as DnsNode).provider)]" :key="'dnspanel'">
+              <path v-if="dnsIcon" d="M -60,-37 L -80,-37 A 6,6 0 0 0 -86,-31 L -86,31 A 6,6 0 0 0 -80,37 L -60,37 Z" :fill="dnsIcon.bgColor" pointer-events="none"/>
+            </template>
+          </template>
 
           <!-- 테두리 (stroke만, fill 없음 - 패널 위에 그려져 border가 가려지지 않음) -->
           <rect
@@ -174,7 +183,7 @@
           />
 
           <!-- 아이콘/텍스트 구분선 -->
-          <line x1="-60" y1="-31" x2="-60" y2="31" :stroke="node.nodeKind === 'infra' ? 'rgba(3,105,161,0.18)' : 'rgba(255,255,255,0.12)'" stroke-width="1" pointer-events="none"/>
+          <line x1="-60" y1="-31" x2="-60" y2="31" :stroke="node.nodeKind === 'infra' ? 'rgba(3,105,161,0.18)' : node.nodeKind === 'dns' ? 'rgba(139,92,246,0.18)' : 'rgba(255,255,255,0.12)'" stroke-width="1" pointer-events="none"/>
 
           <!-- 타입 아이콘 (좌측 컬럼 수직 중앙) -->
           <g transform="translate(-79,-6)" opacity="0.85" pointer-events="none">
@@ -226,10 +235,32 @@
               <line x1="1.5" y1="2.5" x2="9.5" y2="2.5" stroke="white" stroke-width="0.5"/>
               <line x1="1.5" y1="7.5" x2="9.5" y2="7.5" stroke="white" stroke-width="0.5"/>
             </template>
+            <!-- DNS -->
+            <template v-else-if="node.nodeKind === 'dns'">
+              <template v-for="dnsIcon in [getDnsIconInfo((node as DnsNode).provider)]" :key="'dnsi'">
+                <template v-if="dnsIcon">
+                  <circle cx="8" cy="5" r="7" :fill="dnsIcon.color" opacity="0.92"/>
+                  <text
+                    x="8" y="7.2"
+                    text-anchor="middle"
+                    :fill="dnsIcon.textColor"
+                    font-size="6"
+                    font-weight="800"
+                    style="font-family: var(--font-mono); letter-spacing: 0.3px"
+                    pointer-events="none"
+                  >{{ dnsIcon.abbr }}</text>
+                </template>
+                <template v-else>
+                  <circle cx="5.5" cy="5" r="4.5" stroke="#a78bfa" stroke-width="0.9" fill="none"/>
+                  <line x1="5.5" y1="0.5" x2="5.5" y2="9.5" stroke="#a78bfa" stroke-width="0.7"/>
+                  <line x1="1" y1="5" x2="10" y2="5" stroke="#a78bfa" stroke-width="0.7"/>
+                </template>
+              </template>
+            </template>
           </g>
 
           <!-- 노드 텍스트 (우측 텍스트 영역 중앙: x=13) -->
-          <text x="21" dy="-9" text-anchor="middle" class="node-label" :style="node.nodeKind === 'infra' ? `fill:${cssVar('--bg-base')}` : ''">{{ truncate(node.name) }}</text>
+          <text x="21" dy="-9" text-anchor="middle" class="node-label" :style="(node.nodeKind === 'infra' || node.nodeKind === 'dns') ? `fill:${cssVar('--bg-base')}` : ''">{{ truncate(node.name) }}</text>
 
           <template v-if="node.nodeKind === 'l7'">
             <text x="21" dy="6" text-anchor="middle" class="node-sub">{{ (node as any).ip || '' }}{{ (node as any).ip && (node as any).natIp ? ' / ' : '' }}{{ (node as any).natIp || '' }}{{ !((node as any).ip) && !((node as any).natIp) ? 'L7 Load Balancer' : '' }}</text>
@@ -242,6 +273,10 @@
           <template v-else-if="node.nodeKind === 'external'">
             <text x="21" dy="6" text-anchor="middle" class="node-sub">외부 서비스</text>
             <text x="21" dy="19" text-anchor="middle" class="node-meta">담당자 {{ (node as any).contacts?.length ?? 0 }}명</text>
+          </template>
+          <template v-else-if="node.nodeKind === 'dns'">
+            <text x="21" dy="6" text-anchor="middle" class="node-sub" style="fill:rgba(15,23,42,0.65)">{{ (node as DnsNode).dnsType || 'DNS' }}</text>
+            <text x="21" dy="19" text-anchor="middle" class="node-meta" style="fill:rgba(15,23,42,0.5)">{{ (node as DnsNode).recordValue || '-' }}</text>
           </template>
           <template v-else>
             <text x="21" dy="6" text-anchor="middle" class="node-ip">{{ (node as any).internalIps?.[0] || '-' }}{{ (node as any).internalIps?.length > 1 ? ` +${(node as any).internalIps.length - 1}` : '' }}</text>
@@ -257,30 +292,40 @@
 
         <!-- glow 필터 + 엣지 그라디언트 -->
         <defs>
-          <!-- 기존 glow 필터 -->
-          <filter id="glow-blue" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="4" result="blur"/>
+          <!-- glow 필터 -->
+          <filter id="glow-selected" x="-50%" y="-50%" width="200%" height="200%">
+            <feFlood flood-color="#f59e0b" flood-opacity="0.12" result="amber"/>
+            <feComposite in="amber" in2="SourceGraphic" operator="in" result="tinted"/>
+            <feGaussianBlur in="tinted" stdDeviation="5" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
           <filter id="glow-red" x="-40%" y="-40%" width="180%" height="180%">
             <feGaussianBlur stdDeviation="3" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
-          <filter id="glow-amber" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="3" result="blur"/>
+          <filter id="glow-amber" x="-50%" y="-50%" width="200%" height="200%">
+            <feFlood flood-color="#f59e0b" flood-opacity="0.25" result="amber"/>
+            <feComposite in="amber" in2="SourceGraphic" operator="in" result="tinted"/>
+            <feGaussianBlur in="tinted" stdDeviation="5" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
           <!-- 노드 타입별 hover glow 필터 -->
-          <filter id="glow-purple" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="5" result="blur"/>
+          <filter id="glow-purple" x="-50%" y="-50%" width="200%" height="200%">
+            <feFlood flood-color="#b494f7" flood-opacity="0.2" result="color"/>
+            <feComposite in="color" in2="SourceGraphic" operator="in" result="tinted"/>
+            <feGaussianBlur in="tinted" stdDeviation="5" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
-          <filter id="glow-cyan" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="5" result="blur"/>
+          <filter id="glow-cyan" x="-50%" y="-50%" width="200%" height="200%">
+            <feFlood flood-color="#3ec6d6" flood-opacity="0.2" result="color"/>
+            <feComposite in="color" in2="SourceGraphic" operator="in" result="tinted"/>
+            <feGaussianBlur in="tinted" stdDeviation="5" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
-          <filter id="glow-green" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="5" result="blur"/>
+          <filter id="glow-green" x="-50%" y="-50%" width="200%" height="200%">
+            <feFlood flood-color="#42b883" flood-opacity="0.2" result="color"/>
+            <feComposite in="color" in2="SourceGraphic" operator="in" result="tinted"/>
+            <feGaussianBlur in="tinted" stdDeviation="5" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
           <!-- 엣지 그라디언트 (출발 노드 색 → 도착 노드 색) -->
@@ -296,7 +341,7 @@
             <stop offset="100%" :stop-color="g.colorEnd" stop-opacity="0.8"/>
           </linearGradient>
           <marker id="arrow-preview" viewBox="0 -5 10 10" refX="10" refY="0" markerWidth="7" markerHeight="7" orient="auto">
-            <path d="M0,-5L10,0L0,5" fill="#22d3ee"/>
+            <path d="M0,-5L10,0L0,5" fill="#f59e0b"/>
           </marker>
         </defs>
       </g>
@@ -306,8 +351,8 @@
     <div class="search-bar" @keydown.escape="searchQuery = ''; searchFocused = false">
       <div class="search-input-wrap">
         <svg class="search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <circle cx="5.5" cy="5.5" r="4" stroke="#94a3b8" stroke-width="1.3"/>
-          <line x1="8.5" y1="8.5" x2="13" y2="13" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round"/>
+          <circle cx="5.5" cy="5.5" r="4" stroke="#787878" stroke-width="1.3"/>
+          <line x1="8.5" y1="8.5" x2="13" y2="13" stroke="#787878" stroke-width="1.3" stroke-linecap="round"/>
         </svg>
         <input
           v-model="searchQuery"
@@ -323,8 +368,8 @@
         />
         <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''; searchFocused = false">
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <line x1="1" y1="1" x2="9" y2="9" stroke="#94a3b8" stroke-width="1.4" stroke-linecap="round"/>
-            <line x1="9" y1="1" x2="1" y2="9" stroke="#94a3b8" stroke-width="1.4" stroke-linecap="round"/>
+            <line x1="1" y1="1" x2="9" y2="9" stroke="#787878" stroke-width="1.4" stroke-linecap="round"/>
+            <line x1="9" y1="1" x2="1" y2="9" stroke="#787878" stroke-width="1.4" stroke-linecap="round"/>
           </svg>
         </button>
       </div>
@@ -360,6 +405,9 @@
       </div>
       <div class="legend-item">
         <span class="legend-dot legend-ext"></span>External
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot legend-dns"></span>DNS
       </div>
     </div>
 
@@ -564,6 +612,14 @@
         </svg>
         외부 서비스
       </button>
+      <button @click="onAddNodeMenuSelect('dns')">
+        <svg class="menu-icon" viewBox="0 0 11 11" fill="none">
+          <circle cx="5.5" cy="5.5" r="4.5" stroke="#a78bfa" stroke-width="0.9"/>
+          <line x1="5.5" y1="1" x2="5.5" y2="10" stroke="#a78bfa" stroke-width="0.7"/>
+          <line x1="1" y1="5.5" x2="10" y2="5.5" stroke="#a78bfa" stroke-width="0.7"/>
+        </svg>
+        DNS
+      </button>
     </div>
 
     <!-- 컨텍스트 메뉴 -->
@@ -635,6 +691,14 @@
               </svg>
               외부 서비스
             </button>
+            <button @click="onCanvasAddNode('dns')">
+              <svg class="menu-icon" viewBox="0 0 11 11" fill="none">
+                <circle cx="5.5" cy="5.5" r="4.5" stroke="#a78bfa" stroke-width="0.9"/>
+                <line x1="5.5" y1="1" x2="5.5" y2="10" stroke="#a78bfa" stroke-width="0.7"/>
+                <line x1="1" y1="5.5" x2="10" y2="5.5" stroke="#a78bfa" stroke-width="0.7"/>
+              </svg>
+              DNS
+            </button>
           </div>
         </div>
       </template>
@@ -671,7 +735,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import * as d3 from 'd3'
-import type { AnyNode, D3Node, D3Link } from '../types'
+import type { AnyNode, DnsNode, D3Node, D3Link } from '../types'
 import { useGraphStore } from '../stores/graph'
 
 const graphStore = useGraphStore()
@@ -699,7 +763,7 @@ const emit = defineEmits<{
   deleteNodes: [nodeIds: string[]]
   addDependency: [source: AnyNode]
   quickConnect: [source: AnyNode, target: AnyNode]
-  addNodeAt: [nodeKind: 'server' | 'l7' | 'infra' | 'external']
+  addNodeAt: [nodeKind: 'server' | 'l7' | 'infra' | 'external' | 'dns']
   startPathFrom: [node: AnyNode]
   cancelPathMode: []
   linkDblClick: [linkId: string]
@@ -725,9 +789,9 @@ const renderedLinks = ref<D3Link[]>([])
 const hoveredLinkId = ref<string | null>(null)
 
 const markerDefs = [
-  { id: 'arrow-default', fill: '#94a3b8' },
+  { id: 'arrow-default', fill: '#787878' },
   { id: 'arrow-red',     fill: '#ef4444' },
-  { id: 'arrow-green',   fill: '#22c55e' },
+  { id: 'arrow-green',   fill: '#42b883' },
   { id: 'arrow-amber',   fill: '#f59e0b' },
 ]
 
@@ -774,6 +838,8 @@ const blockedTarget = ref<D3Node | null>(null)
 const connectBlockedMsg = ref('')
 
 function isConnectionBlocked(source: D3Node, target: D3Node): boolean {
+  if (target.nodeKind === 'dns') return true
+  if (source.nodeKind === 'dns' && target.nodeKind === 'infra') return true
   return source.nodeKind === 'infra' && (!target.nodeKind || target.nodeKind === 'server')
 }
 
@@ -816,7 +882,7 @@ function onCanvasDblClick(event: MouseEvent) {
   pendingNodePosition = { x, y }
 }
 
-function onAddNodeMenuSelect(nodeKind: 'server' | 'l7' | 'infra' | 'external') {
+function onAddNodeMenuSelect(nodeKind: 'server' | 'l7' | 'infra' | 'external' | 'dns') {
   addNodeMenu.value.visible = false
   emit('addNodeAt', nodeKind)
 }
@@ -830,7 +896,7 @@ function onCanvasContextMenu(event: MouseEvent) {
   canvasContextMenu.value = { visible: true, x: event.offsetX, y: event.offsetY, activeSubmenu: null }
 }
 
-function onCanvasAddNode(nodeKind: 'server' | 'l7' | 'infra' | 'external') {
+function onCanvasAddNode(nodeKind: 'server' | 'l7' | 'infra' | 'external' | 'dns') {
   canvasContextMenu.value.visible = false
   emit('addNodeAt', nodeKind)
 }
@@ -861,8 +927,19 @@ function getInfraIconInfo(infraType?: string): { abbr: string; color: string; te
   if (t.includes('elastic'))                            return { abbr: 'ES', color: '#d97706', textColor: '#fff', bgColor: '#fef9c3' }
   if (t.includes('dynamo'))                             return { abbr: 'DY', color: '#b45309', textColor: '#fff', bgColor: '#fef3c7' }
   if (t.includes('mssql') || t.includes('sqlserver') || t.includes('sql server')) return { abbr: 'MS', color: '#0284c7', textColor: '#fff', bgColor: '#e0f2fe' }
-  if (t.includes('influx'))                             return { abbr: 'IF', color: '#0891b2', textColor: '#fff', bgColor: '#cffafe' }
+  if (t.includes('influx'))                             return { abbr: 'IF', color: '#3ec6d6', textColor: '#fff', bgColor: '#d0f5f8' }
   if (t.includes('clickhouse'))                         return { abbr: 'CH', color: '#ea580c', textColor: '#fff', bgColor: '#ffedd5' }
+  return null
+}
+
+// ─── DNS 프로바이더별 배지 정보 ─────────────────────────────
+function getDnsIconInfo(provider?: string): { abbr: string; color: string; textColor: string; bgColor: string } | null {
+  if (!provider) return null
+  const p = provider.toLowerCase()
+  if (p.includes('route53') || p.includes('aws'))       return { abbr: 'R53', color: '#8b5cf6', textColor: '#fff', bgColor: '#ede9fe' }
+  if (p.includes('cloudflare'))                          return { abbr: 'CF', color: '#f59e0b', textColor: '#fff', bgColor: '#fef3c7' }
+  if (p.includes('google'))                              return { abbr: 'GC', color: '#4285f4', textColor: '#fff', bgColor: '#dbeafe' }
+  if (p.includes('gabia') || p.includes('\uAC00\uBE44\uC544')) return { abbr: 'GA', color: '#2563eb', textColor: '#fff', bgColor: '#dbeafe' }
   return null
 }
 
@@ -880,6 +957,7 @@ function nodeKindColor(kind: string): string {
   if (kind === 'l7') return cssVar('--node-l7-color')
   if (kind === 'infra') return cssVar('--node-infra-color')
   if (kind === 'external') return cssVar('--node-ext-color')
+  if (kind === 'dns') return cssVar('--node-dns-color')
   return cssVar('--node-srv-color')
 }
 
@@ -901,13 +979,14 @@ function nodeColor(node: D3Node): string {
   if (node.nodeKind === 'l7') return cssVar('--node-l7-bg-deep')
   if (node.nodeKind === 'infra') return cssVar('--node-infra-bg-light')
   if (node.nodeKind === 'external') return cssVar('--node-ext-bg-deep')
+  if (node.nodeKind === 'dns') return cssVar('--node-dns-bg-light')
   return cssVar('--accent-bg-medium')
 }
 
 function linkStroke(link: { id: string }): string {
   if (props.pathLinks.has(link.id)) return '#f59e0b'
   if (!showAllFlow.value && props.impactedLinks.has(link.id)) return '#ef4444'
-  if (showAllFlow.value || props.outgoingLinks.has(link.id)) return '#22c55e'
+  if (showAllFlow.value || props.outgoingLinks.has(link.id)) return '#42b883'
   return `url(#link-grad-${link.id})`
 }
 
@@ -929,14 +1008,15 @@ function linkMarker(link: { id: string }): string {
 function nodeFilter(node: D3Node): string | undefined {
   if (props.pathNodes.has(node.id)) return 'url(#glow-amber)'
   if ((props.pathMode || props.pathNodes.size > 0) && hoveredNodeId.value === node.id) return 'url(#glow-amber)'
-  if (props.selectedId === node.id) return 'url(#glow-blue)'
+  if (props.selectedId === node.id) return 'url(#glow-selected)'
   if (props.cycleNodes.has(node.id)) return 'url(#glow-red)'
   if (props.impactedNodes.has(node.id)) return 'url(#glow-red)'
   if (hoveredNodeId.value === node.id) {
     if (node.nodeKind === 'l7') return 'url(#glow-purple)'
     if (node.nodeKind === 'infra') return 'url(#glow-cyan)'
     if (node.nodeKind === 'external') return 'url(#glow-green)'
-    return 'url(#glow-blue)'
+    if (node.nodeKind === 'dns') return 'url(#glow-purple)'
+    return 'url(#glow-selected)'
   }
   return undefined
 }
@@ -955,19 +1035,21 @@ function nodeStroke(node: D3Node): string {
   if ((props.pathMode || props.pathNodes.size > 0) && hoveredNodeId.value === node.id) return '#f59e0b'
   if (props.cycleNodes.has(node.id)) return '#dc2626'
   if (blockedTarget.value?.id === node.id) return '#ef4444'
-  if (connectTarget.value?.id === node.id) return '#22c55e'
+  if (connectTarget.value?.id === node.id) return '#42b883'
   if (arrowSource.value?.id === node.id) return cssVar('--accent-soft')
 
   if (props.selectedId === node.id) {
-    if (node.nodeKind === 'l7') return '#a78bfa'
-    if (node.nodeKind === 'infra') return '#0284c7'
-    if (node.nodeKind === 'external') return '#4ade80'
+    if (node.nodeKind === 'l7') return '#b494f7'
+    if (node.nodeKind === 'infra') return '#3ec6d6'
+    if (node.nodeKind === 'external') return '#42b883'
+    if (node.nodeKind === 'dns') return '#8b5cf6'
     return cssVar('--node-srv-color')
   }
   if (props.impactedNodes.has(node.id)) return '#ef4444'
   if (node.nodeKind === 'l7') return '#7c3aed'
   if (node.nodeKind === 'infra') return '#7dd3fc'
-  if (node.nodeKind === 'external') return '#16a34a'
+  if (node.nodeKind === 'external') return '#42b883'
+  if (node.nodeKind === 'dns') return '#a78bfa'
   return cssVar('--border-strong')
 }
 
@@ -1552,6 +1634,7 @@ function minimapNodeColor(node: { nodeKind?: string }): string {
   if (node.nodeKind === 'l7') return cssVar('--node-l7-color')
   if (node.nodeKind === 'infra') return cssVar('--node-infra-color')
   if (node.nodeKind === 'external') return cssVar('--node-ext-color')
+  if (node.nodeKind === 'dns') return cssVar('--node-dns-color')
   return cssVar('--node-srv-color')
 }
 
@@ -1624,6 +1707,7 @@ function searchNodeKindLabel(node: D3Node): string {
   if (node.nodeKind === 'l7') return 'L7'
   if (node.nodeKind === 'infra') return 'INFRA'
   if (node.nodeKind === 'external') return 'EXT'
+  if (node.nodeKind === 'dns') return 'DNS'
   return 'SRV'
 }
 
@@ -1631,6 +1715,7 @@ function searchNodeColor(node: D3Node): string {
   if (node.nodeKind === 'l7') return cssVar('--node-l7-color')
   if (node.nodeKind === 'infra') return cssVar('--node-infra-color')
   if (node.nodeKind === 'external') return cssVar('--node-ext-color')
+  if (node.nodeKind === 'dns') return cssVar('--node-dns-color')
   return cssVar('--node-srv-color')
 }
 
@@ -1729,7 +1814,7 @@ async function exportGraph(format: 'svg' | 'png', transparent = false) {
   const style = document.createElementNS('http://www.w3.org/2000/svg', 'style')
   style.textContent = [
     `text { font-family: var(--font-sans); }`,
-    `.node-label { font-size: 12px; fill: #fff; font-weight: 700; }`,
+    `.node-label { font-size: var(--text-xs); fill: #fff; font-weight: 700; }`,
     `.node-ip    { font-size: 10px; fill: rgba(255,255,255,0.75); }`,
     `.node-sub   { font-size: 9px;  fill: rgba(255,255,255,0.65); font-weight: 600; letter-spacing: 0.02em; }`,
     `.node-meta  { font-size: 9.5px; fill: rgba(255,255,255,0.5); }`,
@@ -1807,7 +1892,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
   user-select: none;
 }
 .graph-svg { width: 100%; height: 100%; }
-.node-label { font-size: 12px; fill: #fff; pointer-events: none; font-weight: 700; }
+.node-label { font-size: var(--text-xs); fill: #fff; pointer-events: none; font-weight: 700; }
 .node-ip { font-size: 10px; fill: rgba(255,255,255,0.75); pointer-events: none; }
 .node-sub { font-size: 9px; fill: rgba(255,255,255,0.65); pointer-events: none; font-weight: 600; letter-spacing: 0.02em; }
 .node-meta { font-size: 9.5px; fill: rgba(255,255,255,0.5); pointer-events: none; }
@@ -1843,34 +1928,34 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 
 .mode-hint {
   position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
-  background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 20px;
-  padding: 5px 14px; font-size: 11px; color: var(--text-disabled);
+  background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: 20px;
+  padding: 5px 14px; font-size: var(--text-xs); color: var(--text-tertiary);
   pointer-events: none; z-index: 50; white-space: nowrap;
 }
-.readonly-hint { background: #1c1217; border-color: var(--node-l7-color); color: #a78bfa; }
+.readonly-hint { background: #1c1217; border-color: var(--node-l7-color); color: var(--node-l7-color); }
 .drop-hint {
   position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
-  background: var(--node-ext-bg-deep); border: 1px solid #22c55e; border-radius: 20px;
-  padding: 6px 16px; font-size: 13px; color: var(--color-success-lighter);
+  background: var(--node-ext-bg-deep); border: 1px solid var(--node-ext-color); border-radius: 20px;
+  padding: 6px 16px; font-size: var(--text-sm); color: var(--color-success-lighter);
   pointer-events: none; z-index: 50; white-space: nowrap;
 }
 .drag-hint {
   position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
   background: var(--accent-bg-deep); border: 1px solid var(--accent-focus); border-radius: 20px;
-  padding: 6px 16px; font-size: 13px; color: var(--accent-light);
+  padding: 6px 16px; font-size: var(--text-sm); color: var(--accent-light);
   pointer-events: none; z-index: 50; white-space: nowrap;
 }
 .blocked-hint {
   position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
   background: #1c0a0a; border: 1px solid #ef4444; border-radius: 20px;
-  padding: 6px 16px; font-size: 13px; color: #fca5a5;
+  padding: 6px 16px; font-size: var(--text-sm); color: #fca5a5;
   pointer-events: none; z-index: 50; white-space: nowrap;
 }
 .hint-blocked { color: #ef4444; font-weight: 700; }
 .blocked-toast {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
   background: #1c0a0a; border: 1px solid #ef4444; border-radius: 10px;
-  padding: 14px 24px; font-size: 14px; color: #fca5a5; font-weight: 600;
+  padding: 14px 24px; font-size: var(--text-base); color: #fca5a5; font-weight: 600;
   pointer-events: none; z-index: 100; white-space: nowrap;
   box-shadow: 0 4px 20px rgba(239,68,68,0.25);
 }
@@ -1878,21 +1963,21 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .fade-leave-active { transition: opacity 0.4s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 .hint-source { color: var(--accent-soft); font-weight: 700; }
-.hint-target { color: #22c55e; font-weight: 700; }
+.hint-target { color: var(--node-ext-color); font-weight: 700; }
 .add-node-menu {
   position: absolute; background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: 8px; padding: 4px 0; z-index: 110; min-width: 160px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
 .add-node-menu-title {
-  padding: 6px 14px 5px; font-size: 11px; font-weight: 700;
+  padding: 6px 14px 5px; font-size: var(--text-xs); font-weight: 700;
   color: var(--border-strong); letter-spacing: 0.05em; text-transform: uppercase;
   border-bottom: 1px solid var(--border-default); margin-bottom: 3px;
 }
 .add-node-menu button {
   display: flex; align-items: center; gap: 8px;
   width: 100%; padding: 7px 14px; background: none;
-  border: none; color: var(--text-secondary); text-align: left; cursor: pointer; font-size: 13px;
+  border: none; color: var(--text-secondary); text-align: left; cursor: pointer; font-size: var(--text-sm);
 }
 .add-node-menu button:hover { background: var(--border-default); }
 .menu-icon { width: 14px; height: 14px; flex-shrink: 0; }
@@ -1903,12 +1988,12 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 }
 .context-menu button {
   display: block; width: 100%; padding: 6px 16px; background: none;
-  border: none; color: var(--text-secondary); text-align: left; cursor: pointer; font-size: 13px;
+  border: none; color: var(--text-secondary); text-align: left; cursor: pointer; font-size: var(--text-sm);
 }
 .context-menu button:hover { background: var(--border-default); }
 .submenu-item {
   position: relative; display: flex; align-items: center; justify-content: space-between;
-  padding: 6px 12px 6px 16px; color: var(--text-secondary); font-size: 13px; cursor: pointer; user-select: none;
+  padding: 6px 12px 6px 16px; color: var(--text-secondary); font-size: var(--text-sm); cursor: pointer; user-select: none;
 }
 .submenu-item:hover { background: var(--border-default); }
 .submenu-arrow { font-size: 9px; color: var(--text-tertiary); margin-left: 8px; }
@@ -1920,7 +2005,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .submenu button {
   display: flex; align-items: center; gap: 6px;
   width: 100%; padding: 6px 16px; background: none;
-  border: none; color: var(--text-secondary); text-align: left; cursor: pointer; font-size: 13px;
+  border: none; color: var(--text-secondary); text-align: left; cursor: pointer; font-size: var(--text-sm);
 }
 .submenu button:hover { background: var(--border-default); }
 
@@ -1934,29 +2019,29 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
   border-radius: 10px; padding: 24px; width: 300px;
   display: flex; flex-direction: column; gap: 16px;
 }
-.export-modal h3 { margin: 0; color: var(--text-primary); font-size: 15px; }
+.export-modal h3 { margin: 0; color: var(--text-primary); font-size: var(--text-base); }
 .export-format { display: flex; gap: 8px; }
 .export-format label {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
   padding: 8px; border: 1px solid var(--border-default); border-radius: 6px;
-  color: var(--text-tertiary); cursor: pointer; font-size: 13px; transition: all 0.15s;
+  color: var(--text-tertiary); cursor: pointer; font-size: var(--text-sm); transition: all 0.15s;
 }
 .export-format label.active { border-color: var(--accent-focus); color: var(--text-secondary); background: rgba(59,130,246,0.1); }
 .export-format input[type=radio] { display: none; }
 .export-option {
   display: flex; align-items: center; gap: 8px;
-  color: var(--text-secondary); font-size: 13px; cursor: pointer;
+  color: var(--text-secondary); font-size: var(--text-sm); cursor: pointer;
 }
 .export-option input[type=checkbox] { accent-color: var(--accent-focus); width: 14px; height: 14px; }
 .export-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .btn-primary {
   padding: 7px 16px; background: var(--accent-primary); color: #fff;
-  border: none; border-radius: 6px; cursor: pointer; font-size: 13px;
+  border: none; border-radius: 6px; cursor: pointer; font-size: var(--text-sm);
 }
 .btn-primary:hover { background: var(--accent-hover); }
 .btn-secondary {
   padding: 7px 16px; background: none; color: var(--text-tertiary);
-  border: 1px solid var(--border-default); border-radius: 6px; cursor: pointer; font-size: 13px;
+  border: 1px solid var(--border-default); border-radius: 6px; cursor: pointer; font-size: var(--text-sm);
 }
 .btn-secondary:hover { background: var(--border-default); color: var(--text-secondary); }
 .context-menu button.danger { color: #ef4444; }
@@ -1965,7 +2050,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 
 .node-legend {
   position: absolute; top: 12px; right: 12px;
-  background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-default);
+  background: rgba(18, 18, 20, 0.85); border: 1px solid var(--border-default);
   border-radius: 12px; padding: 12px 15px;
   display: flex; flex-direction: column; gap: 8px;
   pointer-events: none; z-index: 50;
@@ -1973,7 +2058,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 }
 .legend-item {
   display: flex; align-items: center; gap: 9px;
-  font-size: 15px; color: var(--text-tertiary); font-weight: 600; white-space: nowrap;
+  font-size: var(--text-base); color: var(--text-tertiary); font-weight: 600; white-space: nowrap;
 }
 .legend-dot {
   width: 15px; height: 15px; border-radius: 3px;
@@ -1983,6 +2068,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .legend-l7    { background: var(--node-l7-bg-deep);     border-color: var(--node-l7-color); }
 .legend-infra { background: var(--node-infra-bg-light); border-color: var(--node-infra-color); }
 .legend-ext   { background: var(--node-ext-bg-deep);    border-color: var(--node-ext-color); }
+.legend-dns   { background: var(--node-dns-color);      border-color: var(--node-dns-color); }
 .legend-divider {
   height: 2px; background: var(--border-default); margin: 3px 0;
 }
@@ -1995,13 +2081,13 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
   left: 12px; bottom: auto; top: 50px;
 }
 .canvas-btns-right .canvas-btn.active {
-  color: #22c55e; border-color: var(--node-ext-color);
+  color: var(--node-ext-color); border-color: var(--node-ext-color);
 }
 .canvas-btn {
   display: flex; align-items: center; gap: 5px;
-  background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-default);
+  background: rgba(18, 18, 20, 0.85); border: 1px solid var(--border-default);
   border-radius: 20px; padding: 5px 12px;
-  font-size: 11px; color: var(--text-disabled); cursor: pointer;
+  font-size: var(--text-xs); color: var(--text-disabled); cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
   backdrop-filter: blur(4px);
 }
@@ -2015,25 +2101,25 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .zoom-controls {
   position: absolute; bottom: 12px; right: 12px;
   display: flex; align-items: center; gap: 4px; z-index: 50;
-  background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-default);
+  background: rgba(18, 18, 20, 0.85); border: 1px solid var(--border-default);
   border-radius: 20px; padding: 4px 10px;
   backdrop-filter: blur(4px);
 }
 .zoom-btn {
   background: none; border: none; color: var(--text-disabled);
-  font-size: 16px; line-height: 1; cursor: pointer;
+  font-size: var(--text-lg); line-height: 1; cursor: pointer;
   padding: 0 4px; transition: color 0.15s;
 }
 .zoom-btn:hover { color: var(--text-tertiary); }
 .zoom-input {
   width: 40px; background: none; border: none;
-  color: var(--text-tertiary); font-size: 12px; font-weight: 700;
+  color: var(--text-tertiary); font-size: var(--text-xs); font-weight: 700;
   text-align: center; outline: none;
   -moz-appearance: textfield;
 }
 .zoom-input::-webkit-inner-spin-button,
 .zoom-input::-webkit-outer-spin-button { -webkit-appearance: none; }
-.zoom-pct { color: var(--text-disabled); font-size: 11px; }
+.zoom-pct { color: var(--text-disabled); font-size: var(--text-xs); }
 
 /* 단축키 툴팁 */
 [data-tooltip]::before {
@@ -2046,7 +2132,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
   border: 1px solid var(--border-default);
   border-radius: 6px;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 400;
   padding: 5px 9px;
   white-space: nowrap;
@@ -2120,7 +2206,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .search-icon { flex-shrink: 0; }
 .search-input {
   flex: 1; background: none; border: none; outline: none;
-  color: var(--text-secondary); font-size: 13px;
+  color: var(--text-secondary); font-size: var(--text-sm);
   min-width: 0;
 }
 .search-input::placeholder { color: var(--border-strong); }
@@ -2150,15 +2236,15 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
   min-width: 30px; flex-shrink: 0;
 }
 .search-result-name {
-  flex: 1; font-size: 13px; color: var(--text-secondary);
+  flex: 1; font-size: var(--text-sm); color: var(--text-secondary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .search-result-ip {
-  font-size: 11px; color: var(--text-disabled);
+  font-size: var(--text-xs); color: var(--text-disabled);
   white-space: nowrap; flex-shrink: 0;
 }
 .search-no-result {
-  padding: 10px 14px; font-size: 12px; color: var(--border-strong);
+  padding: 10px 14px; font-size: var(--text-xs); color: var(--border-strong);
   background: rgba(15, 23, 42, 0.96); border: 1px solid var(--border-default);
   border-radius: 8px; margin-top: 4px; text-align: center;
   backdrop-filter: blur(6px);
@@ -2173,7 +2259,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .path-mode-banner {
   position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
   background: #1c1007; border: 1px solid #f59e0b; border-radius: 20px;
-  padding: 6px 16px; font-size: 13px; color: #fcd34d;
+  padding: 6px 16px; font-size: var(--text-sm); color: #fcd34d;
   z-index: 60; white-space: nowrap;
   display: flex; align-items: center; gap: 10px;
   box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
@@ -2181,7 +2267,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .path-source-name { color: #f59e0b; font-weight: 700; }
 .path-cancel-btn {
   background: none; border: 1px solid #92400e; border-radius: 12px;
-  color: #d97706; font-size: 11px; font-weight: 600; padding: 2px 10px; cursor: pointer;
+  color: #d97706; font-size: var(--text-xs); font-weight: 600; padding: 2px 10px; cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
 .path-cancel-btn:hover { border-color: #f59e0b; color: #fcd34d; }
@@ -2212,7 +2298,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .cycle-warning-banner {
   position: absolute; top: 12px; right: 16px;
   background: #1c0a0a; border: 1px solid #dc2626; border-radius: 20px;
-  padding: 5px 14px; font-size: 12px; font-weight: 600; color: #fca5a5;
+  padding: 5px 14px; font-size: var(--text-xs); font-weight: 600; color: #fca5a5;
   z-index: 60; white-space: nowrap;
   box-shadow: 0 0 10px rgba(220, 38, 38, 0.2);
 }
