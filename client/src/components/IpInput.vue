@@ -122,14 +122,14 @@ function onBlur() {
   border: none;
   outline: none;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--text-sm);
   text-align: center;
   padding: 8px 0;
   font-family: var(--font-mono);
 }
 .dot {
   color: var(--text-disabled);
-  font-size: 14px;
+  font-size: var(--text-base);
   font-weight: 700;
   user-select: none;
 }

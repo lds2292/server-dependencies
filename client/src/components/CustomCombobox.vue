@@ -183,7 +183,7 @@ onUnmounted(() => document.removeEventListener('mousedown', onOutsideClick))
   border: none;
   outline: none;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--text-sm);
   padding: 8px 0;
 }
 .input-wrap input::placeholder { color: var(--border-strong); }
@@ -215,17 +215,17 @@ onUnmounted(() => document.removeEventListener('mousedown', onOutsideClick))
   align-items: center;
   gap: 8px;
   padding: 9px 14px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   cursor: pointer;
   transition: background 0.1s;
 }
 .combobox-option:hover,
-.combobox-option.focused { background: #273549; }
+.combobox-option.focused { background: var(--bg-elevated); }
 .combobox-option.selected { color: var(--accent-soft); }
 .combobox-option .option-check {
   width: 14px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--accent-soft);
   flex-shrink: 0;
 }

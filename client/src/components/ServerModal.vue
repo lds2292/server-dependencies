@@ -109,7 +109,7 @@ function onSubmit() {
 }
 .modal h3 {
   margin: 0 0 20px;
-  font-size: 16px;
+  font-size: var(--text-lg);
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -118,7 +118,7 @@ label {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--text-tertiary);
   font-weight: 600;
 }
@@ -128,12 +128,12 @@ input, select, textarea {
   border-radius: 6px;
   padding: 8px 10px;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--text-sm);
   outline: none;
 }
 input:focus, select:focus, textarea:focus { border-color: var(--accent-focus); }
 .input-error { border-color: #ef4444 !important; }
-.error-msg { color: #ef4444; font-size: 11px; font-weight: 500; }
+.error-msg { color: #ef4444; font-size: var(--text-xs); font-weight: 500; }
 .checkbox-label {
   flex-direction: row;
   align-items: center;
@@ -150,29 +150,29 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent-focus); }
 /* datalist 드롭다운 스타일 */
 input[list] { cursor: pointer; }
 .ip-section { display: flex; flex-direction: column; gap: 6px; }
-.ip-section-label { font-size: 12px; color: var(--text-tertiary); font-weight: 600; }
+.ip-section-label { font-size: var(--text-xs); color: var(--text-tertiary); font-weight: 600; }
 .ip-row { display: flex; align-items: center; gap: 6px; }
 .btn-ip-remove {
   background: none; border: none; color: var(--border-strong); cursor: pointer;
-  font-size: 12px; padding: 4px 6px; border-radius: 4px; flex-shrink: 0;
+  font-size: var(--text-xs); padding: 4px 6px; border-radius: 4px; flex-shrink: 0;
 }
 .btn-ip-remove:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
 .btn-ip-add {
   background: none; border: 1px dashed var(--border-default); border-radius: 5px;
-  color: var(--text-disabled); font-size: 11px; padding: 4px 10px; cursor: pointer;
+  color: var(--text-disabled); font-size: var(--text-xs); padding: 4px 10px; cursor: pointer;
   align-self: flex-start;
 }
 .btn-ip-add:hover { border-color: var(--accent-soft); color: var(--accent-light); }
 .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 .btn-primary {
   background: var(--accent-primary); color: #fff; border: none;
-  border-radius: 6px; padding: 8px 18px; font-size: 13px;
+  border-radius: 6px; padding: 8px 18px; font-size: var(--text-sm);
   cursor: pointer; font-weight: 600;
 }
 .btn-primary:hover { background: var(--accent-hover); }
 .btn-secondary {
   background: var(--border-default); color: var(--text-secondary); border: none;
-  border-radius: 6px; padding: 8px 18px; font-size: 13px; cursor: pointer;
+  border-radius: 6px; padding: 8px 18px; font-size: var(--text-sm); cursor: pointer;
 }
 .btn-secondary:hover { background: var(--border-strong); }
 </style>

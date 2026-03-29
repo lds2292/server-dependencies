@@ -158,30 +158,30 @@ function onSubmit() {
 <style scoped>
 .modal-backdrop { position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:200; }
 .modal { background:var(--bg-surface);border:1px solid var(--border-default);border-radius:10px;padding:24px;width:420px;max-width:90vw;max-height:90vh;overflow-y:auto; }
-.modal h3 { margin:0 0 20px;font-size:16px;font-weight:700;color:var(--text-primary); }
+.modal h3 { margin:0 0 20px;font-size: var(--text-lg);font-weight:700;color:var(--text-primary); }
 form { display:flex;flex-direction:column;gap:14px; }
-label { display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-tertiary);font-weight:600; }
-input,textarea { background:var(--bg-base);border:1px solid var(--border-default);border-radius:6px;padding:8px 10px;color:var(--text-secondary);font-size:13px;outline:none; }
+label { display:flex;flex-direction:column;gap:5px;font-size: var(--text-xs);color:var(--text-tertiary);font-weight:600; }
+input,textarea { background:var(--bg-base);border:1px solid var(--border-default);border-radius:6px;padding:8px 10px;color:var(--text-secondary);font-size: var(--text-sm);outline:none; }
 input:focus,textarea:focus { border-color:var(--node-ext-color); }
 .input-error { border-color:#ef4444!important; }
-.error-msg { color:#ef4444;font-size:11px;font-weight:500; }
+.error-msg { color:#ef4444;font-size: var(--text-xs);font-weight:500; }
 .checkbox-label { flex-direction:row!important;align-items:center;gap:8px;cursor:pointer; }
 .checkbox-label input[type="checkbox"] { width:15px;height:15px;padding:0;cursor:pointer;accent-color:var(--node-ext-color);flex-shrink:0; }
 .section-row { display:flex;align-items:center;justify-content:space-between; }
-.section-label { font-size:12px;font-weight:600;color:var(--text-tertiary); }
-.btn-add-contact { background:#14532d;color:var(--color-success-lighter);border:1px solid var(--node-ext-color);border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600; }
+.section-label { font-size: var(--text-xs);font-weight:600;color:var(--text-tertiary); }
+.btn-add-contact { background:#14532d;color:var(--color-success-lighter);border:1px solid var(--node-ext-color);border-radius:5px;padding:3px 8px;font-size: var(--text-xs);cursor:pointer;font-weight:600; }
 .btn-add-contact:hover { background:#166534; }
 .contacts-list { display:flex;flex-direction:column;gap:8px; }
 .contact-item { background:var(--bg-base);border:1px solid var(--border-default);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:6px; }
 .contact-row { display:flex;gap:6px;align-items:center; }
 .contact-name { flex:1; }
-.btn-remove { background:none;border:none;color:var(--border-strong);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:3px;flex-shrink:0; }
+.btn-remove { background:none;border:none;color:var(--border-strong);cursor:pointer;font-size: var(--text-sm);padding:2px 4px;border-radius:3px;flex-shrink:0; }
 .btn-remove:hover { color:#ef4444;background:#3f1f1f; }
-.no-contacts { color:var(--border-strong);font-size:12px;text-align:center;margin:4px 0; }
+.no-contacts { color:var(--border-strong);font-size: var(--text-xs);text-align:center;margin:4px 0; }
 .actions { display:flex;gap:8px;justify-content:flex-end;margin-top:4px; }
-.btn-primary { background:var(--node-ext-color);color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:600; }
+.btn-primary { background:var(--node-ext-color);color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size: var(--text-sm);cursor:pointer;font-weight:600; }
 .btn-primary:hover:not(:disabled) { background:#15803d; }
 .btn-primary:disabled { opacity:0.5;cursor:not-allowed; }
-.btn-secondary { background:var(--border-default);color:var(--text-secondary);border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer; }
+.btn-secondary { background:var(--border-default);color:var(--text-secondary);border:none;border-radius:6px;padding:8px 18px;font-size: var(--text-sm);cursor:pointer; }
 .btn-secondary:hover { background:var(--border-strong); }
 </style>

@@ -6,6 +6,7 @@
         :l7-nodes="store.l7Nodes"
         :infra-nodes="store.infraNodes"
         :external-nodes="store.externalNodes"
+        :dns-nodes="store.dnsNodes"
         :selected-id="selectedNode?.id ?? null"
         :read-only="readOnly"
         @select="onSelectNode"
@@ -13,6 +14,7 @@
         @add-l7="openAddL7Modal"
         @add-infra="openAddInfraModal"
         @add-external="openAddExternalModal"
+        @add-dns="openAddDnsModal"
         @edit="onEditNode"
         @delete="onDeleteNode"
         @export-j-s-o-n="store.exportJSON"
@@ -56,17 +58,29 @@
           </div>
         </div>
         <div class="toolbar-right">
-          <button v-if="projectStore.canWrite" class="btn-sample" @click="onSampleClick">Sample</button>
           <button
-            :class="['btn-readonly', { active: readOnly }]"
+            :class="['btn-mode-toggle', { active: readOnly }]"
             @click="projectStore.canWrite ? (readOnly = !readOnly) : null"
             :data-tooltip="!projectStore.canWrite ? '읽기 전용 권한입니다' : readOnly ? '편집 모드로 전환' : '읽기 전용으로 전환'"
             data-shortcut="E"
             :disabled="!projectStore.canWrite"
-          >{{ readOnly ? 'Read Only' : 'Edit' }}</button>
-          <button v-if="projectStore.canAdmin" class="btn-members" @click="router.push({ name: 'auditLogs', params: { id: projectStore.currentProject!.id } })">감사 로그</button>
-          <button v-if="projectStore.canAdmin" class="btn-members" @click="onOpenMembersModal">멤버 관리</button>
-          <button class="btn-logout" @click="showLogoutConfirm = true">로그아웃</button>
+          >{{ readOnly ? '읽기 전용' : '편집' }}</button>
+
+          <div v-if="hasSettingsItems" class="toolbar-dropdown-wrap" ref="settingsWrapRef">
+            <button class="btn-toolbar-icon" @click.stop="showSettingsDropdown = !showSettingsDropdown" data-tooltip="설정">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                <path d="M8.325 2.317a1 1 0 0 1 .967-.734h1.416a1 1 0 0 1 .967.734l.244.976a6.47 6.47 0 0 1 1.218.703l.954-.305a1 1 0 0 1 1.142.422l.708 1.226a1 1 0 0 1-.176 1.157l-.71.67a6.5 6.5 0 0 1 0 1.408l.71.67a1 1 0 0 1 .176 1.157l-.708 1.226a1 1 0 0 1-1.142.422l-.954-.305a6.47 6.47 0 0 1-1.218.703l-.244.976a1 1 0 0 1-.967.734H9.292a1 1 0 0 1-.967-.734l-.244-.976a6.47 6.47 0 0 1-1.218-.703l-.954.305a1 1 0 0 1-1.142-.422l-.708-1.226a1 1 0 0 1 .176-1.157l.71-.67a6.5 6.5 0 0 1 0-1.408l-.71-.67a1 1 0 0 1-.176-1.157l.708-1.226a1 1 0 0 1 1.142-.422l.954.305a6.47 6.47 0 0 1 1.218-.703l.244-.976ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <div v-if="showSettingsDropdown" class="toolbar-dropdown">
+              <button v-if="projectStore.canAdmin" @click="router.push({ name: 'auditLogs', params: { id: projectStore.currentProject!.id } }); showSettingsDropdown = false">감사 로그</button>
+              <button v-if="projectStore.canAdmin" @click="onOpenMembersModal(); showSettingsDropdown = false">멤버 관리</button>
+              <div v-if="projectStore.canAdmin && projectStore.canWrite && !hasData" class="toolbar-dropdown-divider"></div>
+              <button v-if="projectStore.canWrite && !hasData" @click="onSampleClick(); showSettingsDropdown = false">샘플 데이터 불러오기</button>
+            </div>
+          </div>
+
+          <UserProfileDropdown @logout="showLogoutConfirm = true" />
         </div>
       </div>
       <div class="graph-wrap">
@@ -96,6 +110,14 @@
           @cancel-path-mode="onCancelPathMode"
           @link-dbl-click="onLinkDblClick"
         />
+        <div v-if="!hasData && projectStore.canWrite && !readOnly" class="empty-state-cta">
+          <p class="empty-state-title">그래프가 비어 있습니다</p>
+          <p class="empty-state-desc">샘플 데이터로 시작하거나 직접 노드를 추가하세요.</p>
+          <div class="empty-state-actions">
+            <button class="btn-empty-sample" @click="loadSample">샘플 데이터로 시작하기</button>
+            <button class="btn-empty-add" @click="openAddServerModal">직접 노드 추가하기</button>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -286,6 +308,13 @@
       @close="infraModal.visible = false"
       @submit="onInfraModalSubmit"
     />
+    <DnsModal
+      v-if="dnsModal.visible"
+      :node="dnsModal.editing"
+      :taken-names="allNodeNames"
+      @close="dnsModal.visible = false"
+      @submit="onDnsModalSubmit"
+    />
     <ExternalServiceModal
       v-if="externalModal.visible"
       :node="externalModal.editing"
@@ -300,10 +329,10 @@
         <div class="delete-dialog">
           <div class="delete-dialog-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="3" width="7" height="7" rx="1" stroke="#60a5fa" stroke-width="1.5"/>
-              <rect x="14" y="3" width="7" height="7" rx="1" stroke="#60a5fa" stroke-width="1.5"/>
-              <rect x="3" y="14" width="7" height="7" rx="1" stroke="#60a5fa" stroke-width="1.5"/>
-              <rect x="14" y="14" width="7" height="7" rx="1" stroke="#60a5fa" stroke-width="1.5"/>
+              <rect x="3" y="3" width="7" height="7" rx="1" stroke="#5b8def" stroke-width="1.5"/>
+              <rect x="14" y="3" width="7" height="7" rx="1" stroke="#5b8def" stroke-width="1.5"/>
+              <rect x="3" y="14" width="7" height="7" rx="1" stroke="#5b8def" stroke-width="1.5"/>
+              <rect x="14" y="14" width="7" height="7" rx="1" stroke="#5b8def" stroke-width="1.5"/>
             </svg>
           </div>
           <div class="delete-dialog-body">
@@ -513,9 +542,11 @@ import L7Modal from '../components/L7Modal.vue'
 import InfraModal from '../components/InfraModal.vue'
 import ExternalServiceModal from '../components/ExternalServiceModal.vue'
 import DependencyModal from '../components/DependencyModal.vue'
+import DnsModal from '../components/DnsModal.vue'
 import ImpactPanel from '../components/ImpactPanel.vue'
+import UserProfileDropdown from '../components/UserProfileDropdown.vue'
 import { graphApi } from '../api/graphApi'
-import type { Server, L7Node, InfraNode, ExternalServiceNode, AnyNode, Dependency, D3Link } from '../types'
+import type { Server, L7Node, InfraNode, ExternalServiceNode, DnsNode, AnyNode, Dependency, D3Link } from '../types'
 
 const route = useRoute()
 const router = useRouter()
@@ -526,6 +557,8 @@ const store = useGraphStore()
 const selectedNode = ref<AnyNode | null>(null)
 const readOnly = ref(false)
 const showShortcuts = ref(false)
+const showSettingsDropdown = ref(false)
+const settingsWrapRef = ref<HTMLDivElement>()
 const showHelp = ref(false)
 const detailPanelOpen = ref(true)
 const pathSource = ref<AnyNode | null>(null)
@@ -535,7 +568,7 @@ const pathLinkIds = ref(new Set<string>())
 const graphCanvasRef = ref<InstanceType<typeof GraphCanvas> | null>(null)
 
 const allNodes = computed<AnyNode[]>(() => [
-  ...store.servers, ...store.l7Nodes, ...store.infraNodes, ...store.externalNodes,
+  ...store.servers, ...store.l7Nodes, ...store.infraNodes, ...store.externalNodes, ...store.dnsNodes,
 ])
 
 const d3Links = computed<D3Link[]>(() =>
@@ -572,6 +605,7 @@ const allNodeNames = computed(() => new Set([
   ...store.l7Nodes.map(n => n.name),
   ...store.infraNodes.map(n => n.name),
   ...store.externalNodes.map(n => n.name),
+  ...store.dnsNodes.map(n => n.name),
 ]))
 
 function onSelectNode(node: AnyNode) {
@@ -621,10 +655,18 @@ function applyPath(targetNode: AnyNode) {
   const pathNodeSet = new Set(expandedPath)
   pathNodeIds.value = pathNodeSet
   const linkIds = new Set<string>()
-  // 원본 경로의 연속 쌍으로 링크 수집
+  // L7 멤버 맵 구성
+  const l7MemberMap = new Map<string, string[]>()
+  for (const l7 of store.l7Nodes) {
+    l7MemberMap.set(l7.id, l7.memberServerIds)
+  }
+  // 원본 경로의 연속 쌍으로 링크 수집 (L7 멤버도 고려)
   for (let i = 0; i < path.length - 1; i++) {
-    const dep = store.dependencies.find(d => d.source === path[i] && d.target === path[i + 1])
-    if (dep) linkIds.add(dep.id)
+    const srcIds = [path[i], ...(l7MemberMap.get(path[i]) ?? [])]
+    const tgtIds = [path[i + 1], ...(l7MemberMap.get(path[i + 1]) ?? [])]
+    for (const dep of store.dependencies) {
+      if (srcIds.includes(dep.source) && tgtIds.includes(dep.target)) linkIds.add(dep.id)
+    }
   }
   // L7 확장으로 추가된 멤버 노드들의 의존성 링크도 수집 (경로 내 노드와 연결된 것)
   for (const nodeId of expandedPath) {
@@ -641,6 +683,7 @@ function onEditNode(node: AnyNode) {
   if (node.nodeKind === 'l7') openEditL7Modal(node as L7Node)
   else if (node.nodeKind === 'infra') openEditInfraModal(node as InfraNode)
   else if (node.nodeKind === 'external') openEditExternalModal(node as ExternalServiceNode)
+  else if (node.nodeKind === 'dns') openEditDnsModal(node as DnsNode)
   else openEditServerModal(node as Server)
 }
 // ─── 노드 삭제 확인 다이얼로그 ───────────────────────────
@@ -657,6 +700,7 @@ function confirmDelete() {
   if (node.nodeKind === 'l7') store.deleteL7Node(node.id)
   else if (node.nodeKind === 'infra') store.deleteInfraNode(node.id)
   else if (node.nodeKind === 'external') store.deleteExternalNode(node.id)
+  else if (node.nodeKind === 'dns') store.deleteDnsNode(node.id)
   else store.deleteServer(node.id)
   if (selectedNode.value?.id === node.id) selectedNode.value = null
   deleteConfirm.value = { visible: false, node: null }
@@ -728,6 +772,16 @@ function onInfraModalSubmit(data: Omit<InfraNode, 'id'>) {
   infraModal.value.visible = false
 }
 
+// DNS Modal
+const dnsModal = ref<{ visible: boolean; editing: DnsNode | null }>({ visible: false, editing: null })
+function openAddDnsModal() { dnsModal.value = { visible: true, editing: null } }
+function openEditDnsModal(n: DnsNode) { dnsModal.value = { visible: true, editing: n } }
+function onDnsModalSubmit(data: Omit<DnsNode, 'id'>) {
+  if (dnsModal.value.editing) store.updateDnsNode(dnsModal.value.editing.id, data)
+  else store.addDnsNode(data)
+  dnsModal.value.visible = false
+}
+
 // External Modal
 const externalModal = ref<{ visible: boolean; editing: ExternalServiceNode | null }>({ visible: false, editing: null })
 function openAddExternalModal() { externalModal.value = { visible: true, editing: null } }
@@ -793,10 +847,11 @@ onBeforeUnmount(() => { store.saveGraph(); store.flushPositions() })
 
 // Dependency Modal
 const depModal = ref<{ visible: boolean; defaultSource: string; defaultTarget: string; editingDep?: Dependency }>({ visible: false, defaultSource: '', defaultTarget: '' })
-function onAddNodeAt(nodeKind: 'server' | 'l7' | 'infra' | 'external') {
+function onAddNodeAt(nodeKind: 'server' | 'l7' | 'infra' | 'external' | 'dns') {
   if (nodeKind === 'l7') openAddL7Modal()
   else if (nodeKind === 'infra') openAddInfraModal()
   else if (nodeKind === 'external') openAddExternalModal()
+  else if (nodeKind === 'dns') openAddDnsModal()
   else openAddServerModal()
 }
 
@@ -830,6 +885,7 @@ const sampleConfirm = ref(false)
 const hasData = computed(() =>
   store.servers.length + store.l7Nodes.length + store.infraNodes.length + store.externalNodes.length > 0
 )
+const hasSettingsItems = computed(() => projectStore.canAdmin || (projectStore.canWrite && !hasData.value))
 
 function onSampleClick() {
   if (hasData.value) {
@@ -864,6 +920,9 @@ function loadSample() {
     'sample-e2': { x:  800, y: -100 },  // Payment Gateway
     'sample-e1': { x:  800, y:   60 },  // Slack
     'sample-e3': { x:  800, y:  220 },  // SMS Gateway
+    // DNS
+    'sample-dns1': { x: -1180, y:  -80 },  // api.example.com
+    'sample-dns2': { x: -1180, y:   80 },  // www.example.com
   }
   store.savePositions(samplePositions)
   store.loadData(sampleData)
@@ -1019,8 +1078,13 @@ watch(() => projectStore.myRole, (role) => {
 
 const isLoading = ref(false)
 
+function closeDropdowns(e: MouseEvent) {
+  if (settingsWrapRef.value && !settingsWrapRef.value.contains(e.target as Node)) showSettingsDropdown.value = false
+}
+
 onMounted(async () => {
   window.addEventListener('keydown', handleKeyDown)
+  document.addEventListener('click', closeDropdowns)
   const projectId = route.params.id as string
   isLoading.value = true
   try {
@@ -1039,6 +1103,7 @@ onMounted(async () => {
 })
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
+  document.removeEventListener('click', closeDropdowns)
   if (autosaveTimer) { clearInterval(autosaveTimer); autosaveTimer = null }
   store.resetGraph()
 })
@@ -1074,52 +1139,67 @@ watch(() => route.params.id, async (newId) => {
   color: var(--text-disabled); cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: color 0.15s, background 0.15s;
 }
-.detail-toggle:hover { background: #273549; color: var(--text-tertiary); }
+.detail-toggle:hover { background: var(--bg-elevated); color: var(--text-tertiary); }
 .main-area { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .toolbar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 20px; border-bottom: 1px solid var(--bg-surface); flex-shrink: 0;
 }
-.app-title { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.02em; }
+.app-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); letter-spacing: 0.02em; }
 .toolbar-right { display: flex; align-items: center; gap: 10px; }
 .btn-back {
-  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
+  font-size: var(--text-xs); font-weight: 600; padding: 0 10px; height: 30px; border-radius: 6px;
   border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
   cursor: pointer; transition: all 0.15s; white-space: nowrap; text-decoration: none;
+  display: inline-flex; align-items: center;
 }
 .btn-back:hover { border-color: var(--border-strong); color: var(--text-secondary); }
-.btn-sample {
-  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
-  border: 1px solid var(--accent-hover); background: var(--accent-bg-deep); color: var(--accent-soft);
-  cursor: pointer; transition: all 0.15s; white-space: nowrap;
-}
-.btn-sample:hover { background: var(--accent-bg-medium); border-color: var(--accent-focus); color: var(--accent-light); }
-.btn-logout {
-  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
-  border: 1px solid var(--border-default); background: transparent; color: var(--text-disabled);
-  cursor: pointer; transition: all 0.15s; white-space: nowrap;
-}
-.btn-logout:hover { border-color: #ef4444; color: #f87171; }
-.btn-readonly {
-  position: relative;
-  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
-  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
-  cursor: pointer; transition: all 0.15s; white-space: nowrap;
-}
-.btn-readonly:hover { border-color: var(--border-strong); color: var(--text-secondary); }
-.btn-readonly.active { background: #2d1b69; border-color: var(--node-l7-color); color: #c4b5fd; }
-.autosave-group { display: flex; align-items: center; gap: 4px; }
-.btn-save {
-  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+/* -- 모드 토글 버튼 -- */
+.btn-mode-toggle {
+  font-size: var(--text-xs); font-weight: 700; padding: 0 10px; height: 30px; border-radius: 6px;
   border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
   cursor: pointer; transition: all 0.15s; white-space: nowrap; position: relative;
+  display: inline-flex; align-items: center;
+}
+.btn-mode-toggle:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+.btn-mode-toggle.active { background: #2d1b69; border-color: var(--node-l7-color); color: #c4b5fd; }
+.btn-mode-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* -- 툴바 드롭다운 -- */
+.toolbar-dropdown-wrap { position: relative; }
+.btn-toolbar-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 6px;
+  border: 1px solid var(--border-default); background: var(--bg-surface);
+  color: var(--text-tertiary); cursor: pointer; transition: all 0.15s;
+}
+.btn-toolbar-icon:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+.toolbar-dropdown {
+  position: absolute; top: calc(100% + 4px); right: 0;
+  background: var(--bg-surface); border: 1px solid var(--border-default);
+  border-radius: 8px; padding: 4px 0; z-index: 200; min-width: 160px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.toolbar-dropdown button {
+  display: block; width: 100%; padding: 7px 16px; background: none;
+  border: none; color: var(--text-secondary); text-align: left;
+  cursor: pointer; font-size: var(--text-sm); transition: background 0.1s;
+}
+.toolbar-dropdown button:hover { background: var(--border-default); }
+.toolbar-dropdown-divider { height: 1px; background: var(--border-default); margin: 3px 0; }
+.autosave-group { display: flex; align-items: center; gap: 4px; }
+.btn-save {
+  font-size: var(--text-xs); font-weight: 700; padding: 0 10px; height: 30px; border-radius: 6px;
+  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
+  cursor: pointer; transition: all 0.15s; white-space: nowrap; position: relative;
+  display: inline-flex; align-items: center;
 }
 .btn-save:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 .btn-save.dirty { border-color: #f59e0b; color: var(--color-warning-light); background: #1c1200; }
 .btn-save.dirty:hover { background: #292100; border-color: var(--color-warning-light); }
 .btn-autosave {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: var(--text-xs); font-weight: 600; padding: 0 10px; height: 30px; border-radius: 6px;
   border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-disabled);
   cursor: pointer; transition: all 0.15s; white-space: nowrap; position: relative;
 }
@@ -1128,9 +1208,9 @@ watch(() => route.params.id, async (newId) => {
   width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
   background: var(--border-strong); transition: background 0.2s;
 }
-.autosave-dot.active { background: #22c55e; box-shadow: 0 0 4px rgba(34,197,94,0.6); }
+.autosave-dot.active { background: var(--color-success); box-shadow: 0 0 4px rgba(34,197,94,0.6); }
 .select-interval {
-  font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 6px;
+  font-size: var(--text-xs); font-weight: 600; padding: 0 8px; height: 30px; border-radius: 6px;
   border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
   cursor: pointer; transition: all 0.15s; outline: none;
 }
@@ -1147,7 +1227,7 @@ watch(() => route.params.id, async (newId) => {
   border: 1px solid var(--border-default);
   border-radius: 6px;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 400;
   padding: 5px 9px;
   white-space: nowrap;
@@ -1179,11 +1259,34 @@ watch(() => route.params.id, async (newId) => {
 }
 [data-tooltip]:hover::before,
 [data-tooltip]:hover::after { opacity: 1; }
-.graph-wrap { flex: 1; padding: 16px; overflow: hidden; }
+.graph-wrap { flex: 1; padding: 16px; overflow: hidden; position: relative; }
+
+/* -- 빈 상태 CTA -- */
+.empty-state-cta {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+  z-index: 10; pointer-events: none;
+}
+.empty-state-cta > * { pointer-events: auto; }
+.empty-state-title { font-size: var(--text-base); font-weight: 700; color: var(--text-secondary); margin: 0; }
+.empty-state-desc { font-size: var(--text-sm); color: var(--text-tertiary); margin: 0; }
+.empty-state-actions { display: flex; gap: 10px; margin-top: 4px; }
+.btn-empty-sample {
+  padding: 8px 18px; border-radius: 8px; font-size: var(--text-sm); font-weight: 700;
+  border: 1px solid var(--accent-hover); background: var(--accent-bg-deep);
+  color: var(--accent-soft); cursor: pointer; transition: all 0.15s;
+}
+.btn-empty-sample:hover { background: var(--accent-bg-medium); border-color: var(--accent-focus); color: var(--accent-light); }
+.btn-empty-add {
+  padding: 8px 18px; border-radius: 8px; font-size: var(--text-sm); font-weight: 700;
+  border: 1px solid var(--border-default); background: var(--bg-surface);
+  color: var(--text-tertiary); cursor: pointer; transition: all 0.15s;
+}
+.btn-empty-add:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 .app-toast {
   position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
   background: #1c0a0a; border: 1px solid #ef4444; border-radius: 10px;
-  padding: 12px 24px; font-size: 14px; color: #fca5a5; font-weight: 600;
+  padding: 12px 24px; font-size: var(--text-base); color: #fca5a5; font-weight: 600;
   z-index: 500; white-space: nowrap; box-shadow: 0 4px 20px rgba(239,68,68,0.25);
   pointer-events: none;
 }
@@ -1205,7 +1308,7 @@ watch(() => route.params.id, async (newId) => {
 .loading-spinner {
   width: 40px; height: 40px;
   border: 3px solid var(--bg-surface);
-  border-top-color: #06b6d4;
+  border-top-color: var(--accent-focus);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -1237,13 +1340,13 @@ watch(() => route.params.id, async (newId) => {
   display: flex; flex-direction: column; gap: 8px; text-align: center;
 }
 .delete-dialog-title {
-  font-size: 16px; font-weight: 700; color: var(--text-primary);
+  font-size: var(--text-lg); font-weight: 700; color: var(--text-primary);
 }
 .delete-dialog-desc {
-  font-size: 13px; color: var(--text-tertiary); line-height: 1.6;
+  font-size: var(--text-sm); color: var(--text-tertiary); line-height: 1.6;
 }
 .delete-node-kind {
-  color: var(--text-disabled); font-size: 11px; font-weight: 600;
+  color: var(--text-disabled); font-size: var(--text-xs); font-weight: 600;
   background: var(--bg-base); border: 1px solid var(--border-default);
   border-radius: 4px; padding: 1px 6px; margin-right: 4px;
   vertical-align: middle;
@@ -1257,14 +1360,14 @@ watch(() => route.params.id, async (newId) => {
 .delete-btn-cancel {
   flex: 1; padding: 8px; border-radius: 7px;
   background: var(--bg-base); border: 1px solid var(--border-default);
-  color: var(--text-tertiary); font-size: 13px; font-weight: 600;
+  color: var(--text-tertiary); font-size: var(--text-sm); font-weight: 600;
   cursor: pointer; transition: all 0.15s;
 }
 .delete-btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 .delete-btn-confirm {
   flex: 1; padding: 8px; border-radius: 7px;
   background: #450a0a; border: 1px solid #ef4444;
-  color: #fca5a5; font-size: 13px; font-weight: 700;
+  color: #fca5a5; font-size: var(--text-sm); font-weight: 700;
   cursor: pointer; transition: all 0.15s;
 }
 .delete-btn-confirm:hover { background: #7f1d1d; color: #fecaca; }
@@ -1278,13 +1381,13 @@ watch(() => route.params.id, async (newId) => {
 .shortcuts-modal {
   background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: 14px; padding: 24px 28px; min-width: 360px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 .shortcuts-header {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 20px;
 }
-.shortcuts-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.shortcuts-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); }
 .shortcuts-close {
   background: none; border: none; cursor: pointer;
   color: var(--text-disabled); padding: 4px; display: flex; align-items: center;
@@ -1294,17 +1397,17 @@ watch(() => route.params.id, async (newId) => {
   font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--border-strong);
   margin: 16px 0 8px; padding-bottom: 5px;
-  border-bottom: 1px solid #293548;
+  border-bottom: 1px solid var(--border-default);
 }
 .shortcuts-section-title:first-of-type { margin-top: 0; }
 .shortcuts-grid { display: flex; flex-direction: column; gap: 6px; }
 .shortcut-row {
   display: flex; align-items: center; gap: 12px;
-  font-size: 13px; color: var(--text-tertiary);
+  font-size: var(--text-sm); color: var(--text-tertiary);
 }
 .shortcut-row kbd {
   display: inline-block; background: var(--bg-base); border: 1px solid var(--border-default);
-  border-radius: 5px; padding: 2px 7px; font-size: 11px; font-weight: 600;
+  border-radius: 5px; padding: 2px 7px; font-size: var(--text-xs); font-weight: 600;
   color: var(--text-muted); font-family: inherit; white-space: nowrap; flex-shrink: 0;
   box-shadow: 0 2px 0 var(--bg-surface);
 }
@@ -1315,9 +1418,9 @@ watch(() => route.params.id, async (newId) => {
 /* 타이틀 + 도움말 버튼 */
 .title-group { display: flex; align-items: center; gap: 8px; }
 .btn-help {
-  width: 20px; height: 20px; border-radius: 50%;
+  width: 30px; height: 30px; border-radius: 50%;
   border: 1px solid var(--border-default); background: var(--bg-surface);
-  color: var(--text-disabled); font-size: 11px; font-weight: 700;
+  color: var(--text-disabled); font-size: var(--text-xs); font-weight: 700;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: all 0.15s; flex-shrink: 0; line-height: 1;
 }
@@ -1334,7 +1437,7 @@ watch(() => route.params.id, async (newId) => {
 .help-body { display: flex; gap: 0; }
 .help-col { flex: 1; min-width: 0; }
 .help-divider {
-  width: 1px; background: #293548; margin: 0 24px; flex-shrink: 0;
+  width: 1px; background: var(--border-default); margin: 0 24px; flex-shrink: 0;
 }
 .help-node-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
 .help-node-item { display: flex; align-items: flex-start; gap: 10px; }
@@ -1344,32 +1447,27 @@ watch(() => route.params.id, async (newId) => {
 }
 .help-node-badge.server { background: var(--accent-bg-medium); color: var(--accent-light); border: 1px solid var(--accent-hover); }
 .help-node-badge.l7    { background: var(--node-l7-bg-deep); color: var(--node-l7-color); border: 1px solid var(--node-l7-color); }
-.help-node-badge.infra { background: #f0f9ff; color: #0369a1; border: 1px solid var(--color-ip-text); }
+.help-node-badge.infra { background: var(--node-infra-bg-deep); color: var(--node-infra-text); border: 1px solid var(--node-infra-color); }
 .help-node-badge.ext   { background: var(--node-ext-bg-deep); color: var(--color-success-lighter); border: 1px solid var(--node-ext-color); }
-.help-node-name { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; }
-.help-node-desc { font-size: 11px; color: var(--text-disabled); line-height: 1.4; }
+.help-node-name { font-size: var(--text-xs); font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; }
+.help-node-desc { font-size: var(--text-xs); color: var(--text-disabled); line-height: 1.4; }
 .help-desc-list { display: flex; flex-direction: column; gap: 7px; }
 .help-desc-item {
   display: flex; align-items: flex-start; gap: 8px;
-  font-size: 12px; color: var(--text-tertiary); line-height: 1.5;
+  font-size: var(--text-xs); color: var(--text-tertiary); line-height: 1.5;
 }
 .help-dot {
   width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px;
 }
 .help-dot.red   { background: #ef4444; }
-.help-dot.green { background: #22c55e; }
+.help-dot.green { background: var(--color-success); }
 .help-dot.amber { background: #f59e0b; }
 
 /* 멤버 관리 */
-.btn-members {
-  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
-  border: 1px solid var(--node-infra-color); background: #083344; color: #22d3ee;
-  cursor: pointer; transition: all 0.15s; white-space: nowrap;
-}
-.btn-members:hover { background: #164e63; border-color: #22d3ee; }
 .members-modal {
   background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px;
   padding: 20px; min-width: 440px; max-width: 560px; width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
   display: flex; flex-direction: column; gap: 12px;
 }
 .members-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
@@ -1379,46 +1477,46 @@ watch(() => route.params.id, async (newId) => {
   gap: 12px;
 }
 .member-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.member-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.member-email { font-size: 11px; color: var(--text-disabled); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-email { font-size: var(--text-xs); color: var(--text-disabled); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .member-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .role-badge {
   font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
   border: 1px solid transparent;
 }
-.role-badge.master  { background: #2d1b69; border-color: var(--node-l7-color); color: #c4b5fd; }
-.role-badge.admin   { background: var(--accent-bg-deep); border-color: var(--accent-hover); color: var(--accent-soft); }
-.role-badge.writer  { background: var(--node-ext-bg-deep); border-color: var(--node-ext-color); color: var(--color-success-light); }
-.role-badge.readonly { background: #1c1a09; border-color: #ca8a04; color: var(--color-warning-light); }
+.role-badge.master   { background: var(--role-master-bg); border-color: var(--role-master); color: var(--accent-light); }
+.role-badge.admin    { background: var(--role-admin-bg); border-color: var(--role-admin); color: var(--role-admin-text); }
+.role-badge.writer   { background: var(--role-writer-bg); border-color: var(--role-writer); color: var(--node-ext-text); }
+.role-badge.readonly { background: var(--role-readonly-bg); border-color: var(--role-readonly); color: var(--text-muted); }
 .role-select {
-  font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 6px;
+  font-size: var(--text-xs); font-weight: 600; padding: 3px 7px; border-radius: 6px;
   border: 1px solid var(--border-default); background: var(--bg-base); color: var(--text-tertiary);
   cursor: pointer; outline: none;
 }
 .role-select:hover { border-color: var(--border-strong); }
 .member-remove-btn {
   width: 20px; height: 20px; border-radius: 4px; border: 1px solid #ef444433;
-  background: transparent; color: #ef4444; cursor: pointer; font-size: 11px;
+  background: transparent; color: #ef4444; cursor: pointer; font-size: var(--text-xs);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   transition: all 0.15s;
 }
 .member-remove-btn:hover { background: #ef444422; border-color: #ef4444; }
 .member-add-form { display: flex; gap: 8px; align-items: center; }
 .pending-invitations { margin-top: 12px; border-top: 1px solid var(--bg-surface); padding-top: 12px; }
-.pending-invitations-title { font-size: 11px; font-weight: 600; color: var(--text-disabled); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.pending-invitations-title { font-size: var(--text-xs); font-weight: 600; color: var(--text-disabled); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
 .pending-inv-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
 .pending-inv-info { display: flex; align-items: center; gap: 8px; }
 .member-input {
   flex: 1; padding: 6px 10px; background: var(--bg-base); border: 1px solid var(--border-default);
-  border-radius: 6px; color: var(--text-secondary); font-size: 12px; outline: none;
+  border-radius: 6px; color: var(--text-secondary); font-size: var(--text-xs); outline: none;
 }
 .member-input:focus { border-color: var(--accent-focus); }
-.member-error { font-size: 12px; color: #f87171; }
+.member-error { font-size: var(--text-xs); color: #f87171; }
 .btn-primary {
-  font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 6px;
-  border: 1px solid var(--accent-hover); background: #1e40af; color: #bfdbfe;
+  font-size: var(--text-xs); font-weight: 700; padding: 6px 14px; border-radius: 6px;
+  border: 1px solid var(--accent-hover); background: var(--accent-bg); color: var(--accent-soft);
   cursor: pointer; transition: all 0.15s; white-space: nowrap;
 }
-.btn-primary:hover { background: var(--accent-hover); color: #dbeafe; }
+.btn-primary:hover { background: var(--accent-bg-medium); color: var(--accent-light); box-shadow: 0 0 10px rgba(217,119,6,0.3); }
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>

@@ -1,5 +1,38 @@
 <template>
   <div class="auth-page">
+    <!-- 배경 장식 SVG — 희미한 그래프 노드 텍스처 -->
+    <div class="auth-bg-deco" aria-hidden="true">
+      <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <!-- 엣지 (opacity: 0.03) -->
+        <line x1="120" y1="82" x2="160" y2="782" stroke="#2a2a30" stroke-width="1" opacity="0.03"/>
+        <line x1="1340" y1="62" x2="1320" y2="762" stroke="#2a2a30" stroke-width="1" opacity="0.03"/>
+        <line x1="120" y1="82" x2="1340" y2="62" stroke="#2a2a30" stroke-width="1" opacity="0.025"/>
+        <line x1="160" y1="782" x2="1320" y2="762" stroke="#2a2a30" stroke-width="1" opacity="0.025"/>
+        <line x1="100" y1="422" x2="160" y2="782" stroke="#2a2a30" stroke-width="1" opacity="0.02"/>
+        <line x1="1360" y1="440" x2="1320" y2="762" stroke="#2a2a30" stroke-width="1" opacity="0.02"/>
+        <!-- 노드 (fill:none 윤곽만, opacity: 0.05) -->
+        <!-- SRV 좌상단 -->
+        <rect x="80" y="60" width="80" height="44" rx="7" fill="none" stroke="#5b8def" stroke-width="1.5" opacity="0.05"/>
+        <text x="120" y="86" text-anchor="middle" fill="#5b8def" font-size="10" font-weight="700" opacity="0.05">SRV</text>
+        <!-- SRV 우상단 -->
+        <rect x="1300" y="40" width="80" height="44" rx="7" fill="none" stroke="#5b8def" stroke-width="1.5" opacity="0.05"/>
+        <text x="1340" y="66" text-anchor="middle" fill="#5b8def" font-size="10" font-weight="700" opacity="0.05">SRV</text>
+        <!-- L7 좌하단 -->
+        <rect x="120" y="760" width="80" height="44" rx="7" fill="none" stroke="#b494f7" stroke-width="1.5" opacity="0.05"/>
+        <text x="160" y="786" text-anchor="middle" fill="#b494f7" font-size="10" font-weight="700" opacity="0.05">L7</text>
+        <!-- INFRA 우하단 -->
+        <rect x="1280" y="740" width="80" height="44" rx="7" fill="none" stroke="#3ec6d6" stroke-width="1.5" opacity="0.05"/>
+        <text x="1320" y="766" text-anchor="middle" fill="#3ec6d6" font-size="10" font-weight="700" opacity="0.05">DB</text>
+        <!-- EXT 좌중단 -->
+        <rect x="60" y="400" width="80" height="44" rx="7" fill="none" stroke="#42b883" stroke-width="1.5" opacity="0.05"/>
+        <text x="100" y="426" text-anchor="middle" fill="#42b883" font-size="10" font-weight="700" opacity="0.05">EXT</text>
+        <!-- L7 우중단 -->
+        <rect x="1320" y="418" width="80" height="44" rx="7" fill="none" stroke="#b494f7" stroke-width="1.5" opacity="0.05"/>
+        <text x="1360" y="444" text-anchor="middle" fill="#b494f7" font-size="10" font-weight="700" opacity="0.05">L7</text>
+      </svg>
+    </div>
+
+    <!-- 폼 카드 -->
     <div class="auth-card">
       <router-link to="/" class="auth-logo">Server Dependencies</router-link>
       <h1 class="auth-title">로그인</h1>
@@ -59,40 +92,74 @@ async function onSubmit() {
 
 <style scoped>
 .auth-page {
-  min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  background: var(--bg-base); padding: 24px;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--bg-base);
+  background-image:
+    radial-gradient(ellipse 55% 55% at 50% 50%, rgba(217,119,6,0.09) 0%, transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cpath d='M 120 0 L 0 0 0 120' fill='none' stroke='rgba(255,255,255,0.10)' stroke-width='0.5'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cpath d='M 24 0 L 0 0 0 24' fill='none' stroke='rgba(255,255,255,0.06)' stroke-width='0.5'/%3E%3C/svg%3E");
+  background-size: cover, 120px 120px, 24px 24px;
+  background-position: center;
 }
+
+/* 배경 장식 SVG */
+.auth-bg-deco {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.auth-bg-deco svg { width: 100%; height: 100%; }
+
+/* 폼 카드 */
 .auth-card {
+  position: relative;
+  z-index: 1;
   width: 100%; max-width: 400px;
-  background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px; padding: 36px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-top: 2px solid var(--accent-primary);
+  border-radius: 12px;
+  padding: 36px;
+  box-shadow:
+    0 0 0 1px rgba(217,119,6,0.12),
+    0 24px 64px rgba(0,0,0,0.5),
+    0 0 48px rgba(217,119,6,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.05);
 }
 .auth-logo {
-  display: block; text-align: center; font-size: 12px; font-weight: 700;
+  display: block; text-align: center; font-size: var(--text-xs); font-weight: 700;
   color: var(--accent-soft); text-decoration: none; letter-spacing: 0.05em; margin-bottom: 24px;
 }
-.auth-title { font-size: 22px; font-weight: 700; color: var(--text-primary); text-align: center; margin: 0 0 28px 0; }
+.auth-title { font-size: var(--text-xl); font-weight: 700; color: var(--text-primary); text-align: center; margin: 0 0 28px 0; }
 .auth-form { display: flex; flex-direction: column; gap: 16px; }
 .form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-label { font-size: 12px; font-weight: 600; color: var(--text-tertiary); }
+.form-label { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); }
 .form-input {
   background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 7px;
-  padding: 9px 12px; font-size: 14px; color: var(--text-secondary); outline: none;
-  transition: border-color 0.15s;
+  padding: 9px 12px; font-size: var(--text-base); color: var(--text-secondary); outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.form-input:focus { border-color: var(--accent-focus); }
-.form-input::placeholder { color: var(--border-strong); }
+.form-input:focus { border-color: var(--accent-focus); box-shadow: 0 0 0 3px rgba(245,158,11,0.1); }
+.form-input::placeholder { color: var(--text-tertiary); }
 .form-error {
-  font-size: 12px; color: #f87171; background: #2d1b1b; border: 1px solid #7f1d1d;
+  font-size: var(--text-xs); color: #f87171; background: #2d1b1b; border: 1px solid #7f1d1d;
   border-radius: 6px; padding: 8px 12px;
 }
 .btn-submit {
   background: var(--accent-primary); color: #fff; border: none; border-radius: 7px;
-  padding: 10px; font-size: 14px; font-weight: 700; cursor: pointer;
-  transition: background 0.15s; margin-top: 4px;
+  padding: 10px; font-size: var(--text-base); font-weight: 700; cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s; margin-top: 4px;
 }
-.btn-submit:hover:not(:disabled) { background: var(--accent-hover); }
+.btn-submit:hover:not(:disabled) { background: var(--accent-hover); box-shadow: 0 0 14px rgba(217,119,6,0.35); }
 .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-.auth-link { text-align: center; font-size: 13px; color: var(--text-disabled); margin: 20px 0 0 0; }
+.auth-link { text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin: 20px 0 0 0; }
 .auth-link a { color: var(--accent-soft); text-decoration: none; }
 .auth-link a:hover { text-decoration: underline; }
 </style>

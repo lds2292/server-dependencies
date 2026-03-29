@@ -9,6 +9,8 @@
       </button>
       <span class="settings-title">프로젝트 설정</span>
       <span class="project-name-label">{{ projectStore.currentProject?.name }}</span>
+      <span class="topbar-spacer"></span>
+      <UserProfileDropdown @logout="showLogoutConfirm = true" />
     </div>
 
     <div class="settings-body">
@@ -153,7 +155,7 @@
           <div class="delete-dialog-body">
             <div class="delete-dialog-title">프로젝트 삭제</div>
             <div class="delete-dialog-desc">
-              삭제하려면 프로젝트 이름 <strong style="color:#f1f5f9">{{ projectStore.currentProject?.name }}</strong>을 입력하세요.<br/>
+              삭제하려면 프로젝트 이름 <strong style="color:var(--text-primary)">{{ projectStore.currentProject?.name }}</strong>을 입력하세요.<br/>
               모든 그래프 데이터가 영구적으로 삭제됩니다.
             </div>
           </div>
@@ -178,6 +180,20 @@
     <transition name="toast-fade">
       <div v-if="toastMsg" :class="['app-toast', toastType]">{{ toastMsg }}</div>
     </transition>
+
+    <!-- 로그아웃 확인 모달 -->
+    <transition name="fade">
+      <div v-if="showLogoutConfirm" class="modal-overlay" @click.self="showLogoutConfirm = false">
+        <div class="modal-card" style="max-width:340px">
+          <h2 class="modal-title">로그아웃</h2>
+          <p style="font-size: var(--text-sm);color:var(--text-tertiary);margin:0 0 20px">로그아웃 하시겠습니까?</p>
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" @click="showLogoutConfirm = false">취소</button>
+            <button type="button" class="btn-confirm btn-confirm-danger" @click="onLogout">로그아웃</button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -187,6 +203,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '../stores/project'
 import { useAuthStore } from '../stores/auth'
 import type { ProjectMemberRole } from '../api/projectApi'
+import UserProfileDropdown from '../components/UserProfileDropdown.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -195,6 +212,11 @@ const authStore = useAuthStore()
 const projectId = route.params.id as string
 
 const loading = ref(true)
+const showLogoutConfirm = ref(false)
+async function onLogout() {
+  await authStore.logout()
+  router.push({ name: 'login' })
+}
 
 // ─── 토스트 ───────────────────────────────────────────────
 const toastMsg = ref('')
@@ -375,15 +397,43 @@ onMounted(async () => {
   background: none;
   border: none;
   color: var(--text-disabled);
-  font-size: 13px;
+  font-size: var(--text-sm);
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 5px;
   transition: color 0.15s, background 0.15s;
 }
 .back-btn:hover { color: var(--text-secondary); background: var(--border-default); }
-.settings-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
-.project-name-label { font-size: 12px; color: var(--border-strong); }
+.settings-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); }
+.project-name-label { font-size: var(--text-xs); color: var(--border-strong); }
+.topbar-spacer { flex: 1; }
+
+/* 로그아웃 모달 */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-card {
+  background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px;
+  padding: 20px; width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.modal-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); margin: 0 0 12px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.btn-cancel {
+  padding: 6px 14px; border-radius: 6px; font-size: var(--text-sm); font-weight: 600;
+  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+.btn-confirm {
+  padding: 6px 14px; border-radius: 6px; font-size: var(--text-sm); font-weight: 700;
+  border: none; cursor: pointer; transition: all 0.15s;
+}
+.btn-confirm-danger { background: var(--color-danger); color: #fff; }
+.btn-confirm-danger:hover { background: var(--color-danger-hover); }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.15s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 
 /* 본문 */
 .settings-body {
@@ -398,7 +448,7 @@ onMounted(async () => {
   padding: 60px 0;
   text-align: center;
   color: var(--border-strong);
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 /* 스켈레톤 */
@@ -421,7 +471,7 @@ onMounted(async () => {
   padding: 24px 28px;
 }
 .section-title {
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: var(--text-tertiary);
   text-transform: uppercase;
@@ -452,13 +502,13 @@ onMounted(async () => {
 
 /* 폼 */
 .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-.form-label { font-size: 12px; font-weight: 600; color: var(--text-disabled); }
+.form-label { font-size: var(--text-xs); font-weight: 600; color: var(--text-disabled); }
 .form-input {
   background: var(--bg-base);
   border: 1px solid var(--border-default);
   border-radius: 7px;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--text-sm);
   padding: 9px 12px;
   outline: none;
   transition: border-color 0.15s;
@@ -470,11 +520,11 @@ onMounted(async () => {
 .form-textarea { resize: vertical; min-height: 72px; font-family: inherit; }
 
 .btn-save {
-  font-size: 12px; font-weight: 700; padding: 7px 20px; border-radius: 7px;
+  font-size: var(--text-xs); font-weight: 700; padding: 7px 20px; border-radius: 7px;
   border: 1px solid var(--accent-hover); background: var(--accent-bg); color: var(--accent-soft);
   cursor: pointer; transition: all 0.15s;
 }
-.btn-save:hover:not(:disabled) { background: var(--accent-bg-medium); color: var(--accent-light); }
+.btn-save:hover:not(:disabled) { background: var(--accent-bg-medium); color: var(--accent-light); box-shadow: 0 0 12px rgba(217,119,6,0.3); }
 .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* 멤버 관리 */
@@ -484,25 +534,25 @@ onMounted(async () => {
   padding: 10px 12px; background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 8px;
 }
 .member-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.member-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.member-email { font-size: 11px; color: var(--text-disabled); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-email { font-size: var(--text-xs); color: var(--text-disabled); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .member-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .role-badge {
   font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
   border: 1px solid transparent;
 }
-.role-badge.master  { background: #2d1b69; border-color: var(--node-l7-color); color: #c4b5fd; }
-.role-badge.admin   { background: var(--accent-bg-deep); border-color: var(--accent-hover); color: var(--accent-soft); }
-.role-badge.writer  { background: var(--node-ext-bg-deep); border-color: var(--node-ext-color); color: var(--color-success-light); }
-.role-badge.readonly { background: #1c1a09; border-color: #ca8a04; color: var(--color-warning-light); }
+.role-badge.master   { background: var(--role-master-bg); border-color: var(--role-master); color: var(--accent-light); }
+.role-badge.admin    { background: var(--role-admin-bg); border-color: var(--role-admin); color: var(--role-admin-text); }
+.role-badge.writer   { background: var(--role-writer-bg); border-color: var(--role-writer); color: var(--node-ext-text); }
+.role-badge.readonly { background: var(--role-readonly-bg); border-color: var(--role-readonly); color: var(--text-muted); }
 .role-select {
-  font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 6px;
+  font-size: var(--text-xs); font-weight: 600; padding: 7px 10px; border-radius: 6px;
   background: var(--bg-base); border: 1px solid var(--border-default); color: var(--text-tertiary); cursor: pointer;
 }
 .role-select:hover { border-color: var(--border-strong); }
 .member-remove-btn {
   width: 20px; height: 20px; border-radius: 4px; border: 1px solid #ef444433;
-  background: transparent; color: #ef4444; font-size: 13px; line-height: 1;
+  background: transparent; color: #ef4444; font-size: var(--text-sm); line-height: 1;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: all 0.15s;
 }
@@ -510,18 +560,18 @@ onMounted(async () => {
 .member-add-form { display: flex; gap: 8px; align-items: center; }
 .member-input {
   flex: 1; padding: 7px 10px; background: var(--bg-base); border: 1px solid var(--border-default);
-  border-radius: 6px; color: var(--text-secondary); font-size: 12px; outline: none;
+  border-radius: 6px; color: var(--text-secondary); font-size: var(--text-xs); outline: none;
 }
 .member-input:focus { border-color: var(--accent-focus); }
-.member-error { font-size: 12px; color: #f87171; margin-top: 8px; }
+.member-error { font-size: var(--text-xs); color: #f87171; margin-top: 8px; }
 .btn-primary {
-  font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 6px;
+  font-size: var(--text-xs); font-weight: 700; padding: 7px 14px; border-radius: 6px;
   border: 1px solid var(--accent-hover); background: var(--accent-bg); color: var(--accent-soft); cursor: pointer;
 }
-.btn-primary:hover { background: var(--accent-hover); color: #dbeafe; }
+.btn-primary:hover { background: var(--accent-hover); color: var(--text-primary); }
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 .pending-invitations { margin-top: 16px; border-top: 1px solid var(--bg-surface); padding-top: 16px; }
-.pending-invitations-title { font-size: 11px; font-weight: 600; color: var(--text-disabled); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.pending-invitations-title { font-size: var(--text-xs); font-weight: 600; color: var(--text-disabled); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
 .pending-inv-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
 .pending-inv-info { display: flex; align-items: center; gap: 8px; }
 
@@ -535,10 +585,10 @@ onMounted(async () => {
 .danger-title { color: #f87171 !important; }
 .danger-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .danger-desc { display: flex; flex-direction: column; gap: 4px; }
-.danger-label { font-size: 13px; font-weight: 700; color: #f87171; }
-.danger-hint { font-size: 12px; color: var(--text-disabled); }
+.danger-label { font-size: var(--text-sm); font-weight: 700; color: #f87171; }
+.danger-hint { font-size: var(--text-xs); color: var(--text-disabled); }
 .btn-danger {
-  font-size: 12px; font-weight: 700; padding: 7px 16px; border-radius: 7px;
+  font-size: var(--text-xs); font-weight: 700; padding: 7px 16px; border-radius: 7px;
   border: 1px solid #ef4444; background: #450a0a; color: #fca5a5;
   cursor: pointer; transition: all 0.15s; flex-shrink: 0;
 }
@@ -554,16 +604,16 @@ onMounted(async () => {
 }
 .delete-dialog {
   background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px;
-  padding: 24px; width: 340px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  padding: 24px; width: 340px; box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
   display: flex; flex-direction: column; gap: 16px;
 }
 .delete-dialog-icon { display: flex; justify-content: center; }
 .delete-dialog-body { display: flex; flex-direction: column; gap: 8px; text-align: center; }
-.delete-dialog-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
-.delete-dialog-desc { font-size: 13px; color: var(--text-tertiary); line-height: 1.6; }
+.delete-dialog-title { font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); }
+.delete-dialog-desc { font-size: var(--text-sm); color: var(--text-tertiary); line-height: 1.6; }
 .delete-name-input {
   background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 7px;
-  color: var(--text-secondary); font-size: 13px; padding: 8px 12px; outline: none;
+  color: var(--text-secondary); font-size: var(--text-sm); padding: 8px 12px; outline: none;
   width: 100%; box-sizing: border-box; transition: border-color 0.15s;
 }
 .delete-name-input:focus { border-color: #ef4444; }
@@ -572,13 +622,13 @@ onMounted(async () => {
 .delete-btn-cancel {
   flex: 1; padding: 8px; border-radius: 7px;
   background: var(--bg-base); border: 1px solid var(--border-default);
-  color: var(--text-tertiary); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  color: var(--text-tertiary); font-size: var(--text-sm); font-weight: 600; cursor: pointer; transition: all 0.15s;
 }
 .delete-btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 .delete-btn-confirm {
   flex: 1; padding: 8px; border-radius: 7px;
   background: #450a0a; border: 1px solid #ef4444;
-  color: #fca5a5; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.15s;
+  color: #fca5a5; font-size: var(--text-sm); font-weight: 700; cursor: pointer; transition: all 0.15s;
 }
 .delete-btn-confirm:hover:not(:disabled) { background: #7f1d1d; color: #fecaca; }
 .delete-btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -587,7 +637,7 @@ onMounted(async () => {
 .app-toast {
   position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
   background: #1c0a0a; border: 1px solid #ef4444; border-radius: 10px;
-  padding: 12px 24px; font-size: 14px; color: #fca5a5; font-weight: 600;
+  padding: 12px 24px; font-size: var(--text-base); color: #fca5a5; font-weight: 600;
   z-index: 700; white-space: nowrap; box-shadow: 0 4px 20px rgba(239,68,68,0.25);
   pointer-events: none;
 }

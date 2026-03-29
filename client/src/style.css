@@ -3,36 +3,47 @@
   --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
 
+  /* ── 타입 스케일 ── */
+  --text-xs:      11px;  /* 뱃지, 타임스탬프, 마이크로 레이블 */
+  --text-sm:      13px;  /* 보조 텍스트, 버튼, 폼 레이블 */
+  --text-base:    14px;  /* 기본 본문 */
+  --text-lg:      16px;  /* 소제목, 강조 본문 */
+  --text-xl:      20px;  /* 섹션 제목 */
+  --text-2xl:     28px;  /* 페이지 제목 */
+  --text-3xl:     40px;  /* 히어로 제목 */
+  --text-display: 34px;  /* 섹션 대제목 (features-title 등) */
+  --text-hero:    56px;  /* 랜딩 히어로 타이틀 */
+
 
   /* ── 배경 레이어 ── */
-  --bg-base: #0a0e1a;        /* 메인 페이지 배경 */
-  --bg-surface: #111827;     /* 카드, 패널, 모달 */
-  --bg-elevated: #141f30;    /* 드롭다운, 툴팁 */
-  --bg-input: #0a0e1a;       /* 입력 필드 배경 */
+  --bg-base: #121214;        /* 메인 페이지 배경 */
+  --bg-surface: #1a1a1e;     /* 카드, 패널, 모달 */
+  --bg-elevated: #232328;    /* 드롭다운, 툴팁 */
+  --bg-input: #0e0e10;       /* 입력 필드 배경 */
   --bg-overlay: rgba(0, 0, 0, 0.6); /* 모달 오버레이 */
 
   /* ── 보더 ── */
-  --border-subtle: #111827;  /* 매우 미묘한 구분선 */
-  --border-default: #1e2a3a; /* 일반 보더 */
-  --border-strong: #2e3f55;  /* 강조 보더, hover 보더 */
+  --border-subtle: #1e1e22;  /* 매우 미묘한 구분선 */
+  --border-default: #2a2a30; /* 일반 보더 */
+  --border-strong: #3a3a42;  /* 강조 보더, hover 보더 */
 
   /* ── 텍스트 ── */
-  --text-primary: #f1f5f9;   /* 제목, 강조 텍스트 */
-  --text-secondary: #e2e8f0; /* 본문, 일반 텍스트 */
-  --text-tertiary: #94a3b8;  /* 보조 텍스트, 레이블 */
-  --text-muted: #cbd5e1;     /* 중간 텍스트 */
-  --text-disabled: #64748b;  /* 비활성, 힌트 */
+  --text-primary: #f0f0f0;   /* 제목, 강조 텍스트 */
+  --text-secondary: #d4d4d4; /* 본문, 일반 텍스트 */
+  --text-tertiary: #787878;  /* 보조 텍스트, 레이블 */
+  --text-muted: #a0a0a0;     /* 중간 텍스트 */
+  --text-disabled: #525252;  /* 비활성, 힌트 */
 
-  /* ── 액센트 (Primary Cyan) ── */
-  --accent-primary: #0891b2;   /* cyan-600 */
-  --accent-hover: #0e7490;     /* cyan-700 */
-  --accent-focus: #06b6d4;     /* cyan-500 */
-  --accent-soft: #22d3ee;      /* cyan-400 */
-  --accent-light: #67e8f9;     /* cyan-300 */
-  --accent-bg: #0a2d3a;        /* 선택/활성 상태 배경 */
-  --accent-bg-medium: #0c3545; /* 중간 시안 배경 (hover) */
-  --accent-bg-deep: #061c26;   /* 깊은 시안 배경 (버튼, 뱃지) */
-  --accent-bg-subtle: #071520; /* 그라디언트 등 */
+  /* ── 액센트 (Amber) ── */
+  --accent-primary: #d97706;   /* amber-600 */
+  --accent-hover: #b45309;     /* amber-700 */
+  --accent-focus: #f59e0b;     /* amber-500 */
+  --accent-soft: #fbbf24;      /* amber-400 */
+  --accent-light: #fcd34d;     /* amber-300 */
+  --accent-bg: #292117;        /* 선택/활성 상태 배경 */
+  --accent-bg-medium: #332a1a; /* 중간 앰버 배경 (hover) */
+  --accent-bg-deep: #1f1a12;   /* 깊은 앰버 배경 (버튼, 뱃지) */
+  --accent-bg-subtle: #17140e; /* 그라디언트 등 */
 
   /* ── 상태 색상 ── */
   --color-success: #22c55e;
@@ -42,40 +53,48 @@
   --color-warning-light: #fbbf24;   /* amber-400, dirty 상태·방화벽 */
   --color-danger: #ef4444;
   --color-danger-hover: #dc2626;
-  --color-info: #22d3ee;
+  --color-info: #3ec6d6;
   --color-ip-text: #7dd3fc;         /* IP·포트 등 기술 데이터 텍스트 (sky-300) */
 
   /* ── 노드 타입 ── */
-  --node-srv-color: #3b82f6;
-  --node-srv-bg: #1e3a5f;
-  --node-srv-glow: rgba(59, 130, 246, 0.3);
+  --node-srv-color: #5b8def;
+  --node-srv-bg: #1a2d4a;
+  --node-srv-glow: rgba(91, 141, 239, 0.3);
 
-  --node-l7-color: #a78bfa;
-  --node-l7-bg: #2d1f5e;
-  --node-l7-bg-deep: #3b0764;
+  --node-l7-color: #b494f7;
+  --node-l7-bg: #2a1f52;
+  --node-l7-bg-deep: #2e0a5a;
   --node-l7-text: #e9d5ff;          /* 뱃지 텍스트 purple-200 */
-  --node-l7-glow: rgba(167, 139, 250, 0.3);
+  --node-l7-glow: rgba(180, 148, 247, 0.3);
 
-  --node-infra-color: #22d3ee;
-  --node-infra-bg: #0e3a4a;
-  --node-infra-bg-deep: #0c2040;
+  --node-infra-color: #3ec6d6;
+  --node-infra-bg: #0d3340;
+  --node-infra-bg-deep: #0a1e35;
   --node-infra-bg-light: #f0f9ff;  /* 인프라 노드 밝은 배경 (아이콘 패널 대비용) */
-  --node-infra-text: #7dd3fc;       /* 뱃지 텍스트 sky-300 (= --color-ip-text) */
-  --node-infra-glow: rgba(34, 211, 238, 0.3);
+  --node-infra-text: #67d2dd;       /* 뱃지 텍스트 (teal-300 계열) */
+  --node-infra-glow: rgba(62, 198, 214, 0.3);
 
-  --node-ext-color: #22c55e;
-  --node-ext-bg: #0f3a23;
+  --node-ext-color: #42b883;
+  --node-ext-bg: #0d2e1c;
   --node-ext-bg-deep: #052e16;
   --node-ext-text: #86efac;         /* 뱃지 텍스트 green-300 */
-  --node-ext-glow: rgba(34, 197, 94, 0.3);
+  --node-ext-glow: rgba(66, 184, 131, 0.3);
+
+  --node-dns-color: #8b5cf6;
+  --node-dns-bg: #1e1b4b;
+  --node-dns-bg-deep: #0f0a2e;
+  --node-dns-bg-light: #f5f3ff;
+  --node-dns-text: #a78bfa;
+  --node-dns-glow: rgba(139, 92, 246, 0.3);
 
   /* ── 역할(Role) 뱃지 ── */
   --role-master: #f59e0b;
   --role-master-bg: rgba(245, 158, 11, 0.15);
-  --role-admin: #3b82f6;
-  --role-admin-bg: rgba(59, 130, 246, 0.15);
-  --role-writer: #22c55e;
-  --role-writer-bg: rgba(34, 197, 94, 0.15);
+  --role-admin: #5b8def;
+  --role-admin-bg: rgba(91, 141, 239, 0.15);
+  --role-admin-text: #93b4f5;
+  --role-writer: #42b883;
+  --role-writer-bg: rgba(66, 184, 131, 0.15);
   --role-readonly: #94a3b8;
   --role-readonly-bg: rgba(148, 163, 184, 0.15);
 }

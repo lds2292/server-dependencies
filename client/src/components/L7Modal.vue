@@ -20,8 +20,8 @@
         <div class="section-label">구성 서버 선택</div>
         <div class="server-filter-wrap">
           <svg class="filter-icon" width="13" height="13" viewBox="0 0 13 13" fill="none">
-            <circle cx="5.5" cy="5.5" r="4" stroke="#475569" stroke-width="1.3"/>
-            <line x1="8.5" y1="8.5" x2="12" y2="12" stroke="#475569" stroke-width="1.3" stroke-linecap="round"/>
+            <circle cx="5.5" cy="5.5" r="4" stroke="#3a3a42" stroke-width="1.3"/>
+            <line x1="8.5" y1="8.5" x2="12" y2="12" stroke="#3a3a42" stroke-width="1.3" stroke-linecap="round"/>
           </svg>
           <input
             v-model="serverFilter"
@@ -30,8 +30,8 @@
           />
           <button v-if="serverFilter" class="filter-clear" type="button" @click="serverFilter = ''">
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <line x1="1" y1="1" x2="9" y2="9" stroke="#64748b" stroke-width="1.4" stroke-linecap="round"/>
-              <line x1="9" y1="1" x2="1" y2="9" stroke="#64748b" stroke-width="1.4" stroke-linecap="round"/>
+              <line x1="1" y1="1" x2="9" y2="9" stroke="#525252" stroke-width="1.4" stroke-linecap="round"/>
+              <line x1="9" y1="1" x2="1" y2="9" stroke="#525252" stroke-width="1.4" stroke-linecap="round"/>
             </svg>
           </button>
         </div>
@@ -135,22 +135,22 @@ function onSubmit() {
   border-radius: 10px; padding: 24px; width: 420px;
   max-width: 90vw; max-height: 90vh; overflow-y: auto;
 }
-.modal h3 { margin: 0 0 20px; font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.modal h3 { margin: 0 0 20px; font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); }
 form { display: flex; flex-direction: column; gap: 14px; }
 label {
   display: flex; flex-direction: column; gap: 5px;
-  font-size: 12px; color: var(--text-tertiary); font-weight: 600;
+  font-size: var(--text-xs); color: var(--text-tertiary); font-weight: 600;
 }
 input, textarea {
   background: var(--bg-base); border: 1px solid var(--border-default);
   border-radius: 6px; padding: 8px 10px; color: var(--text-secondary);
-  font-size: 13px; outline: none;
+  font-size: var(--text-sm); outline: none;
 }
 input:focus, textarea:focus { border-color: var(--node-l7-color); }
 .input-error { border-color: #ef4444 !important; }
-.error-msg { color: #ef4444; font-size: 11px; font-weight: 500; }
+.error-msg { color: #ef4444; font-size: var(--text-xs); font-weight: 500; }
 .section-label {
-  font-size: 12px; font-weight: 600; color: var(--text-tertiary);
+  font-size: var(--text-xs); font-weight: 600; color: var(--text-tertiary);
 }
 .server-filter-wrap {
   display: flex; align-items: center; gap: 7px;
@@ -162,7 +162,7 @@ input:focus, textarea:focus { border-color: var(--node-l7-color); }
 .filter-icon { flex-shrink: 0; }
 .server-filter-input {
   flex: 1; background: none; border: none;
-  color: var(--text-secondary); font-size: 12px; outline: none; padding: 0;
+  color: var(--text-secondary); font-size: var(--text-xs); outline: none; padding: 0;
 }
 .server-filter-input::placeholder { color: var(--border-strong); }
 .filter-clear {
@@ -180,7 +180,7 @@ input:focus, textarea:focus { border-color: var(--node-l7-color); }
 .check-item {
   display: flex; flex-direction: row !important; align-items: center;
   gap: 8px; padding: 7px 12px; cursor: pointer;
-  font-size: 13px; font-weight: 400; color: var(--text-muted);
+  font-size: var(--text-sm); font-weight: 400; color: var(--text-muted);
   transition: background 0.12s;
 }
 .check-item:hover { background: var(--bg-surface); }
@@ -190,19 +190,19 @@ input:focus, textarea:focus { border-color: var(--node-l7-color); }
   background: transparent; border: none; outline: none;
 }
 .check-name { flex: 1; }
-.check-team { font-size: 11px; color: var(--border-strong); }
-.empty-list { padding: 10px 12px; color: var(--border-strong); font-size: 12px; margin: 0; }
-.selected-count { font-size: 11px; color: var(--node-l7-color); margin: -6px 0; }
+.check-team { font-size: var(--text-xs); color: var(--border-strong); }
+.empty-list { padding: 10px 12px; color: var(--border-strong); font-size: var(--text-xs); margin: 0; }
+.selected-count { font-size: var(--text-xs); color: var(--node-l7-color); margin: -6px 0; }
 .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 .btn-primary {
   background: var(--node-l7-color); color: #fff; border: none;
-  border-radius: 6px; padding: 8px 18px; font-size: 13px; cursor: pointer; font-weight: 600;
+  border-radius: 6px; padding: 8px 18px; font-size: var(--text-sm); cursor: pointer; font-weight: 600;
 }
 .btn-primary:hover:not(:disabled) { background: #6d28d9; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-secondary {
   background: var(--border-default); color: var(--text-secondary); border: none;
-  border-radius: 6px; padding: 8px 18px; font-size: 13px; cursor: pointer;
+  border-radius: 6px; padding: 8px 18px; font-size: var(--text-sm); cursor: pointer;
 }
 .btn-secondary:hover { background: var(--border-strong); }
 </style>

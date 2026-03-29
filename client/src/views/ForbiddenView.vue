@@ -38,18 +38,18 @@ const router = useRouter()
   text-align: center;
 }
 .forbidden-title {
-  font-size: 20px;
+  font-size: var(--text-xl);
   font-weight: 700;
   color: var(--text-primary);
 }
 .forbidden-desc {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--text-tertiary);
   line-height: 1.7;
 }
 .forbidden-btn {
   margin-top: 8px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 700;
   padding: 9px 24px;
   border-radius: 8px;

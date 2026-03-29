@@ -9,6 +9,8 @@
       </button>
       <span class="audit-title">감사 로그</span>
       <span class="project-name">{{ projectName }}</span>
+      <span class="topbar-spacer"></span>
+      <UserProfileDropdown @logout="showLogoutConfirm = true" />
     </div>
 
     <div class="audit-body">
@@ -55,10 +57,10 @@
       <div v-else-if="error" class="audit-state error">{{ error }}</div>
       <div v-else-if="logs.length === 0" class="audit-empty">
         <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="26" cy="26" r="18" stroke="#1e2a3a" stroke-width="1.6"/>
-          <line x1="26" y1="14" x2="26" y2="26" stroke="#2e3f55" stroke-width="1.8" stroke-linecap="round"/>
-          <line x1="26" y1="26" x2="33" y2="31" stroke="#2e3f55" stroke-width="1.6" stroke-linecap="round"/>
-          <circle cx="26" cy="26" r="1.8" fill="#2e3f55"/>
+          <circle cx="26" cy="26" r="18" stroke="#2a2a30" stroke-width="1.6"/>
+          <line x1="26" y1="14" x2="26" y2="26" stroke="#3a3a42" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="26" y1="26" x2="33" y2="31" stroke="#3a3a42" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="26" cy="26" r="1.8" fill="#3a3a42"/>
         </svg>
         <p class="audit-empty-title">감사 로그가 없습니다</p>
         <p class="audit-empty-desc">프로젝트 변경 내역이 여기에 기록됩니다</p>
@@ -112,6 +114,19 @@
         <div class="audit-footer">{{ filteredLogs.length }}건</div>
       </template>
     </div>
+
+    <transition name="fade">
+      <div v-if="showLogoutConfirm" class="modal-overlay" @click.self="showLogoutConfirm = false">
+        <div class="modal-card" style="max-width:340px">
+          <h2 class="modal-title">로그아웃</h2>
+          <p style="font-size: var(--text-sm);color:var(--text-tertiary);margin:0 0 20px">로그아웃 하시겠습니까?</p>
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" @click="showLogoutConfirm = false">취소</button>
+            <button type="button" class="btn-confirm btn-confirm-danger" @click="onLogout">로그아웃</button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -120,10 +135,19 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { projectApi, type AuditLog } from '../api/projectApi'
 import { useProjectStore } from '../stores/project'
+import { useAuthStore } from '../stores/auth'
+import UserProfileDropdown from '../components/UserProfileDropdown.vue'
 
 const route = useRoute()
 const router = useRouter()
 const projectStore = useProjectStore()
+const authStore = useAuthStore()
+
+const showLogoutConfirm = ref(false)
+async function onLogout() {
+  await authStore.logout()
+  router.push({ name: 'login' })
+}
 
 const projectId = route.params.id as string
 const projectName = computed(() => projectStore.currentProject?.name ?? '')
@@ -343,7 +367,7 @@ onMounted(async () => {
   background: none;
   border: none;
   color: var(--text-disabled);
-  font-size: 13px;
+  font-size: var(--text-sm);
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 5px;
@@ -352,15 +376,43 @@ onMounted(async () => {
 .back-btn:hover { color: var(--text-secondary); background: var(--border-default); }
 
 .audit-title {
-  font-size: 14px;
+  font-size: var(--text-base);
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .project-name {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--border-strong);
 }
+.topbar-spacer { flex: 1; }
+
+/* 로그아웃 모달 */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-card {
+  background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px;
+  padding: 20px; width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.modal-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); margin: 0 0 12px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.btn-cancel {
+  padding: 6px 14px; border-radius: 6px; font-size: var(--text-sm); font-weight: 600;
+  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+.btn-confirm {
+  padding: 6px 14px; border-radius: 6px; font-size: var(--text-sm); font-weight: 700;
+  border: none; cursor: pointer; transition: all 0.15s;
+}
+.btn-confirm-danger { background: var(--color-danger); color: #fff; }
+.btn-confirm-danger:hover { background: var(--color-danger-hover); }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.15s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 
 /* 본문 */
 .audit-body {
@@ -386,7 +438,7 @@ onMounted(async () => {
   border: none;
   color: var(--text-disabled);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   padding: 6px 14px;
   border-bottom: 2px solid transparent;
@@ -431,7 +483,7 @@ onMounted(async () => {
   border: 1px solid var(--border-default);
   border-radius: 5px;
   color: var(--text-disabled);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   padding: 5px 12px;
   cursor: pointer;
@@ -451,20 +503,20 @@ onMounted(async () => {
   border: 1px solid var(--border-default);
   border-radius: 6px;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--text-xs);
   padding: 5px 8px;
   outline: none;
   cursor: pointer;
 }
 .date-input:focus { border-color: var(--accent-focus); }
 .date-input::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
-.date-sep { font-size: 12px; color: var(--border-strong); }
+.date-sep { font-size: var(--text-xs); color: var(--border-strong); }
 .date-reset {
   background: none;
   border: 1px solid var(--border-default);
   border-radius: 5px;
   color: var(--text-disabled);
-  font-size: 11px;
+  font-size: var(--text-xs);
   padding: 4px 10px;
   cursor: pointer;
   margin-left: 2px;
@@ -475,15 +527,15 @@ onMounted(async () => {
 .audit-state {
   padding: 60px;
   text-align: center;
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--border-strong);
 }
 .audit-state.error { color: #f87171; }
 
 /* 빈 상태 */
 .audit-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 72px 0; text-align: center; }
-.audit-empty-title { font-size: 15px; font-weight: 600; color: var(--text-disabled); margin: 4px 0 0; }
-.audit-empty-desc  { font-size: 13px; color: var(--border-strong); margin: 0; }
+.audit-empty-title { font-size: var(--text-base); font-weight: 600; color: var(--text-disabled); margin: 4px 0 0; }
+.audit-empty-desc  { font-size: var(--text-sm); color: var(--border-strong); margin: 0; }
 
 /* 스켈레톤 */
 .audit-skeleton { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; }
@@ -521,7 +573,7 @@ onMounted(async () => {
   margin: 4px -36px 2px;
   padding: 12px 0 8px 36px;
   display: flex; align-items: center; gap: 10px;
-  font-size: 11px; font-weight: 700;
+  font-size: var(--text-xs); font-weight: 700;
   color: var(--text-tertiary);
   letter-spacing: 0.06em; text-transform: uppercase;
   background: var(--bg-base);
@@ -555,8 +607,8 @@ onMounted(async () => {
 }
 .timeline-item + .timeline-item { border-top: 1px solid var(--border-subtle); }
 .timeline-item.clickable { cursor: pointer; }
-.timeline-item.clickable:hover { background: #0c1825; }
-.timeline-item.expanded { background: #0c1825; }
+.timeline-item.clickable:hover { background: var(--bg-elevated); }
+.timeline-item.expanded { background: var(--bg-elevated); }
 
 /* 각 항목 dot */
 .timeline-item::before {
@@ -589,25 +641,25 @@ onMounted(async () => {
 }
 
 .audit-time {
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--text-muted);
   font-family: var(--font-mono);
   flex-shrink: 0;
   min-width: 40px;
 }
 .audit-action-badge {
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 4px;
   flex-shrink: 0;
 }
-.audit-action-badge.security { background: #1c1a36; color: #a78bfa; }
-.audit-action-badge.member   { background: #0f2340; color: var(--accent-soft); }
+.audit-action-badge.security { background: #1c1a36; color: var(--node-l7-color); }
+.audit-action-badge.member   { background: var(--accent-bg); color: var(--accent-soft); }
 .audit-action-badge.other    { background: var(--bg-surface); color: var(--text-tertiary); border: 1px solid var(--border-default); }
 
 .audit-user {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--text-muted);
   flex-shrink: 1;
   max-width: 280px;
@@ -650,14 +702,14 @@ onMounted(async () => {
 }
 
 .detail-label {
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--border-strong);
   white-space: nowrap;
   padding-top: 1px;
 }
 
 .detail-value {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--text-muted);
   overflow-wrap: break-word;
   min-width: 0;
@@ -666,7 +718,7 @@ onMounted(async () => {
 .audit-footer {
   padding: 12px 0;
   border-top: 1px solid var(--border-default);
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--border-strong);
   text-align: right;
   flex-shrink: 0;
