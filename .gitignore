@@ -28,3 +28,10 @@ server/.env
 # Tools
 .serena/
 .claude/
+
+# docs
+docs/archive
+
+# e2e tests
+e2e/
+playwright.config.ts
