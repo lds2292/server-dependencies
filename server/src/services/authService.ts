@@ -90,6 +90,40 @@ export async function verifyUserPassword(userId: string, password: string): Prom
   if (!ok) throw Object.assign(new Error('비밀번호가 올바르지 않습니다.'), { code: 'INVALID_CREDENTIALS' })
 }
 
+export async function updateProfile(
+  userId: string,
+  data: { username?: string }
+) {
+  const updateData: Record<string, string> = {}
+
+  if (data.username) {
+    const usernameHash = hmac(data.username)
+    const existing = await prisma.user.findUnique({ where: { usernameHash } })
+    if (existing && existing.id !== userId) {
+      throw Object.assign(new Error('이미 사용 중인 사용자명입니다.'), { code: 'USERNAME_TAKEN' })
+    }
+    updateData.username = encrypt(data.username)
+    updateData.usernameHash = usernameHash
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    throw Object.assign(new Error('변경할 항목이 없습니다.'), { code: 'VALIDATION_ERROR' })
+  }
+
+  const user = await prisma.user.update({ where: { id: userId }, data: updateData })
+  return decryptUserFields(user)
+}
+
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string
+) {
+  await verifyUserPassword(userId, currentPassword)
+  const passwordHashValue = await hashPassword(newPassword)
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash: passwordHashValue } })
+}
+
 export async function logout(refreshToken: string) {
   await prisma.session.deleteMany({ where: { token: refreshToken } })
 }

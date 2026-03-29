@@ -111,6 +111,70 @@ export async function refresh(req: Request, res: Response): Promise<void> {
   }
 }
 
+export async function updateProfile(req: Request, res: Response): Promise<void> {
+  const { ipAddress, userAgent } = getClientInfo(req)
+  try {
+    const { username } = req.body
+    if (!username) {
+      res.status(400).json({ error: '변경할 항목이 없습니다.', code: 'VALIDATION_ERROR' })
+      return
+    }
+    if (typeof username !== 'string' || username.length < 2 || username.length > 30) {
+      res.status(400).json({ error: '사용자명은 2~30자여야 합니다.', code: 'VALIDATION_ERROR' })
+      return
+    }
+    const user = await authService.updateProfile(req.user!.userId, { username })
+    await auditLogService.createAuditLog({
+      action: 'PROFILE_UPDATE', status: 'SUCCESS',
+      userId: req.user!.userId, ipAddress, userAgent,
+    }).catch(() => {})
+    logger.info('AUTH profile updated', { userId: user.id })
+    res.json({ id: user.id, email: user.email, username: user.username, createdAt: user.createdAt })
+  } catch (err: unknown) {
+    const e = err as { code?: string; message?: string }
+    if (e.code === 'EMAIL_TAKEN' || e.code === 'USERNAME_TAKEN') {
+      res.status(409).json({ error: e.message, code: e.code })
+    } else if (e.code === 'VALIDATION_ERROR') {
+      res.status(400).json({ error: e.message, code: e.code })
+    } else {
+      logger.error('AUTH profile update error', { userId: req.user!.userId, error: (err as Error).message })
+      res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+    }
+  }
+}
+
+export async function changePassword(req: Request, res: Response): Promise<void> {
+  const { ipAddress, userAgent } = getClientInfo(req)
+  try {
+    const { currentPassword, newPassword } = req.body
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ error: '현재 비밀번호와 새 비밀번호를 입력하세요.', code: 'VALIDATION_ERROR' })
+      return
+    }
+    if (typeof newPassword !== 'string' || newPassword.length < 8) {
+      res.status(400).json({ error: '새 비밀번호는 최소 8자여야 합니다.', code: 'VALIDATION_ERROR' })
+      return
+    }
+    await authService.changePassword(req.user!.userId, currentPassword, newPassword)
+    await auditLogService.createAuditLog({
+      action: 'PASSWORD_CHANGE', status: 'SUCCESS',
+      userId: req.user!.userId, ipAddress, userAgent,
+    }).catch(() => {})
+    logger.info('AUTH password changed', { userId: req.user!.userId })
+    res.json({ message: '비밀번호가 변경되었습니다.' })
+  } catch (err: unknown) {
+    const e = err as { code?: string; message?: string }
+    if (e.code === 'INVALID_CREDENTIALS') {
+      res.status(401).json({ error: '현재 비밀번호가 올바르지 않습니다.', code: e.code })
+    } else if (e.code === 'VALIDATION_ERROR') {
+      res.status(400).json({ error: e.message, code: e.code })
+    } else {
+      logger.error('AUTH password change error', { userId: req.user!.userId, error: (err as Error).message })
+      res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+    }
+  }
+}
+
 export async function me(req: Request, res: Response): Promise<void> {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user!.userId } })

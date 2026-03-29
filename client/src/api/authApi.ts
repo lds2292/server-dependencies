@@ -29,4 +29,10 @@ export const authApi = {
   me() {
     return http.get<AuthUser>('/auth/me')
   },
+  updateProfile(data: { username?: string }) {
+    return http.put<AuthUser>('/auth/profile', data)
+  },
+  changePassword(data: { currentPassword: string; newPassword: string }) {
+    return http.put<{ message: string }>('/auth/password', data)
+  },
 }

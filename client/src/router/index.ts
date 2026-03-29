@@ -38,6 +38,7 @@ const router = createRouter({
       meta: { requiresAuth: true },
       beforeEnter: async to => checkProjectAccess(to.params.id as string),
     },
+    { path: '/account', name: 'account', component: () => import('../views/AccountView.vue'), meta: { requiresAuth: true } },
     { path: '/forbidden', name: 'forbidden', component: () => import('../views/ForbiddenView.vue'), meta: { requiresAuth: true } },
   ],
 })

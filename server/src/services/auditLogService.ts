@@ -14,6 +14,8 @@ export type AuditAction =
   | 'INVITATION_CANCELLED'
   | 'INVITATION_ACCEPTED'
   | 'INVITATION_REJECTED'
+  | 'PROFILE_UPDATE'
+  | 'PASSWORD_CHANGE'
 export type AuditStatus = 'SUCCESS' | 'FAILED'
 
 interface CreateAuditLogParams {
