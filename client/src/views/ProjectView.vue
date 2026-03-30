@@ -23,7 +23,7 @@
     <main class="main-area">
       <div class="toolbar">
         <div class="title-group">
-          <router-link to="/projects" class="btn-ghost btn-sm">← 목록</router-link>
+          <button class="btn-ghost btn-sm" @click="router.replace({ name: 'projects' })">← 목록</button>
           <span class="app-title">{{ projectStore.currentProject?.name ?? 'Server Dependencies' }}</span>
           <button class="btn-help" @click="showHelp = true" title="사용 방법">?</button>
           <div v-if="!readOnly" class="autosave-group">
@@ -65,28 +65,30 @@
             :disabled="!projectStore.canWrite"
           >{{ readOnly ? '읽기 전용' : '편집' }}</button>
 
+          <div v-if="projectStore.canWrite" class="toolbar-dropdown-wrap" ref="importWrapRef">
+            <button class="btn-mode-toggle" @click.stop="showImportDropdown = !showImportDropdown; showSettingsDropdown = false">
+              Import <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="margin-left:2px"><path d="M2.5 4L5 6.5L7.5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div v-if="showImportDropdown" class="toolbar-dropdown">
+              <button @click="showTerraformImport = true; showImportDropdown = false">
+                Terraform <span class="menu-beta-badge">Beta</span>
+              </button>
+            </div>
+          </div>
+
           <div v-if="hasSettingsItems" class="toolbar-dropdown-wrap" ref="settingsWrapRef">
-            <button class="btn-toolbar-icon" @click.stop="showSettingsDropdown = !showSettingsDropdown" data-tooltip="설정">
+            <button class="btn-toolbar-icon" @click.stop="showSettingsDropdown = !showSettingsDropdown; showImportDropdown = false" data-tooltip="설정">
               <Icon name="settings" :size="16" />
             </button>
             <div v-if="showSettingsDropdown" class="toolbar-dropdown">
               <button v-if="projectStore.canAdmin" @click="router.push({ name: 'auditLogs', params: { id: projectStore.currentProject!.id } }); showSettingsDropdown = false">감사 로그</button>
               <button v-if="projectStore.canAdmin" @click="onOpenMembersModal(); showSettingsDropdown = false">멤버 관리</button>
-              <div v-if="projectStore.canAdmin && projectStore.canWrite" class="toolbar-dropdown-divider"></div>
+              <div v-if="projectStore.canAdmin && projectStore.canWrite && !hasData" class="toolbar-dropdown-divider"></div>
               <button v-if="projectStore.canWrite && !hasData" @click="onSampleClick(); showSettingsDropdown = false">샘플 데이터 불러오기</button>
-              <div v-if="projectStore.canWrite" class="submenu-item" @mouseenter="showImportSub = true" @mouseleave="showImportSub = false">
-                <span>Import</span>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3.5 2L7 5L3.5 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <div v-if="showImportSub" class="toolbar-submenu">
-                  <button @click="showTerraformImport = true; showSettingsDropdown = false; showImportSub = false">
-                    Terraform <span class="menu-beta-badge">Beta</span>
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
 
-          <UserProfileDropdown @logout="showLogoutConfirm = true" />
+          <UserProfileDropdown @logout="showLogoutConfirm = true" @toggle="showSettingsDropdown = false; showImportDropdown = false" />
         </div>
       </div>
       <div class="graph-wrap">
@@ -430,7 +432,7 @@
           </div>
           <div class="delete-dialog-actions">
             <button class="btn-ghost delete-dialog-btn" @click="showLogoutConfirm = false">취소</button>
-            <button class="btn-danger delete-dialog-btn" @click="authStore.logout().then(() => router.push({ name: 'login' }))">로그아웃</button>
+            <button class="btn-danger delete-dialog-btn" @click="authStore.logout()">로그아웃</button>
           </div>
         </div>
       </div>
@@ -566,7 +568,8 @@ const readOnly = ref(false)
 const showShortcuts = ref(false)
 const showSettingsDropdown = ref(false)
 const showTerraformImport = ref(false)
-const showImportSub = ref(false)
+const showImportDropdown = ref(false)
+const importWrapRef = ref<HTMLDivElement>()
 const settingsWrapRef = ref<HTMLDivElement>()
 const showHelp = ref(false)
 const detailPanelOpen = ref(true)
@@ -1233,6 +1236,7 @@ const isLoading = ref(false)
 
 function closeDropdowns(e: MouseEvent) {
   if (settingsWrapRef.value && !settingsWrapRef.value.contains(e.target as Node)) showSettingsDropdown.value = false
+  if (importWrapRef.value && !importWrapRef.value.contains(e.target as Node)) showImportDropdown.value = false
 }
 
 onMounted(async () => {
@@ -1247,8 +1251,8 @@ onMounted(async () => {
     await store.setProject(projectId)
   } catch (err: unknown) {
     const status = (err as { response?: { status?: number } }).response?.status
-    if (status === 403) router.push({ name: 'forbidden' })
-    else router.push({ name: 'projects' })
+    if (status === 403) router.replace({ name: 'forbidden' })
+    else router.replace({ name: 'projects' })
   } finally {
     isLoading.value = false
   }
@@ -1333,24 +1337,6 @@ watch(() => route.params.id, async (newId) => {
 }
 .toolbar-dropdown button:hover { background: var(--border-default); }
 .toolbar-dropdown-divider { height: 1px; background: var(--border-default); margin: 3px 0; }
-.submenu-item {
-  position: relative; display: flex; align-items: center; justify-content: space-between;
-  padding: 7px 16px; color: var(--text-secondary); font-size: var(--text-sm); cursor: pointer;
-  transition: background 0.1s;
-}
-.submenu-item:hover { background: var(--border-default); }
-.toolbar-submenu {
-  position: absolute; left: 100%; top: -4px;
-  background: var(--bg-surface); border: 1px solid var(--border-default);
-  border-radius: 8px; padding: 4px 0; min-width: 160px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 210;
-}
-.toolbar-submenu button {
-  display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 16px;
-  background: none; border: none; color: var(--text-secondary); text-align: left;
-  cursor: pointer; font-size: var(--text-sm); transition: background 0.1s;
-}
-.toolbar-submenu button:hover { background: var(--border-default); }
 .menu-beta-badge {
   font-size: 9px; font-weight: 700; color: var(--accent-soft);
   background: var(--accent-bg); border: 1px solid var(--accent-primary);

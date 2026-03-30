@@ -1,6 +1,6 @@
 <template>
   <div class="user-dropdown-wrap" ref="wrapRef">
-    <button class="btn-user-trigger" @click.stop="open = !open">
+    <button class="btn-user-trigger" @click.stop="open = !open; emit('toggle')">
       <span class="user-avatar">{{ initial }}</span>
       <span class="user-name">{{ username }}</span>
     </button>
@@ -19,7 +19,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
-const emit = defineEmits<{ logout: [] }>()
+const emit = defineEmits<{ logout: []; toggle: [] }>()
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
