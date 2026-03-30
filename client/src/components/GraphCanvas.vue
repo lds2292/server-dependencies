@@ -41,6 +41,19 @@
           <circle cx="0" cy="0" r="4" fill="none" stroke="#f59e0b" stroke-width="1.2"/>
         </g>
 
+        <!-- L7 그룹 영역 -->
+        <path v-for="hull in l7GroupHulls" :key="'hull-' + hull.l7Id"
+          :d="hull.path"
+          :fill="hull.color"
+          fill-opacity="0.06"
+          :stroke="hull.color"
+          stroke-opacity="0.2"
+          stroke-width="1"
+          stroke-dasharray="4,3"
+          pointer-events="none"
+          :opacity="(pathMode || pathNodes.size > 0) ? (pathNodes.has(hull.l7Id) ? 0.8 : 0.03) : 1"
+        />
+
         <!-- L7 멤버 연결선 (의존성 라인보다 먼저 렌더링) -->
         <g v-for="ml in l7MemberLines" :key="ml.key" pointer-events="none"
           :opacity="(pathMode || pathNodes.size > 0) ? (pathNodes.has(ml.l7Id) && pathNodes.has(ml.memberId) ? 1 : 0.1) : 1"
@@ -259,35 +272,71 @@
             </template>
           </g>
 
-          <!-- 노드 텍스트 (우측 텍스트 영역 중앙: x=13) -->
-          <text x="21" dy="-9" text-anchor="middle" class="node-label" :style="(node.nodeKind === 'infra' || node.nodeKind === 'dns') ? `fill:${cssVar('--bg-base')}` : ''">{{ truncate(node.name) }}</text>
+          <!-- 노드 텍스트 (우측 텍스트 영역 좌측 정렬: x=-52) -->
+          <text x="-52" dy="-9" text-anchor="start" class="node-label" :style="(node.nodeKind === 'infra' || node.nodeKind === 'dns') ? `fill:${cssVar('--bg-base')}` : ''">{{ truncate(node.name) }}</text>
 
           <template v-if="node.nodeKind === 'l7'">
-            <text x="21" dy="6" text-anchor="middle" class="node-sub">{{ (node as any).ip || '' }}{{ (node as any).ip && (node as any).natIp ? ' / ' : '' }}{{ (node as any).natIp || '' }}{{ !((node as any).ip) && !((node as any).natIp) ? 'L7 Load Balancer' : '' }}</text>
-            <text x="21" dy="19" text-anchor="middle" class="node-meta">{{ (node as any).memberServerIds?.length ?? 0 }}개 서버</text>
+            <text x="-52" dy="6" text-anchor="start" class="node-sub">{{ (node as L7Node).memberServerIds?.length ?? 0 }}개 서버</text>
+            <text x="-52" dy="19" text-anchor="start" class="node-meta">{{ (node as L7Node).ip || (node as L7Node).natIp || '-' }}</text>
           </template>
           <template v-else-if="node.nodeKind === 'infra'">
-            <text x="21" dy="6" text-anchor="middle" class="node-sub" style="fill:rgba(15,23,42,0.65)">{{ (node as any).infraType || 'Infra' }}</text>
-            <text x="21" dy="19" text-anchor="middle" class="node-meta" style="fill:rgba(15,23,42,0.5)">{{ (node as any).host || '-' }}{{ (node as any).port ? ':' + (node as any).port : '' }}</text>
+            <text x="-52" dy="6" text-anchor="start" class="node-sub" style="fill:rgba(15,23,42,0.65)">{{ (node as any).infraType || 'Infra' }}</text>
+            <text x="-52" dy="19" text-anchor="start" class="node-meta" style="fill:rgba(15,23,42,0.5)">{{ (node as any).host || '-' }}{{ (node as any).port ? ':' + (node as any).port : '' }}</text>
           </template>
           <template v-else-if="node.nodeKind === 'external'">
-            <text x="21" dy="6" text-anchor="middle" class="node-sub">외부 서비스</text>
-            <text x="21" dy="19" text-anchor="middle" class="node-meta">담당자 {{ (node as any).contacts?.length ?? 0 }}명</text>
+            <text x="-52" dy="6" text-anchor="start" class="node-sub">{{ externalStatusText(node as ExternalServiceNode) }}</text>
+            <text x="-52" dy="19" text-anchor="start" class="node-meta">{{ contactSummary((node as ExternalServiceNode).contacts) }}</text>
           </template>
           <template v-else-if="node.nodeKind === 'dns'">
-            <text x="21" dy="6" text-anchor="middle" class="node-sub" style="fill:rgba(15,23,42,0.65)">{{ (node as DnsNode).dnsType || 'DNS' }}</text>
-            <text x="21" dy="19" text-anchor="middle" class="node-meta" style="fill:rgba(15,23,42,0.5)">{{ (node as DnsNode).recordValue || '-' }}</text>
+            <text x="-52" dy="6" text-anchor="start" class="node-sub" style="fill:rgba(15,23,42,0.65)">{{ (node as DnsNode).dnsType || 'DNS' }}</text>
+            <text x="-52" dy="19" text-anchor="start" class="node-meta" style="fill:rgba(15,23,42,0.5)">{{ (node as DnsNode).recordValue || '-' }}</text>
           </template>
           <template v-else>
-            <text x="21" dy="6" text-anchor="middle" class="node-ip">{{ (node as any).internalIps?.[0] || '-' }}{{ (node as any).internalIps?.length > 1 ? ` +${(node as any).internalIps.length - 1}` : '' }}</text>
-            <text x="21" dy="19" text-anchor="middle" class="node-meta">NAT: {{ (node as any).natIps?.[0] || '-' }}{{ (node as any).natIps?.length > 1 ? ` +${(node as any).natIps.length - 1}` : '' }}</text>
+            <text x="-52" dy="6" text-anchor="start" class="node-sub">{{ (node as Server).team || '-' }}</text>
+            <text x="-52" dy="19" text-anchor="start" class="node-meta">{{ (node as Server).internalIps?.[0] || '-' }}</text>
           </template>
+
+          <!-- 연결 포트 힌트 -->
+          <circle
+            v-if="hoveredNodeId === node.id && !props.readOnly && !arrowSource"
+            cx="101" cy="0" r="6"
+            :fill="nodeKindColor(node.nodeKind ?? 'server')"
+            stroke="white" stroke-width="1.5"
+            class="connect-handle"
+            cursor="crosshair"
+            @mousedown.stop="startArrowDrag($event, node)"
+          />
 
           <!-- 순환 의존성 경고 배지 -->
           <g v-if="cycleNodes.has(node.id)" class="cycle-badge" pointer-events="none">
             <circle cx="80" cy="-30" r="8" fill="#dc2626" stroke="#0f172a" stroke-width="1.5"/>
             <text x="80" y="-26" text-anchor="middle" font-size="10" font-weight="900" fill="white">!</text>
           </g>
+        </g>
+
+        <!-- 호버 툴팁 -->
+        <g v-if="tooltipNode && !arrowSource && !boxSelect"
+           :transform="`translate(${(tooltipNode.x ?? 0) + 100},${(tooltipNode.y ?? 0) - 37})`"
+           pointer-events="none"
+           class="hover-tooltip"
+        >
+          <rect
+            x="0" y="0"
+            width="180"
+            :height="getTooltipLines(tooltipNode).length * 16 + 12"
+            rx="4"
+            :fill="cssVar('--bg-surface')"
+            :stroke="nodeKindColor(tooltipNode.nodeKind ?? 'server')"
+            stroke-width="1"
+            opacity="0.95"
+          />
+          <text v-for="(line, i) in getTooltipLines(tooltipNode)" :key="i"
+            x="8" :y="16 + i * 16"
+            text-anchor="start"
+            font-size="9"
+            :fill="cssVar('--text-primary')"
+            opacity="0.85"
+          >{{ line }}</text>
         </g>
 
         <!-- glow 필터 + 엣지 그라디언트 -->
@@ -735,7 +784,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import * as d3 from 'd3'
-import type { AnyNode, DnsNode, D3Node, D3Link } from '../types'
+import type { AnyNode, DnsNode, D3Node, D3Link, Server, L7Node, InfraNode, ExternalServiceNode, ExternalContact } from '../types'
 import { useGraphStore } from '../stores/graph'
 
 const graphStore = useGraphStore()
@@ -828,6 +877,20 @@ watch(() => graphStore.positionRestoreVersion, () => {
 
 // 드래그 상태
 const hoveredNodeId = ref<string | null>(null)
+const tooltipNodeId = ref<string | null>(null)
+let tooltipTimer: ReturnType<typeof setTimeout> | null = null
+watch(hoveredNodeId, (newId) => {
+  if (tooltipTimer) clearTimeout(tooltipTimer)
+  if (newId) {
+    tooltipTimer = setTimeout(() => { tooltipNodeId.value = newId }, 300)
+  } else {
+    tooltipNodeId.value = null
+  }
+})
+const tooltipNode = computed(() => {
+  if (!tooltipNodeId.value) return null
+  return renderedNodes.value.find(n => n.id === tooltipNodeId.value) ?? null
+})
 const arrowSource = ref<D3Node | null>(null)
 const spaceHeld = ref(false)
 const multiSelectedIds = ref<Set<string>>(new Set())
@@ -946,6 +1009,54 @@ function getDnsIconInfo(provider?: string): { abbr: string; color: string; textC
 // ─── 텍스트 잘라내기 ─────────────────────────────────────
 function truncate(text: string, max = 20): string {
   return text.length > max ? text.slice(0, max) + '…' : text
+}
+
+function externalStatusText(node: ExternalServiceNode): string {
+  const parts: string[] = []
+  if (node.hasFirewall) parts.push('FW')
+  if (node.hasWhitelist) parts.push('Whitelist')
+  return parts.length > 0 ? parts.join(' / ') : '직접 연결'
+}
+
+function contactSummary(contacts?: ExternalContact[]): string {
+  if (!contacts || contacts.length === 0) return '담당자 없음'
+  if (contacts.length === 1) return contacts[0].name
+  return `${contacts[0].name} 외 ${contacts.length - 1}명`
+}
+
+function getTooltipLines(node: D3Node): string[] {
+  const lines: string[] = []
+  if (!node.nodeKind || node.nodeKind === 'server') {
+    const s = node as unknown as Server
+    if (s.team) lines.push(`팀: ${s.team}`)
+    s.internalIps?.forEach(ip => lines.push(`내부: ${ip}`))
+    s.natIps?.forEach(ip => lines.push(`NAT: ${ip}`))
+    if (s.description) lines.push(truncate(s.description, 30))
+  } else if (node.nodeKind === 'l7') {
+    const l = node as unknown as L7Node
+    if (l.ip) lines.push(`IP: ${l.ip}`)
+    if (l.natIp) lines.push(`NAT: ${l.natIp}`)
+    lines.push(`멤버: ${l.memberServerIds?.length ?? 0}개 서버`)
+    if (l.description) lines.push(truncate(l.description, 30))
+  } else if (node.nodeKind === 'infra') {
+    const i = node as unknown as InfraNode
+    if (i.infraType) lines.push(`타입: ${i.infraType}`)
+    if (i.host) lines.push(`${i.host}${i.port ? ':' + i.port : ''}`)
+    if (i.description) lines.push(truncate(i.description, 30))
+  } else if (node.nodeKind === 'external') {
+    const e = node as unknown as ExternalServiceNode
+    if (e.hasFirewall) lines.push('방화벽 적용')
+    if (e.hasWhitelist) lines.push('화이트리스트 적용')
+    e.contacts?.forEach(c => lines.push(`담당: ${c.name}`))
+    if (e.description) lines.push(truncate(e.description, 30))
+  } else if (node.nodeKind === 'dns') {
+    const d = node as unknown as DnsNode
+    lines.push(`타입: ${d.dnsType}`)
+    if (d.recordValue) lines.push(`값: ${d.recordValue}`)
+    if (d.ttl != null) lines.push(`TTL: ${d.ttl}`)
+    if (d.description) lines.push(truncate(d.description, 30))
+  }
+  return lines
 }
 
 // ─── 색상 ───────────────────────────────────────────────
@@ -1107,6 +1218,48 @@ const l7MemberLines = computed(() => {
     }
   }
   return lines
+})
+
+// ─── L7 그룹 시각 영역 ──────────────────────────────────────
+const l7GroupHulls = computed(() => {
+  const nodeMap = new Map(renderedNodes.value.map(n => [n.id, n]))
+  const hulls: { l7Id: string; path: string; color: string }[] = []
+
+  for (const node of renderedNodes.value) {
+    if (node.nodeKind !== 'l7') continue
+    const memberIds: string[] = (node as any).memberServerIds ?? []
+    if (memberIds.length === 0) continue
+
+    const points: [number, number][] = []
+    const nx = node.x ?? 0, ny = node.y ?? 0
+    points.push([nx - 86, ny - 37], [nx + 101, ny - 37], [nx + 101, ny + 37], [nx - 86, ny + 37])
+
+    for (const mid of memberIds) {
+      const m = nodeMap.get(mid)
+      if (!m) continue
+      const mx = m.x ?? 0, my = m.y ?? 0
+      points.push([mx - 86, my - 37], [mx + 101, my - 37], [mx + 101, my + 37], [mx - 86, my + 37])
+    }
+
+    if (points.length < 6) continue
+    const hull = d3.polygonHull(points)
+    if (!hull) continue
+
+    const centroid = d3.polygonCentroid(hull)
+    const padded = hull.map(([px, py]) => {
+      const dx = px - centroid[0], dy = py - centroid[1]
+      const dist = Math.hypot(dx, dy)
+      if (dist === 0) return [px, py] as [number, number]
+      return [px + (dx / dist) * 20, py + (dy / dist) * 20] as [number, number]
+    })
+
+    const lineGen = d3.line().curve(d3.curveCatmullRomClosed.alpha(0.5))
+    const pathD = lineGen(padded)
+    if (pathD) {
+      hulls.push({ l7Id: node.id, path: pathD, color: cssVar('--node-l7-color') })
+    }
+  }
+  return hulls
 })
 
 // ─── SVG 좌표 변환 ───────────────────────────────────────
@@ -1896,6 +2049,10 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .node-ip { font-size: 10px; fill: rgba(255,255,255,0.75); pointer-events: none; }
 .node-sub { font-size: 9px; fill: rgba(255,255,255,0.65); pointer-events: none; font-weight: 600; letter-spacing: 0.02em; }
 .node-meta { font-size: 9.5px; fill: rgba(255,255,255,0.5); pointer-events: none; }
+.hover-tooltip { opacity: 0; animation: tooltip-fade-in 0.15s ease forwards; }
+@keyframes tooltip-fade-in { to { opacity: 1; } }
+.connect-handle { opacity: 0.85; transition: opacity 0.15s, r 0.15s; }
+.connect-handle:hover { opacity: 1; }
 /* 의존성 링크 애니메이션 */
 @keyframes flow-dash {
   from { stroke-dashoffset: 18; }
