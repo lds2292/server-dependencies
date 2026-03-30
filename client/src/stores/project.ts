@@ -73,6 +73,11 @@ export const useProjectStore = defineStore('project', () => {
     if (currentProject.value?.id === projectId) currentProject.value = data
   }
 
+  async function transferOwnership(projectId: string, targetUserId: string, password: string): Promise<void> {
+    const { data } = await projectApi.transferOwnership(projectId, targetUserId, password)
+    if (currentProject.value?.id === projectId) currentProject.value = data
+  }
+
   async function leaveProject(projectId: string): Promise<void> {
     await projectApi.leaveProject(projectId)
     projects.value = projects.value.filter(p => p.id !== projectId)
@@ -99,7 +104,7 @@ export const useProjectStore = defineStore('project', () => {
     myRole, canWrite, canAdmin, isMaster,
     loadProjects, loadProject, createProject, updateProject, deleteProject,
     sendInvitation, loadProjectInvitations, cancelInvitation,
-    removeMember, updateMemberRole, leaveProject,
+    removeMember, updateMemberRole, transferOwnership, leaveProject,
     loadMyInvitations, acceptInvitation, rejectInvitation,
   }
 })

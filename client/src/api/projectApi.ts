@@ -102,6 +102,9 @@ export const projectApi = {
   unmasksContacts(projectId: string, nodeId: string, password: string) {
     return http.post<{ contacts: ExternalContact[] }>(`/projects/${projectId}/contacts/unmask`, { nodeId, password })
   },
+  transferOwnership(id: string, targetUserId: string, password: string) {
+    return http.post<Project>(`/projects/${id}/transfer-ownership`, { targetUserId, password })
+  },
   getAuditLogs(id: string) {
     return http.get<{ logs: AuditLog[] }>(`/projects/${id}/audit-logs`)
   },

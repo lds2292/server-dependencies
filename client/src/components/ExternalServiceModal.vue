@@ -59,8 +59,8 @@
         <label>설명<textarea v-model="form.description" rows="2" placeholder="외부서비스 설명..." /></label>
 
         <div class="actions">
-          <button type="button" class="btn-secondary" @click="$emit('close')">취소</button>
-          <button type="submit" class="btn-primary" :disabled="!form.name.trim() || isDuplicate || hasAnyContactError">{{ isEdit ? '저장' : '추가' }}</button>
+          <button type="button" class="btn-ghost" @click="$emit('close')">취소</button>
+          <button type="submit" class="btn-primary btn-node-ext" :disabled="!form.name.trim() || isDuplicate || hasAnyContactError">{{ isEdit ? '저장' : '추가' }}</button>
         </div>
       </form>
     </div>
@@ -179,9 +179,4 @@ input:focus,textarea:focus { border-color:var(--node-ext-color); }
 .btn-remove:hover { color:#ef4444;background:#3f1f1f; }
 .no-contacts { color:var(--border-strong);font-size: var(--text-xs);text-align:center;margin:4px 0; }
 .actions { display:flex;gap:8px;justify-content:flex-end;margin-top:4px; }
-.btn-primary { background:var(--node-ext-color);color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size: var(--text-sm);cursor:pointer;font-weight:600; }
-.btn-primary:hover:not(:disabled) { background:#15803d; }
-.btn-primary:disabled { opacity:0.5;cursor:not-allowed; }
-.btn-secondary { background:var(--border-default);color:var(--text-secondary);border:none;border-radius:6px;padding:8px 18px;font-size: var(--text-sm);cursor:pointer; }
-.btn-secondary:hover { background:var(--border-strong); }
 </style>

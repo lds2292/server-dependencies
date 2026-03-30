@@ -50,7 +50,7 @@
             <label class="form-label">설명</label>
             <textarea v-model="editDescription" class="form-input form-textarea" rows="3" placeholder="프로젝트 설명 (선택)" />
           </div>
-          <button class="btn-save" @click="onSaveInfo" :disabled="savingInfo || !editName.trim()">
+          <button class="btn-outline btn-sm" @click="onSaveInfo" :disabled="savingInfo || !editName.trim()">
             {{ savingInfo ? '저장 중...' : '저장' }}
           </button>
         </section>
@@ -89,8 +89,8 @@
                   v-if="canRemoveMember(member.role, member.userId)"
                   class="member-remove-btn"
                   @click="onRemoveMember(member.userId)"
-                  title="멤버 제거"
-                >x</button>
+                  title="멤버 해제"
+                >해제</button>
               </div>
             </div>
           </div>
@@ -98,14 +98,14 @@
           <div v-if="projectStore.canAdmin" class="member-add-form">
             <input
               v-model="addMemberIdentifier"
-              class="member-input"
+              class="form-input member-input"
               placeholder="이메일"
               @keydown.enter="onSendInvitation"
             />
             <select v-model="addMemberRole" class="role-select">
               <option v-for="r in addableRoles" :key="r" :value="r">{{ roleLabel(r) }}</option>
             </select>
-            <button class="btn-primary" @click="onSendInvitation" :disabled="!addMemberIdentifier.trim()">초대</button>
+            <button class="btn-outline btn-sm" @click="onSendInvitation" :disabled="!addMemberIdentifier.trim()">초대</button>
           </div>
           <div v-if="memberError" class="member-error">{{ memberError }}</div>
 
@@ -116,7 +116,7 @@
                 <span class="member-name">{{ inv.invitee.email }}</span>
                 <span :class="['role-badge', inv.role.toLowerCase()]">{{ roleLabel(inv.role) }}</span>
               </div>
-              <button class="member-remove-btn" @click="onCancelInvitation(inv.id)" title="초대 취소">x</button>
+              <button class="member-remove-btn" @click="onCancelInvitation(inv.id)" title="초대 취소">취소</button>
             </div>
           </div>
         </section>
@@ -130,6 +130,19 @@
             </svg>
             위험 영역
           </h2>
+          <div class="danger-item">
+            <div class="danger-desc">
+              <span class="danger-label">마스터 권한 위임</span>
+              <span class="danger-hint">다른 멤버에게 마스터 권한을 이전합니다. 기존 마스터는 Admin으로 변경됩니다.</span>
+            </div>
+            <button
+              class="btn-danger"
+              @click="showTransferConfirm = true"
+              :disabled="transferableMembers.length === 0"
+              :title="transferableMembers.length === 0 ? '위임할 멤버가 없습니다.' : ''"
+            >권한 위임</button>
+          </div>
+          <div class="danger-divider"></div>
           <div class="danger-item">
             <div class="danger-desc">
               <span class="danger-label">프로젝트 삭제</span>
@@ -166,11 +179,60 @@
             @keydown.enter="deleteConfirmInput === projectStore.currentProject?.name && !deleting && onDeleteProject()"
           />
           <div class="delete-dialog-actions">
-            <button class="delete-btn-cancel" @click="showDeleteConfirm = false; deleteConfirmInput = ''">취소</button>
-            <button class="delete-btn-confirm" @click="onDeleteProject"
+            <button class="btn-ghost delete-dialog-btn" @click="showDeleteConfirm = false; deleteConfirmInput = ''">취소</button>
+            <button class="btn-danger delete-dialog-btn" @click="onDeleteProject"
               :disabled="deleting || deleteConfirmInput !== projectStore.currentProject?.name">
               {{ deleting ? '삭제 중...' : '삭제' }}
             </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 권한 위임 확인 다이얼로그 -->
+    <transition name="toast-fade">
+      <div v-if="showTransferConfirm" class="delete-overlay" @click.self="closeTransferModal">
+        <div class="delete-dialog" style="width: 380px">
+          <div class="delete-dialog-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M12 9v4M12 17h.01" stroke="var(--color-warning)" stroke-width="2" stroke-linecap="round"/>
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="var(--color-warning)" stroke-width="1.5" fill="none"/>
+            </svg>
+          </div>
+          <div class="delete-dialog-body">
+            <div class="delete-dialog-title">마스터 권한 위임</div>
+            <div class="delete-dialog-desc">
+              선택한 멤버에게 마스터 권한이 이전됩니다.<br/>
+              현재 권한은 Admin으로 변경됩니다.
+            </div>
+          </div>
+          <div class="transfer-field">
+            <label class="transfer-field-label">위임 대상</label>
+            <select v-model="transferTargetUserId" class="form-input">
+              <option value="" disabled>멤버 선택</option>
+              <option v-for="m in transferableMembers" :key="m.userId" :value="m.userId">
+                {{ m.user.username }} ({{ m.user.email }})
+              </option>
+            </select>
+          </div>
+          <div class="transfer-field">
+            <label class="transfer-field-label">비밀번호 확인</label>
+            <input
+              v-model="transferPassword"
+              type="password"
+              class="form-input"
+              placeholder="비밀번호 입력"
+              @keydown.enter="onTransferOwnership"
+            />
+          </div>
+          <div v-if="transferError" class="transfer-error">{{ transferError }}</div>
+          <div class="delete-dialog-actions">
+            <button class="btn-ghost delete-dialog-btn" @click="closeTransferModal">취소</button>
+            <button
+              class="btn-outline delete-dialog-btn"
+              @click="onTransferOwnership"
+              :disabled="transferring || !transferTargetUserId || !transferPassword"
+            >{{ transferring ? '위임 중...' : '위임 확인' }}</button>
           </div>
         </div>
       </div>
@@ -188,8 +250,8 @@
           <h2 class="modal-title">로그아웃</h2>
           <p style="font-size: var(--text-sm);color:var(--text-tertiary);margin:0 0 20px">로그아웃 하시겠습니까?</p>
           <div class="modal-actions">
-            <button type="button" class="btn-cancel" @click="showLogoutConfirm = false">취소</button>
-            <button type="button" class="btn-confirm btn-confirm-danger" @click="onLogout">로그아웃</button>
+            <button type="button" class="btn-ghost" @click="showLogoutConfirm = false">취소</button>
+            <button type="button" class="btn-danger" @click="onLogout">로그아웃</button>
           </div>
         </div>
       </div>
@@ -333,6 +395,46 @@ async function onChangeRole(targetUserId: string, newRole: string) {
   }
 }
 
+// ─── 권한 위임 ──────────────────────────────────────────────
+const showTransferConfirm = ref(false)
+const transferTargetUserId = ref('')
+const transferPassword = ref('')
+const transferring = ref(false)
+const transferError = ref('')
+
+const transferableMembers = computed(() => {
+  if (!projectStore.currentProject) return []
+  return projectStore.currentProject.members.filter(m => m.role !== 'MASTER')
+})
+
+function closeTransferModal() {
+  showTransferConfirm.value = false
+  transferTargetUserId.value = ''
+  transferPassword.value = ''
+  transferError.value = ''
+}
+
+async function onTransferOwnership() {
+  if (!transferTargetUserId.value || !transferPassword.value) return
+  transferring.value = true
+  transferError.value = ''
+  try {
+    await projectStore.transferOwnership(projectId, transferTargetUserId.value, transferPassword.value)
+    closeTransferModal()
+    showToast('마스터 권한이 위임되었습니다.', 'success')
+  } catch (err: unknown) {
+    const e = err as { response?: { data?: { error?: string; code?: string } } }
+    if (e.response?.data?.code === 'INVALID_CREDENTIALS') {
+      transferError.value = '비밀번호가 올바르지 않습니다.'
+    } else {
+      closeTransferModal()
+      showToast(e.response?.data?.error ?? '권한 위임에 실패했습니다.')
+    }
+  } finally {
+    transferring.value = false
+  }
+}
+
 // ─── 위험 영역 ────────────────────────────────────────────
 const showDeleteConfirm = ref(false)
 const deleteConfirmInput = ref('')
@@ -420,18 +522,6 @@ onMounted(async () => {
 }
 .modal-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); margin: 0 0 12px; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-.btn-cancel {
-  padding: 6px 14px; border-radius: 6px; font-size: var(--text-sm); font-weight: 600;
-  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
-  cursor: pointer; transition: all 0.15s;
-}
-.btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
-.btn-confirm {
-  padding: 6px 14px; border-radius: 6px; font-size: var(--text-sm); font-weight: 700;
-  border: none; cursor: pointer; transition: all 0.15s;
-}
-.btn-confirm-danger { background: var(--color-danger); color: #fff; }
-.btn-confirm-danger:hover { background: var(--color-danger-hover); }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.15s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
@@ -519,13 +609,6 @@ onMounted(async () => {
 .form-input::placeholder { color: var(--border-strong); }
 .form-textarea { resize: vertical; min-height: 72px; font-family: inherit; }
 
-.btn-save {
-  font-size: var(--text-xs); font-weight: 700; padding: 7px 20px; border-radius: 7px;
-  border: 1px solid var(--accent-hover); background: var(--accent-bg); color: var(--accent-soft);
-  cursor: pointer; transition: all 0.15s;
-}
-.btn-save:hover:not(:disabled) { background: var(--accent-bg-medium); color: var(--accent-light); box-shadow: 0 0 12px rgba(217,119,6,0.3); }
-.btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* 멤버 관리 */
 .members-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
@@ -546,30 +629,29 @@ onMounted(async () => {
 .role-badge.writer   { background: var(--role-writer-bg); border-color: var(--role-writer); color: var(--node-ext-text); }
 .role-badge.readonly { background: var(--role-readonly-bg); border-color: var(--role-readonly); color: var(--text-muted); }
 .role-select {
-  font-size: var(--text-xs); font-weight: 600; padding: 7px 10px; border-radius: 6px;
-  background: var(--bg-base); border: 1px solid var(--border-default); color: var(--text-tertiary); cursor: pointer;
+  font-size: var(--text-sm); font-weight: 600; padding: 9px 32px 9px 12px; border-radius: 7px;
+  background: var(--bg-base); border: 1px solid var(--border-default); color: var(--text-secondary); cursor: pointer;
+  outline: none; transition: border-color 0.15s;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23525252'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px 16px;
 }
 .role-select:hover { border-color: var(--border-strong); }
+.role-select:focus { border-color: var(--accent-focus); }
 .member-remove-btn {
-  width: 20px; height: 20px; border-radius: 4px; border: 1px solid #ef444433;
-  background: transparent; color: #ef4444; font-size: var(--text-sm); line-height: 1;
+  padding: 2px 8px; border-radius: 4px; border: 1px solid #ef444433;
+  background: transparent; color: #ef4444; font-size: var(--text-xs); font-weight: 600; line-height: 1.4;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s;
+  transition: all 0.15s; white-space: nowrap;
 }
 .member-remove-btn:hover { background: #ef444422; border-color: #ef4444; }
 .member-add-form { display: flex; gap: 8px; align-items: center; }
 .member-input {
-  flex: 1; padding: 7px 10px; background: var(--bg-base); border: 1px solid var(--border-default);
-  border-radius: 6px; color: var(--text-secondary); font-size: var(--text-xs); outline: none;
+  flex: 1;
 }
-.member-input:focus { border-color: var(--accent-focus); }
 .member-error { font-size: var(--text-xs); color: #f87171; margin-top: 8px; }
-.btn-primary {
-  font-size: var(--text-xs); font-weight: 700; padding: 7px 14px; border-radius: 6px;
-  border: 1px solid var(--accent-hover); background: var(--accent-bg); color: var(--accent-soft); cursor: pointer;
-}
-.btn-primary:hover { background: var(--accent-hover); color: var(--text-primary); }
-.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 .pending-invitations { margin-top: 16px; border-top: 1px solid var(--bg-surface); padding-top: 16px; }
 .pending-invitations-title { font-size: var(--text-xs); font-weight: 600; color: var(--text-disabled); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
 .pending-inv-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
@@ -587,12 +669,14 @@ onMounted(async () => {
 .danger-desc { display: flex; flex-direction: column; gap: 4px; }
 .danger-label { font-size: var(--text-sm); font-weight: 700; color: #f87171; }
 .danger-hint { font-size: var(--text-xs); color: var(--text-disabled); }
-.btn-danger {
-  font-size: var(--text-xs); font-weight: 700; padding: 7px 16px; border-radius: 7px;
-  border: 1px solid #ef4444; background: #450a0a; color: #fca5a5;
-  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+.btn-danger { flex-shrink: 0; }
+
+/* 위험 영역 구분선 */
+.danger-divider {
+  height: 1px;
+  background: rgba(239, 68, 68, 0.15);
+  margin: 16px 0;
 }
-.btn-danger:hover { background: #7f1d1d; color: #fecaca; }
 
 /* 삭제 다이얼로그 */
 .delete-overlay {
@@ -619,19 +703,20 @@ onMounted(async () => {
 .delete-name-input:focus { border-color: #ef4444; }
 .delete-name-input::placeholder { color: var(--border-strong); }
 .delete-dialog-actions { display: flex; gap: 8px; }
-.delete-btn-cancel {
-  flex: 1; padding: 8px; border-radius: 7px;
-  background: var(--bg-base); border: 1px solid var(--border-default);
-  color: var(--text-tertiary); font-size: var(--text-sm); font-weight: 600; cursor: pointer; transition: all 0.15s;
+.delete-dialog-btn { flex: 1; }
+
+/* 권한 위임 모달 */
+.transfer-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.delete-btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
-.delete-btn-confirm {
-  flex: 1; padding: 8px; border-radius: 7px;
-  background: #450a0a; border: 1px solid #ef4444;
-  color: #fca5a5; font-size: var(--text-sm); font-weight: 700; cursor: pointer; transition: all 0.15s;
+.transfer-field-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-disabled);
 }
-.delete-btn-confirm:hover:not(:disabled) { background: #7f1d1d; color: #fecaca; }
-.delete-btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+.transfer-error { font-size: var(--text-xs); color: #f87171; text-align: center; }
 
 /* 토스트 */
 .app-toast {

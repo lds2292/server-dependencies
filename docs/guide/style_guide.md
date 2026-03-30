@@ -124,6 +124,13 @@
 | `--color-warning-light` | `#fbbf24` | dirty 상태, 방화벽 (amber-400) |
 | `--color-danger` | `#ef4444` | 위험/오류 |
 | `--color-danger-hover` | `#dc2626` | 위험 버튼 hover |
+| `--color-danger-bg` | `#450a0a` | danger 버튼 배경 |
+| `--color-danger-bg-hover` | `#7f1d1d` | danger 버튼 hover 배경 |
+| `--color-danger-text` | `#fca5a5` | danger 버튼 텍스트 |
+| `--color-danger-text-hover` | `#fecaca` | danger 버튼 hover 텍스트 |
+| `--color-danger-border` | `#ef4444` | danger 보더 (시맨틱 분리) |
+| `--color-danger-surface` | `#1c0a0a` | danger 토스트/배너 배경 |
+| `--color-danger-muted` | `#f87171` | danger 경고 텍스트 |
 | `--color-info` | `#3ec6d6` | 정보 (= node-infra-color) |
 | `--color-ip-text` | `#7dd3fc` | IP·포트 등 기술 데이터 텍스트 (sky-300) |
 
@@ -178,6 +185,54 @@
 | ADMIN | `--role-admin` `#5b8def` | `--role-admin-bg` | 관리자 (파랑) |
 | WRITER | `--role-writer` `#42b883` | `--role-writer-bg` | 편집자 (초록) |
 | READONLY | `--role-readonly` `#94a3b8` | `--role-readonly-bg` | 읽기 전용 (회색) |
+
+---
+
+## 버튼 시스템
+
+`style.css`에 글로벌 버튼 클래스가 정의되어 있다. 새 버튼을 만들 때 반드시 글로벌 클래스를 사용한다.
+
+### 카테고리
+
+| 클래스 | 용도 | 외형 |
+|--------|------|------|
+| `.btn-primary` | 주요 액션 (저장, 확인, 추가) | accent 배경 + 흰색 텍스트 |
+| `.btn-ghost` | 보조 액션 (취소, 뒤로, 닫기) | 투명 배경 + 보더 |
+| `.btn-danger` | 위험 확인 (삭제, 로그아웃) | danger 배경 + danger 텍스트 |
+| `.btn-danger-ghost` | 위험 트리거 (계정 삭제 버튼) | 투명 배경 + danger 보더 |
+| `.btn-outline` | 강조 아웃라인 (새 프로젝트, 저장) | accent-bg 배경 + accent 보더/텍스트 |
+| `.btn-icon` | 아이콘 버튼 (도움말, 설정) | 28x28 정사각형, 투명 배경 |
+
+### 사이즈
+
+| 클래스 | font-size | padding | height | border-radius | 용도 |
+|--------|-----------|---------|--------|---------------|------|
+| `.btn-sm` | `--text-xs` | `0 10px` | `28px` | `6px` | 툴바, 패널 내부 |
+| (기본) | `--text-sm` | `7px 16px` | auto | `6px` | 모달 푸터, 폼 |
+| `.btn-lg` | `--text-base` | `10px 28px` | auto | `8px` | 로그인, 히어로 CTA |
+
+### 노드 타입 Modifier
+
+모달 Primary 버튼에서 노드 타입별 색상을 사용할 때 적용한다.
+
+| 클래스 | 배경 | hover 배경 |
+|--------|------|-----------|
+| `.btn-node-l7` | `--node-l7-color` | `--node-l7-hover` |
+| `.btn-node-ext` | `--node-ext-color` | `--node-ext-hover` |
+
+사용 예:
+```html
+<button class="btn-primary btn-node-l7">저장</button>
+<button class="btn-ghost btn-sm">Export JSON</button>
+<button class="btn-danger btn-lg">계정 삭제</button>
+```
+
+### 규칙
+
+- scoped style에서 버튼 외형(background, color, border, padding, font-size, border-radius)을 재정의하지 않는다.
+- 레이아웃 속성(flex, margin, width 등)만 scoped에서 추가한다.
+- 상태 기반 스타일(.dirty 등)은 scoped에서 유지한다.
+- 특수 버튼(canvas-btn, zoom-btn, choice-btn 등)은 글로벌 시스템 대상이 아니다.
 
 ---
 
@@ -309,6 +364,47 @@ GraphCanvas 배경 격자는 "엔지니어링 청사진" 패턴을 사용한다.
 
 Webkit(Chrome, Edge, Safari)과 Firefox 모두 지원한다.
 `overflow-y: auto` 또는 `overflow-y: scroll`이 적용된 모든 요소에 자동 적용된다.
+
+---
+
+## 폼 컴포넌트 통일 규격
+
+모든 폼 입력 요소(input, select, combobox)는 동일한 시각적 규격을 따른다.
+
+### 공통 속성
+
+| 속성 | 값 | 비고 |
+|------|----|------|
+| font-size | `var(--text-sm)` | 13px |
+| padding | `9px 12px` | 상하 9px, 좌우 12px |
+| border | `1px solid var(--border-default)` | |
+| border-radius | `7px` | |
+| background | `var(--bg-base)` | 카드 안에서 대비 확보 |
+| color | `var(--text-secondary)` | |
+| outline | `none` | |
+| transition | `border-color 0.15s` | |
+| box-sizing | `border-box` | |
+
+### 상태별 스타일
+
+| 상태 | 속성 | 값 |
+|------|------|----|
+| hover | border-color | `var(--border-strong)` |
+| focus / open | border-color | `var(--accent-focus)` |
+| placeholder | color | `var(--border-strong)` |
+| disabled | opacity | `0.5`, cursor: `not-allowed` |
+
+### 셀렉트/콤보박스 화살표(chevron) 규격
+
+- 화살표 아이콘: `16px x 16px`, color `var(--text-disabled)`
+- 트리거 내부 레이아웃: `display: flex; align-items: center; justify-content: space-between; gap: 8px`
+- 텍스트와 화살표 사이 최소 gap: `8px`
+- open 상태에서 화살표 회전: `transform: rotate(180deg)`
+
+### 참고
+
+- native `<select>` 대신 `CustomSelect` 컴포넌트를 사용할 것
+- 색상 하드코딩 금지, 반드시 CSS 변수 사용
 
 ---
 

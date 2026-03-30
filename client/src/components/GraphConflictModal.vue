@@ -78,8 +78,8 @@
       </div>
 
       <div class="conflict-actions">
-        <button class="btn-cancel" @click="onDismiss">나중에 결정</button>
-        <button class="btn-confirm" @click="onConfirm">적용</button>
+        <button class="btn-ghost" @click="onDismiss">나중에 결정</button>
+        <button class="btn-primary" @click="onConfirm">적용</button>
       </div>
     </div>
   </div>
@@ -294,16 +294,4 @@ function onDismiss() {
   display: flex; justify-content: flex-end; gap: 8px;
   flex-shrink: 0;
 }
-.btn-cancel {
-  background: none; border: 1px solid var(--border-default); border-radius: 7px;
-  padding: 7px 16px; font-size: var(--text-sm); color: var(--text-tertiary); cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-}
-.btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
-.btn-confirm {
-  background: var(--accent-primary); border: none; border-radius: 7px;
-  padding: 7px 20px; font-size: var(--text-sm); font-weight: 700; color: #fff;
-  cursor: pointer; transition: background 0.15s;
-}
-.btn-confirm:hover { background: var(--accent-hover); box-shadow: 0 0 12px rgba(217,119,6,0.35); }
 </style>

@@ -48,8 +48,8 @@
               <span class="invitation-meta">{{ inv.inviter.username }} 님이 초대 · {{ roleLabel(inv.role) }}</span>
             </div>
             <div class="invitation-actions">
-              <button class="btn-accept" @click="onAcceptInvitation(inv.id)">수락</button>
-              <button class="btn-reject" @click="onRejectInvitation(inv.id)">거절</button>
+              <button class="btn-primary btn-sm" @click="onAcceptInvitation(inv.id)">수락</button>
+              <button class="btn-ghost btn-sm btn-reject" @click="onRejectInvitation(inv.id)">거절</button>
             </div>
           </div>
         </div>
@@ -59,7 +59,7 @@
     <div class="projects-body">
       <div class="projects-top">
         <h1 class="projects-title">프로젝트</h1>
-        <button class="btn-new" @click="showCreate = true">+ 새 프로젝트</button>
+        <button class="btn-outline btn-sm" @click="showCreate = true">+ 새 프로젝트</button>
       </div>
 
       <div v-if="loading" class="projects-grid">
@@ -91,7 +91,7 @@
         </svg>
         <p class="empty-title">아직 프로젝트가 없습니다</p>
         <p class="empty-desc">팀과 함께 서버 의존성을 시각화해보세요</p>
-        <button class="btn-new" @click="showCreate = true">첫 번째 프로젝트 만들기</button>
+        <button class="btn-outline btn-sm" @click="showCreate = true">첫 번째 프로젝트 만들기</button>
       </div>
 
       <template v-else>
@@ -151,7 +151,7 @@
           </div>
           <div v-else class="section-empty">
             <p class="section-empty-text">아직 직접 만든 프로젝트가 없습니다</p>
-            <button class="btn-new" @click="showCreate = true">첫 번째 프로젝트 만들기</button>
+            <button class="btn-outline btn-sm" @click="showCreate = true">첫 번째 프로젝트 만들기</button>
           </div>
         </div>
 
@@ -221,8 +221,8 @@
           <h2 class="modal-title">로그아웃</h2>
           <p style="font-size: var(--text-sm);color:var(--text-tertiary);margin:0 0 20px">로그아웃 하시겠습니까?</p>
           <div class="modal-actions">
-            <button type="button" class="btn-cancel" @click="showLogoutConfirm = false">취소</button>
-            <button type="button" class="btn-confirm btn-confirm-danger" @click="onLogout">로그아웃</button>
+            <button type="button" class="btn-ghost" @click="showLogoutConfirm = false">취소</button>
+            <button type="button" class="btn-danger" @click="onLogout">로그아웃</button>
           </div>
         </div>
       </div>
@@ -244,8 +244,8 @@
             </div>
             <div v-if="createError" class="form-error">{{ createError }}</div>
             <div class="modal-actions">
-              <button type="button" class="btn-cancel" @click="showCreate = false">취소</button>
-              <button type="submit" class="btn-confirm" :disabled="creating">
+              <button type="button" class="btn-ghost" @click="showCreate = false">취소</button>
+              <button type="submit" class="btn-primary" :disabled="creating">
                 {{ creating ? '생성 중...' : '생성' }}
               </button>
             </div>
@@ -384,12 +384,6 @@ function ownerName(project: { members: { role: string; user: { username: string 
 .section-empty-text { font-size: var(--text-sm); color: var(--text-disabled); margin: 0 0 12px 0; }
 .projects-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
 .projects-title { font-size: var(--text-xl); font-weight: 700; color: var(--text-primary); margin: 0; }
-.btn-new {
-  font-size: var(--text-xs); font-weight: 700; padding: 7px 14px; border-radius: 7px;
-  border: 1px solid var(--accent-hover); background: var(--accent-bg); color: var(--accent-soft);
-  cursor: pointer; transition: all 0.15s;
-}
-.btn-new:hover { background: var(--accent-bg-medium); color: var(--accent-light); box-shadow: 0 0 12px rgba(217,119,6,0.3); }
 .projects-empty { text-align: center; padding: 72px 0; color: var(--border-strong); font-size: var(--text-base); display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .empty-title { font-size: var(--text-base); font-weight: 600; color: var(--text-tertiary); margin: 6px 0 0; }
 .empty-desc  { font-size: var(--text-sm); color: var(--border-strong); margin: 0 0 6px; }
@@ -472,19 +466,6 @@ function ownerName(project: { members: { role: string; user: { username: string 
 .form-input::placeholder { color: var(--border-strong); }
 .form-error { font-size: var(--text-xs); color: #f87171; margin-bottom: 12px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
-.btn-cancel {
-  padding: 8px 16px; border-radius: 6px; font-size: var(--text-sm);
-  border: 1px solid var(--border-default); background: transparent; color: var(--text-tertiary); cursor: pointer;
-}
-.btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
-.btn-confirm {
-  padding: 8px 16px; border-radius: 6px; font-size: var(--text-sm); font-weight: 700;
-  border: none; background: var(--accent-primary); color: #fff; cursor: pointer; transition: background 0.15s;
-}
-.btn-confirm:hover:not(:disabled) { background: var(--accent-hover); box-shadow: 0 0 12px rgba(217,119,6,0.35); }
-.btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-confirm-danger { background: #991b1b; }
-.btn-confirm-danger:hover:not(:disabled) { background: #b91c1c; }
 /* 초대 배너 */
 .invitations-banner {
   background: var(--bg-elevated); border-bottom: 1px solid var(--border-default);
@@ -506,16 +487,7 @@ function ownerName(project: { members: { role: string; user: { username: string 
 .invitation-project { font-size: var(--text-sm); font-weight: 700; color: var(--text-secondary); }
 .invitation-meta { font-size: var(--text-xs); color: var(--text-disabled); }
 .invitation-actions { display: flex; gap: 6px; }
-.btn-accept {
-  font-size: var(--text-xs); font-weight: 700; padding: 5px 12px; border-radius: 5px;
-  border: none; background: var(--accent-hover); color: #fff; cursor: pointer; transition: background 0.15s;
-}
-.btn-accept:hover { background: var(--accent-primary); }
-.btn-reject {
-  font-size: var(--text-xs); font-weight: 700; padding: 5px 12px; border-radius: 5px;
-  border: 1px solid var(--border-default); background: transparent; color: var(--text-disabled); cursor: pointer; transition: all 0.15s;
-}
-.btn-reject:hover { border-color: #ef4444; color: #f87171; }
+.btn-reject:hover { border-color: var(--color-danger); color: var(--color-danger-muted); }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

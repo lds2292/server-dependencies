@@ -151,8 +151,8 @@
     </ul>
 
     <div v-if="!readOnly" class="panel-footer">
-      <button class="btn-secondary" @click="emit('exportJSON')">Export JSON</button>
-      <label class="btn-secondary">
+      <button class="btn-ghost btn-sm panel-footer-btn" @click="emit('exportJSON')">Export JSON</button>
+      <label class="btn-ghost btn-sm panel-footer-btn">
         Import JSON
         <input type="file" accept=".json" style="display:none" @change="onImport" />
       </label>
@@ -432,9 +432,5 @@ function onImport(e: Event) {
 .panel-footer {
   display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border-default);
 }
-.btn-secondary {
-  background: var(--border-default); color: var(--text-secondary); border: none; border-radius: 6px;
-  padding: 6px 10px; font-size: var(--text-xs); cursor: pointer; flex: 1; text-align: center;
-}
-.btn-secondary:hover { background: var(--border-strong); }
+.panel-footer-btn { flex: 1; text-align: center; }
 </style>

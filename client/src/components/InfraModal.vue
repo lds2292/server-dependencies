@@ -15,7 +15,7 @@
         <label>Port<input v-model="form.port" placeholder="예: 5432" /></label>
         <label>설명<textarea v-model="form.description" rows="2" placeholder="인프라 설명..." /></label>
         <div class="actions">
-          <button type="button" class="btn-secondary" @click="$emit('close')">취소</button>
+          <button type="button" class="btn-ghost" @click="$emit('close')">취소</button>
           <button type="submit" class="btn-primary" :disabled="!form.name.trim() || isDuplicate">{{ isEdit ? '저장' : '추가' }}</button>
         </div>
       </form>
@@ -105,9 +105,4 @@ input:focus,textarea:focus { border-color:var(--accent-focus); }
 .input-error { border-color:#ef4444!important; }
 .error-msg { color:#ef4444;font-size: var(--text-xs);font-weight:500; }
 .actions { display:flex;gap:8px;justify-content:flex-end;margin-top:4px; }
-.btn-primary { background:var(--accent-primary);color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size: var(--text-sm);cursor:pointer;font-weight:600; }
-.btn-primary:hover:not(:disabled) { background:var(--accent-hover); }
-.btn-primary:disabled { opacity:0.5;cursor:not-allowed; }
-.btn-secondary { background:var(--border-default);color:var(--text-secondary);border:none;border-radius:6px;padding:8px 18px;font-size: var(--text-sm);cursor:pointer; }
-.btn-secondary:hover { background:var(--border-strong); }
 </style>

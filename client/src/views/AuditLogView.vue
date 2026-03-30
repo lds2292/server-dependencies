@@ -121,8 +121,8 @@
           <h2 class="modal-title">로그아웃</h2>
           <p style="font-size: var(--text-sm);color:var(--text-tertiary);margin:0 0 20px">로그아웃 하시겠습니까?</p>
           <div class="modal-actions">
-            <button type="button" class="btn-cancel" @click="showLogoutConfirm = false">취소</button>
-            <button type="button" class="btn-confirm btn-confirm-danger" @click="onLogout">로그아웃</button>
+            <button type="button" class="btn-ghost" @click="showLogoutConfirm = false">취소</button>
+            <button type="button" class="btn-danger" @click="onLogout">로그아웃</button>
           </div>
         </div>
       </div>
@@ -399,18 +399,6 @@ onMounted(async () => {
 }
 .modal-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); margin: 0 0 12px; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-.btn-cancel {
-  padding: 6px 14px; border-radius: 6px; font-size: var(--text-sm); font-weight: 600;
-  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
-  cursor: pointer; transition: all 0.15s;
-}
-.btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
-.btn-confirm {
-  padding: 6px 14px; border-radius: 6px; font-size: var(--text-sm); font-weight: 700;
-  border: none; cursor: pointer; transition: all 0.15s;
-}
-.btn-confirm-danger { background: var(--color-danger); color: #fff; }
-.btn-confirm-danger:hover { background: var(--color-danger-hover); }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.15s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 

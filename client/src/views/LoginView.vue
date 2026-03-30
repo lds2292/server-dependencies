@@ -47,7 +47,7 @@
           <input v-model="form.password" type="password" class="form-input" placeholder="비밀번호 입력" autocomplete="current-password" required />
         </div>
         <div v-if="errorMsg" class="form-error">{{ errorMsg }}</div>
-        <button type="submit" class="btn-submit" :disabled="loading">
+        <button type="submit" class="btn-primary btn-lg btn-auth-submit" :disabled="loading">
           {{ loading ? '로그인 중...' : '로그인' }}
         </button>
       </form>
@@ -152,13 +152,7 @@ async function onSubmit() {
   font-size: var(--text-xs); color: #f87171; background: #2d1b1b; border: 1px solid #7f1d1d;
   border-radius: 6px; padding: 8px 12px;
 }
-.btn-submit {
-  background: var(--accent-primary); color: #fff; border: none; border-radius: 7px;
-  padding: 10px; font-size: var(--text-base); font-weight: 700; cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s; margin-top: 4px;
-}
-.btn-submit:hover:not(:disabled) { background: var(--accent-hover); box-shadow: 0 0 14px rgba(217,119,6,0.35); }
-.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-auth-submit { width: 100%; margin-top: 4px; }
 .auth-link { text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin: 20px 0 0 0; }
 .auth-link a { color: var(--accent-soft); text-decoration: none; }
 .auth-link a:hover { text-decoration: underline; }

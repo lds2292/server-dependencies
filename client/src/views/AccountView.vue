@@ -39,7 +39,7 @@
           <span class="readonly-value">{{ formattedCreatedAt }}</span>
         </div>
 
-        <button class="btn-save" @click="onSaveProfile" :disabled="savingProfile || !canSaveProfile">
+        <button class="btn-outline btn-sm" @click="onSaveProfile" :disabled="savingProfile || !canSaveProfile">
           {{ savingProfile ? '저장 중...' : '저장' }}
         </button>
       </section>
@@ -56,7 +56,7 @@
 
         <template v-if="!showPasswordForm">
           <p class="password-desc">비밀번호를 변경하려면 아래 버튼을 클릭하세요.</p>
-          <button class="btn-save" @click="showPasswordForm = true">비밀번호 변경</button>
+          <button class="btn-outline btn-sm" @click="showPasswordForm = true">비밀번호 변경</button>
         </template>
 
         <template v-else>
@@ -77,8 +77,8 @@
           </div>
 
           <div class="password-actions">
-            <button class="btn-cancel" @click="onCancelPasswordChange">취소</button>
-            <button class="btn-save" @click="onChangePassword" :disabled="savingPassword || !canChangePassword">
+            <button class="btn-ghost btn-sm" @click="onCancelPasswordChange">취소</button>
+            <button class="btn-outline btn-sm" @click="onChangePassword" :disabled="savingPassword || !canChangePassword">
               {{ savingPassword ? '변경 중...' : '비밀번호 변경' }}
             </button>
           </div>
@@ -99,7 +99,7 @@
           소유한 프로젝트 중 다른 관리자가 있는 프로젝트는 소유권이 이전되고,
           그렇지 않은 프로젝트는 함께 삭제됩니다.
         </p>
-        <button class="btn-danger" @click="showDeleteConfirm = true">계정 삭제</button>
+        <button class="btn-danger-ghost" @click="showDeleteConfirm = true">계정 삭제</button>
       </section>
     </div>
 
@@ -125,10 +125,10 @@
             />
           </div>
           <div class="modal-actions">
-            <button type="button" class="btn-cancel" @click="onCancelDelete">취소</button>
+            <button type="button" class="btn-ghost" @click="onCancelDelete">취소</button>
             <button
               type="button"
-              class="btn-confirm btn-confirm-danger"
+              class="btn-danger"
               :disabled="deletingAccount || !deletePassword"
               @click="onDeleteAccount"
             >
@@ -146,8 +146,8 @@
           <h2 class="modal-title">로그아웃</h2>
           <p style="font-size: var(--text-sm);color:var(--text-tertiary);margin:0 0 20px">로그아웃 하시겠습니까?</p>
           <div class="modal-actions">
-            <button type="button" class="btn-cancel" @click="showLogoutConfirm = false">취소</button>
-            <button type="button" class="btn-confirm btn-confirm-danger" @click="onLogout">로그아웃</button>
+            <button type="button" class="btn-ghost" @click="showLogoutConfirm = false">취소</button>
+            <button type="button" class="btn-danger" @click="onLogout">로그아웃</button>
           </div>
         </div>
       </div>
@@ -461,15 +461,6 @@ onMounted(() => {
   margin: 0 0 16px;
   line-height: 1.6;
 }
-.btn-danger {
-  font-size: var(--text-xs); font-weight: 700; padding: 7px 20px; border-radius: 7px;
-  border: 1px solid var(--color-danger); background: transparent; color: var(--color-danger);
-  cursor: pointer; transition: all 0.15s;
-}
-.btn-danger:hover {
-  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--color-danger) 30%, transparent);
-}
 .modal-desc {
   font-size: var(--text-sm);
   color: var(--text-tertiary);
@@ -477,13 +468,6 @@ onMounted(() => {
   line-height: 1.5;
 }
 
-.btn-save {
-  font-size: var(--text-xs); font-weight: 700; padding: 7px 20px; border-radius: 7px;
-  border: 1px solid var(--accent-hover); background: var(--accent-bg); color: var(--accent-soft);
-  cursor: pointer; transition: all 0.15s;
-}
-.btn-save:hover:not(:disabled) { background: var(--accent-bg-medium); color: var(--accent-light); box-shadow: 0 0 12px rgba(217,119,6,0.3); }
-.btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* 토스트 */
 .app-toast {
@@ -513,18 +497,6 @@ onMounted(() => {
 }
 .modal-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); margin: 0 0 12px; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-.btn-cancel {
-  padding: 6px 14px; border-radius: 6px; font-size: var(--text-sm); font-weight: 600;
-  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
-  cursor: pointer; transition: all 0.15s;
-}
-.btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
-.btn-confirm {
-  padding: 6px 14px; border-radius: 6px; font-size: var(--text-sm); font-weight: 700;
-  border: none; cursor: pointer; transition: all 0.15s;
-}
-.btn-confirm-danger { background: var(--color-danger); color: #fff; }
-.btn-confirm-danger:hover { background: var(--color-danger-hover); }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.15s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

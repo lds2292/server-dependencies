@@ -54,7 +54,7 @@
           />
         </label>
         <div class="actions">
-          <button type="button" class="btn-secondary" @click="$emit('close')">취소</button>
+          <button type="button" class="btn-ghost" @click="$emit('close')">취소</button>
           <button
             type="submit"
             class="btn-primary"
@@ -224,15 +224,4 @@ input:focus { border-color: var(--accent-focus); }
   accent-color: var(--accent-focus);
 }
 .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
-.btn-primary {
-  background: var(--accent-primary); color: #fff; border: none;
-  border-radius: 6px; padding: 8px 18px; font-size: var(--text-sm); cursor: pointer; font-weight: 600;
-}
-.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-secondary {
-  background: var(--border-default); color: var(--text-secondary); border: none;
-  border-radius: 6px; padding: 8px 18px; font-size: var(--text-sm); cursor: pointer;
-}
-.btn-secondary:hover { background: var(--border-strong); }
 </style>

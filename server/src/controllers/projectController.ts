@@ -116,6 +116,45 @@ export async function leaveProject(req: Request, res: Response): Promise<void> {
   } catch (err) { handleProjectError(err, res, 'leaveProject') }
 }
 
+export async function transferOwnership(req: Request, res: Response): Promise<void> {
+  const { id } = req.params
+  const { targetUserId, password } = req.body
+  const userId = req.user!.userId
+  const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() ?? req.socket.remoteAddress
+  const userAgent = req.headers['user-agent']
+
+  if (!targetUserId || !password) {
+    res.status(400).json({ error: 'targetUserId와 password는 필수입니다.' })
+    return
+  }
+
+  try {
+    await authService.verifyUserPassword(userId, password)
+
+    const project = await projectService.updateMemberRole(id, userId, targetUserId, 'MASTER')
+
+    await auditLogService.createAuditLog({
+      userId, projectId: id, action: 'OWNERSHIP_TRANSFERRED', status: 'SUCCESS',
+      ipAddress, userAgent,
+      detail: JSON.stringify({ targetUserId }),
+    }).catch(() => {})
+
+    logger.info('PROJECT ownership transferred', { projectId: id, fromUserId: userId, toUserId: targetUserId })
+    res.json(project)
+  } catch (err: unknown) {
+    const e = err as { code?: string; message?: string }
+    if (e.code === 'INVALID_CREDENTIALS') {
+      await auditLogService.createAuditLog({
+        userId, projectId: id, action: 'OWNERSHIP_TRANSFERRED', status: 'FAILED',
+        ipAddress, userAgent, failReason: 'INVALID_CREDENTIALS',
+      }).catch(() => {})
+      res.status(401).json({ error: '비밀번호가 올바르지 않습니다.', code: e.code })
+      return
+    }
+    handleProjectError(err, res, 'transferOwnership')
+  }
+}
+
 export async function unmasksContacts(req: Request, res: Response): Promise<void> {
   const { id } = req.params
   const { nodeId, password } = req.body

@@ -132,7 +132,7 @@
               placeholder="비밀번호" @keyup.enter="onUnmask" autofocus />
             <span v-if="verifyError" class="verify-error">{{ verifyError }}</span>
             <div class="mask-modal-actions">
-              <button class="btn-secondary" @click="closePasswordModal">취소</button>
+              <button class="btn-ghost" @click="closePasswordModal">취소</button>
               <button class="btn-primary" @click="onUnmask" :disabled="verifyLoading || !passwordInput">
                 {{ verifyLoading ? '확인 중...' : '확인' }}
               </button>
@@ -360,17 +360,6 @@ li:hover { background: var(--bg-elevated); }
 .mask-modal-input:focus { outline: none; border-color: var(--accent-focus); }
 .verify-error { font-size: var(--text-xs); color: #f87171; }
 .mask-modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-.btn-primary {
-  padding: 7px 16px; background: var(--accent-primary); color: #fff;
-  border: none; border-radius: 6px; cursor: pointer; font-size: var(--text-sm);
-}
-.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-secondary {
-  padding: 7px 16px; background: none; color: var(--text-tertiary);
-  border: 1px solid var(--border-default); border-radius: 6px; cursor: pointer; font-size: var(--text-sm);
-}
-.btn-secondary:hover { background: var(--border-default); color: var(--text-secondary); }
 .dep-type {
   font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 700; flex-shrink: 0;
 }

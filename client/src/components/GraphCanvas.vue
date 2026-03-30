@@ -825,7 +825,7 @@
           배경 제거 (투명)
         </label>
         <div class="export-actions">
-          <button class="btn-secondary" @click="exportModal.visible = false">취소</button>
+          <button class="btn-ghost" @click="exportModal.visible = false">취소</button>
           <button class="btn-primary" @click="onExportConfirm">내보내기</button>
         </div>
       </div>
@@ -2275,16 +2275,6 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 }
 .export-option input[type=checkbox] { accent-color: var(--accent-focus); width: 14px; height: 14px; }
 .export-actions { display: flex; gap: 8px; justify-content: flex-end; }
-.btn-primary {
-  padding: 7px 16px; background: var(--accent-primary); color: #fff;
-  border: none; border-radius: 6px; cursor: pointer; font-size: var(--text-sm);
-}
-.btn-primary:hover { background: var(--accent-hover); }
-.btn-secondary {
-  padding: 7px 16px; background: none; color: var(--text-tertiary);
-  border: 1px solid var(--border-default); border-radius: 6px; cursor: pointer; font-size: var(--text-sm);
-}
-.btn-secondary:hover { background: var(--border-default); color: var(--text-secondary); }
 .context-menu button.danger { color: #ef4444; }
 .context-menu button.disabled-item { color: var(--border-strong); cursor: not-allowed; font-style: italic; }
 .context-menu button.disabled-item:hover { background: none; }

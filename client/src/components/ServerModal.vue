@@ -37,7 +37,7 @@
           <textarea v-model="form.description" rows="3" placeholder="서버 설명..." />
         </label>
         <div class="actions">
-          <button type="button" class="btn-secondary" @click="$emit('close')">취소</button>
+          <button type="button" class="btn-ghost" @click="$emit('close')">취소</button>
           <button type="submit" class="btn-primary" :disabled="isDuplicate">{{ isEdit ? '저장' : '추가' }}</button>
         </div>
       </form>
@@ -164,15 +164,4 @@ input[list] { cursor: pointer; }
 }
 .btn-ip-add:hover { border-color: var(--accent-soft); color: var(--accent-light); }
 .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
-.btn-primary {
-  background: var(--accent-primary); color: #fff; border: none;
-  border-radius: 6px; padding: 8px 18px; font-size: var(--text-sm);
-  cursor: pointer; font-weight: 600;
-}
-.btn-primary:hover { background: var(--accent-hover); }
-.btn-secondary {
-  background: var(--border-default); color: var(--text-secondary); border: none;
-  border-radius: 6px; padding: 8px 18px; font-size: var(--text-sm); cursor: pointer;
-}
-.btn-secondary:hover { background: var(--border-strong); }
 </style>

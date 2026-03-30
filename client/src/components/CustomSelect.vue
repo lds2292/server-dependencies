@@ -150,14 +150,15 @@ onUnmounted(() => document.removeEventListener('mousedown', onOutsideClick))
   justify-content: space-between;
   background: var(--bg-base);
   border: 1px solid var(--border-default);
-  border-radius: 6px;
-  padding: 8px 10px;
+  border-radius: 7px;
+  padding: 9px 12px;
   color: var(--text-secondary);
   font-size: var(--text-sm);
   cursor: pointer;
   text-align: left;
   transition: border-color 0.15s;
-  gap: 6px;
+  gap: 8px;
+  box-sizing: border-box;
 }
 .select-trigger:hover { border-color: var(--border-strong); }
 .select-trigger:focus { outline: none; border-color: var(--accent-focus); }

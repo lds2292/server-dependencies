@@ -25,12 +25,12 @@
     <main class="main-area">
       <div class="toolbar">
         <div class="title-group">
-          <router-link to="/projects" class="btn-back">← 목록</router-link>
+          <router-link to="/projects" class="btn-ghost btn-sm">← 목록</router-link>
           <span class="app-title">{{ projectStore.currentProject?.name ?? 'Server Dependencies' }}</span>
           <button class="btn-help" @click="showHelp = true" title="사용 방법">?</button>
           <div v-if="!readOnly" class="autosave-group">
             <button
-              :class="['btn-save', { dirty: store.positionsDirty }]"
+              :class="['btn-outline', 'btn-sm', 'btn-save-local', { dirty: store.positionsDirty }]"
               @click="manualSave"
               data-tooltip="위치 수동 저장"
               data-shortcut="Cmd+S"
@@ -114,8 +114,8 @@
           <p class="empty-state-title">그래프가 비어 있습니다</p>
           <p class="empty-state-desc">샘플 데이터로 시작하거나 직접 노드를 추가하세요.</p>
           <div class="empty-state-actions">
-            <button class="btn-empty-sample" @click="loadSample">샘플 데이터로 시작하기</button>
-            <button class="btn-empty-add" @click="openAddServerModal">직접 노드 추가하기</button>
+            <button class="btn-outline btn-lg" @click="loadSample">샘플 데이터로 시작하기</button>
+            <button class="btn-ghost btn-lg" @click="openAddServerModal">직접 노드 추가하기</button>
           </div>
         </div>
       </div>
@@ -342,8 +342,8 @@
             </div>
           </div>
           <div class="delete-dialog-actions">
-            <button class="delete-btn-cancel" @click="sampleConfirm = false">취소</button>
-            <button class="delete-btn-confirm" style="background:var(--accent-bg-deep);border-color:var(--accent-focus);color:var(--accent-light)" @click="loadSample">불러오기</button>
+            <button class="btn-ghost delete-dialog-btn" @click="sampleConfirm = false">취소</button>
+            <button class="btn-outline delete-dialog-btn" @click="loadSample">불러오기</button>
           </div>
         </div>
       </div>
@@ -366,8 +366,8 @@
             </div>
           </div>
           <div class="delete-dialog-actions">
-            <button class="delete-btn-cancel" @click="cancelDeleteMulti">취소</button>
-            <button class="delete-btn-confirm" @click="confirmDeleteMulti">삭제</button>
+            <button class="btn-ghost delete-dialog-btn" @click="cancelDeleteMulti">취소</button>
+            <button class="btn-danger delete-dialog-btn" @click="confirmDeleteMulti">삭제</button>
           </div>
         </div>
       </div>
@@ -392,8 +392,8 @@
             </div>
           </div>
           <div class="delete-dialog-actions">
-            <button class="delete-btn-cancel" @click="cancelDelete">취소</button>
-            <button class="delete-btn-confirm" @click="confirmDelete">삭제</button>
+            <button class="btn-ghost delete-dialog-btn" @click="cancelDelete">취소</button>
+            <button class="btn-danger delete-dialog-btn" @click="confirmDelete">삭제</button>
           </div>
         </div>
       </div>
@@ -425,8 +425,8 @@
             <div class="delete-dialog-desc">로그아웃 하시겠습니까?</div>
           </div>
           <div class="delete-dialog-actions">
-            <button class="delete-btn-cancel" @click="showLogoutConfirm = false">취소</button>
-            <button class="delete-btn-confirm" @click="authStore.logout().then(() => router.push({ name: 'login' }))">로그아웃</button>
+            <button class="btn-ghost delete-dialog-btn" @click="showLogoutConfirm = false">취소</button>
+            <button class="btn-danger delete-dialog-btn" @click="authStore.logout().then(() => router.push({ name: 'login' }))">로그아웃</button>
           </div>
         </div>
       </div>
@@ -491,7 +491,7 @@
             <select v-model="addMemberRole" class="role-select">
               <option v-for="r in addableRoles" :key="r" :value="r">{{ roleLabel(r) }}</option>
             </select>
-            <button class="btn-primary" @click="onSendInvitation" :disabled="!addMemberIdentifier.trim()">초대</button>
+            <button class="btn-outline btn-sm" @click="onSendInvitation" :disabled="!addMemberIdentifier.trim()">초대</button>
           </div>
           <div v-if="memberError" class="member-error">{{ memberError }}</div>
 
@@ -1147,13 +1147,6 @@ watch(() => route.params.id, async (newId) => {
 }
 .app-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); letter-spacing: 0.02em; }
 .toolbar-right { display: flex; align-items: center; gap: 10px; }
-.btn-back {
-  font-size: var(--text-xs); font-weight: 600; padding: 0 10px; height: 30px; border-radius: 6px;
-  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
-  cursor: pointer; transition: all 0.15s; white-space: nowrap; text-decoration: none;
-  display: inline-flex; align-items: center;
-}
-.btn-back:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 /* -- 모드 토글 버튼 -- */
 .btn-mode-toggle {
   font-size: var(--text-xs); font-weight: 700; padding: 0 10px; height: 30px; border-radius: 6px;
@@ -1188,15 +1181,8 @@ watch(() => route.params.id, async (newId) => {
 .toolbar-dropdown button:hover { background: var(--border-default); }
 .toolbar-dropdown-divider { height: 1px; background: var(--border-default); margin: 3px 0; }
 .autosave-group { display: flex; align-items: center; gap: 4px; }
-.btn-save {
-  font-size: var(--text-xs); font-weight: 700; padding: 0 10px; height: 30px; border-radius: 6px;
-  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
-  cursor: pointer; transition: all 0.15s; white-space: nowrap; position: relative;
-  display: inline-flex; align-items: center;
-}
-.btn-save:hover { border-color: var(--border-strong); color: var(--text-secondary); }
-.btn-save.dirty { border-color: #f59e0b; color: var(--color-warning-light); background: #1c1200; }
-.btn-save.dirty:hover { background: #292100; border-color: var(--color-warning-light); }
+.btn-save-local.dirty { border-color: var(--color-warning); color: var(--color-warning-light); background: #1c1200; }
+.btn-save-local.dirty:hover { background: #292100; border-color: var(--color-warning-light); }
 .btn-autosave {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: var(--text-xs); font-weight: 600; padding: 0 10px; height: 30px; border-radius: 6px;
@@ -1271,18 +1257,6 @@ watch(() => route.params.id, async (newId) => {
 .empty-state-title { font-size: var(--text-base); font-weight: 700; color: var(--text-secondary); margin: 0; }
 .empty-state-desc { font-size: var(--text-sm); color: var(--text-tertiary); margin: 0; }
 .empty-state-actions { display: flex; gap: 10px; margin-top: 4px; }
-.btn-empty-sample {
-  padding: 8px 18px; border-radius: 8px; font-size: var(--text-sm); font-weight: 700;
-  border: 1px solid var(--accent-hover); background: var(--accent-bg-deep);
-  color: var(--accent-soft); cursor: pointer; transition: all 0.15s;
-}
-.btn-empty-sample:hover { background: var(--accent-bg-medium); border-color: var(--accent-focus); color: var(--accent-light); }
-.btn-empty-add {
-  padding: 8px 18px; border-radius: 8px; font-size: var(--text-sm); font-weight: 700;
-  border: 1px solid var(--border-default); background: var(--bg-surface);
-  color: var(--text-tertiary); cursor: pointer; transition: all 0.15s;
-}
-.btn-empty-add:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 .app-toast {
   position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
   background: #1c0a0a; border: 1px solid #ef4444; border-radius: 10px;
@@ -1357,20 +1331,7 @@ watch(() => route.params.id, async (newId) => {
 .delete-dialog-actions {
   display: flex; gap: 8px;
 }
-.delete-btn-cancel {
-  flex: 1; padding: 8px; border-radius: 7px;
-  background: var(--bg-base); border: 1px solid var(--border-default);
-  color: var(--text-tertiary); font-size: var(--text-sm); font-weight: 600;
-  cursor: pointer; transition: all 0.15s;
-}
-.delete-btn-cancel:hover { border-color: var(--border-strong); color: var(--text-secondary); }
-.delete-btn-confirm {
-  flex: 1; padding: 8px; border-radius: 7px;
-  background: #450a0a; border: 1px solid #ef4444;
-  color: #fca5a5; font-size: var(--text-sm); font-weight: 700;
-  cursor: pointer; transition: all 0.15s;
-}
-.delete-btn-confirm:hover { background: #7f1d1d; color: #fecaca; }
+.delete-dialog-btn { flex: 1; }
 
 /* 단축키 오버레이 */
 .shortcuts-overlay {
@@ -1512,11 +1473,4 @@ watch(() => route.params.id, async (newId) => {
 }
 .member-input:focus { border-color: var(--accent-focus); }
 .member-error { font-size: var(--text-xs); color: #f87171; }
-.btn-primary {
-  font-size: var(--text-xs); font-weight: 700; padding: 6px 14px; border-radius: 6px;
-  border: 1px solid var(--accent-hover); background: var(--accent-bg); color: var(--accent-soft);
-  cursor: pointer; transition: all 0.15s; white-space: nowrap;
-}
-.btn-primary:hover { background: var(--accent-bg-medium); color: var(--accent-light); box-shadow: 0 0 10px rgba(217,119,6,0.3); }
-.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>

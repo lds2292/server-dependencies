@@ -27,6 +27,8 @@ router.put('/:id/graph', graphController.saveGraph)
 router.get('/:id/graph/positions', graphController.getPositions)
 router.put('/:id/graph/positions', graphController.savePositions)
 
+router.post('/:id/transfer-ownership', projectController.transferOwnership)
+
 router.post('/:id/contacts/unmask', projectController.unmasksContacts)
 
 router.get('/:id/audit-logs', projectController.getAuditLogs)

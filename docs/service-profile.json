@@ -1,0 +1,271 @@
+{
+  "service": {
+    "name": "Server Dependencies",
+    "tagline": "서버 의존성 시각화 플랫폼",
+    "headline": "서버 의존성을 한눈에 파악하세요",
+    "description": "서버, 로드밸런서, 인프라, 외부 서비스 간의 의존 관계를 시각화하고 팀과 함께 관리하는 협업 도구"
+  },
+
+  "problems": {
+    "summary": "서버 인프라가 복잡해질수록 의존 관계 파악이 어려워지고, 장애 발생 시 영향 범위를 빠르게 판단할 수 없다",
+    "details": [
+      {
+        "problem": "의존성 파악 불가",
+        "description": "수십~수백 대의 서버가 얽혀 있을 때 어떤 서버가 어떤 서버에 의존하는지 문서나 스프레드시트로는 추적이 불가능하다"
+      },
+      {
+        "problem": "장애 영향 범위 불명확",
+        "description": "특정 서버에 장애가 발생하면 어디까지 영향을 받는지 즉시 파악할 수 없어 대응이 지연된다"
+      },
+      {
+        "problem": "순환 의존성 감지 불가",
+        "description": "서버 간 순환 참조가 숨어 있어도 인지하지 못하고, 장애가 연쇄적으로 전파된다"
+      },
+      {
+        "problem": "팀 간 정보 단절",
+        "description": "인프라 정보가 개인 문서나 구두로만 공유되어 팀원 간 이해도 격차가 발생한다"
+      },
+      {
+        "problem": "민감 정보 관리 부재",
+        "description": "서버 IP, 담당자 연락처 등 민감한 인프라 정보가 스프레드시트나 위키에 평문으로 노출된다"
+      }
+    ]
+  },
+
+  "features": {
+    "core": [
+      {
+        "name": "노드 기반 의존성 그래프",
+        "description": "D3 force simulation 기반 인터랙티브 그래프로 서버 토폴로지를 시각화하고 편집한다"
+      },
+      {
+        "name": "영향 범위 분석",
+        "description": "특정 노드 선택 시 직접/간접 의존 노드를 즉시 하이라이트하여 장애 영향 범위를 파악한다"
+      },
+      {
+        "name": "순환 의존성 탐지",
+        "description": "그래프 내 순환 참조를 자동으로 감지하고 경고한다"
+      },
+      {
+        "name": "경로 탐색 (BFS)",
+        "description": "두 노드 간 의존 경로를 BFS로 탐색하여 연결 관계를 시각적으로 보여준다"
+      },
+      {
+        "name": "5가지 노드 타입",
+        "description": "Server, L7 로드밸런서, Infrastructure, External Service, DNS 등 인프라 구성요소를 유형별로 분류"
+      }
+    ],
+    "collaboration": [
+      {
+        "name": "프로젝트 단위 팀 협업",
+        "description": "프로젝트별로 멤버를 초대하고 역할(MASTER/ADMIN/WRITER/READONLY)을 부여하여 협업한다"
+      },
+      {
+        "name": "동시 편집 충돌 감지",
+        "description": "Optimistic Locking 기반으로 동시 편집 시 충돌을 감지하고, 3-way merge로 자동 병합하거나 수동 해결 UI를 제공한다"
+      },
+      {
+        "name": "자동저장",
+        "description": "30/60/90/120/180초 간격 자동저장 + Cmd+S 수동저장, 미저장 변경 표시(*)"
+      },
+      {
+        "name": "Undo/Redo",
+        "description": "Cmd+Z / Cmd+Shift+Z로 최대 100단계 되돌리기/다시하기, 배치 작업 지원"
+      },
+      {
+        "name": "감사 로그",
+        "description": "모든 주요 작업(로그인, 멤버 변경, 그래프 수정 등)을 기록하고 카테고리/날짜별 필터로 조회"
+      }
+    ],
+    "convenience": [
+      {
+        "name": "미니맵",
+        "description": "우측 하단 축소 뷰로 전체 그래프를 조망하고, 클릭/드래그로 뷰포트를 이동한다"
+      },
+      {
+        "name": "노드 검색 필터",
+        "description": "이름, 내부 IP, NAT IP로 노드를 빠르게 검색한다"
+      },
+      {
+        "name": "PNG/JSON 내보내기",
+        "description": "그래프를 이미지(PNG) 또는 데이터(JSON)로 내보내 공유하거나 백업한다"
+      },
+      {
+        "name": "방화벽 오픈 추적",
+        "description": "의존성(엣지)에 방화벽 오픈 필요 여부와 URL을 기록, 화살표 중간에 자물쇠 아이콘으로 표시"
+      },
+      {
+        "name": "노드 호버 툴팁",
+        "description": "노드에 마우스를 올리면 IP, 포트, 담당자 등 핵심 정보를 즉시 확인"
+      }
+    ]
+  },
+
+  "strengths": {
+    "security": [
+      {
+        "name": "AES-256-GCM 암호화",
+        "description": "서버 IP, 호스트, 담당자 연락처 등 민감한 인프라 정보는 AES-256-GCM으로 암호화되어 저장된다"
+      },
+      {
+        "name": "회원 정보 암호화",
+        "description": "이메일, 사용자명은 해시(emailHash/usernameHash)로 유일성을 검증하고, 원본은 AES 암호화 저장"
+      },
+      {
+        "name": "담당자 연락처 마스킹",
+        "description": "담당자 연락처는 기본적으로 마스킹 처리되며, 비밀번호 확인 후에만 열람 가능"
+      },
+      {
+        "name": "JWT 기반 인증",
+        "description": "Access Token(15분) + Refresh Token(30일) 이중 구조로 세션을 안전하게 관리"
+      },
+      {
+        "name": "역할 기반 접근 제어",
+        "description": "MASTER/ADMIN/WRITER/READONLY 4단계 역할로 프로젝트별 세밀한 권한 관리"
+      },
+      {
+        "name": "감사 로그",
+        "description": "로그인, 멤버 변경, 그래프 수정 등 모든 주요 작업이 기록되어 추적 가능"
+      }
+    ],
+    "convenience": [
+      {
+        "name": "직관적 시각화",
+        "description": "복잡한 서버 관계를 노드 그래프로 한눈에 파악, 드래그&드롭으로 편집"
+      },
+      {
+        "name": "실시간 영향도 분석",
+        "description": "노드 클릭만으로 장애 영향 범위를 즉시 시각화"
+      },
+      {
+        "name": "팀 협업 최적화",
+        "description": "프로젝트 단위 초대, 동시 편집, 자동저장으로 팀 단위 인프라 관리"
+      },
+      {
+        "name": "키보드 단축키",
+        "description": "Cmd+Z/Shift+Z (Undo/Redo), Cmd+S (저장), Delete (삭제) 등 생산성 단축키 지원"
+      },
+      {
+        "name": "자동 레이아웃",
+        "description": "D3 force simulation으로 노드 위치를 자동 정렬하여 가독성 있는 그래프 생성"
+      }
+    ]
+  },
+
+  "design": {
+    "theme": "Dark",
+    "concept": "엔지니어링 블루프린트 미학 - 다크 배경 위 앰버 액센트로 기술적 전문성과 신뢰감을 전달",
+    "font": {
+      "sans": "Pretendard, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+      "mono": "JetBrains Mono, Menlo, Consolas, monospace"
+    },
+    "logo": {
+      "description": "두 화살표가 교차하는 아이콘 - 서버 간 양방향 의존성을 상징",
+      "colors": {
+        "blue_arrow": "#5b8def",
+        "orange_arrow": "#f97316",
+        "auxiliary": "#787878"
+      }
+    },
+    "colorPalette": {
+      "background": {
+        "base": "#121214",
+        "surface": "#1a1a1e",
+        "elevated": "#232328",
+        "input": "#0e0e10",
+        "overlay": "rgba(0, 0, 0, 0.6)"
+      },
+      "border": {
+        "subtle": "#1e1e22",
+        "default": "#2a2a30",
+        "strong": "#3a3a42"
+      },
+      "text": {
+        "primary": "#f0f0f0",
+        "secondary": "#d4d4d4",
+        "muted": "#a0a0a0",
+        "tertiary": "#787878",
+        "disabled": "#525252"
+      },
+      "accent": {
+        "primary": "#d97706",
+        "hover": "#b45309",
+        "focus": "#f59e0b",
+        "soft": "#fbbf24",
+        "light": "#fcd34d",
+        "bg": "#292117",
+        "bg_medium": "#332a1a",
+        "bg_deep": "#1f1a12"
+      },
+      "status": {
+        "success": "#22c55e",
+        "success_light": "#4ade80",
+        "warning": "#f59e0b",
+        "warning_light": "#fbbf24",
+        "danger": "#ef4444",
+        "danger_hover": "#dc2626",
+        "info": "#3ec6d6"
+      },
+      "nodeTypes": {
+        "server": {
+          "color": "#5b8def",
+          "bg": "#1a2d4a",
+          "glow": "rgba(91, 141, 239, 0.3)"
+        },
+        "l7_loadbalancer": {
+          "color": "#b494f7",
+          "bg": "#2a1f52",
+          "glow": "rgba(180, 148, 247, 0.3)"
+        },
+        "infrastructure": {
+          "color": "#3ec6d6",
+          "bg": "#0d3340",
+          "glow": "rgba(62, 198, 214, 0.3)"
+        },
+        "external_service": {
+          "color": "#42b883",
+          "bg": "#0d2e1c",
+          "glow": "rgba(66, 184, 131, 0.3)"
+        },
+        "dns": {
+          "color": "#8b5cf6",
+          "bg": "#1e1b4b",
+          "glow": "rgba(139, 92, 246, 0.3)"
+        }
+      },
+      "roles": {
+        "master": { "color": "#f59e0b", "bg": "rgba(245, 158, 11, 0.15)" },
+        "admin": { "color": "#5b8def", "bg": "rgba(91, 141, 239, 0.15)" },
+        "writer": { "color": "#42b883", "bg": "rgba(66, 184, 131, 0.15)" },
+        "readonly": { "color": "#94a3b8", "bg": "rgba(148, 163, 184, 0.15)" }
+      }
+    }
+  },
+
+  "heroPage": {
+    "currentCopy": {
+      "badge": "서버 의존성 시각화 플랫폼",
+      "title": "서버 의존성을 한눈에 파악하세요",
+      "subtitle": "서버, 로드밸런서, 인프라, 외부 서비스 간의 의존 관계를 시각화하고 팀과 함께 관리하는 협업 도구",
+      "features": [
+        "노드 기반 의존성 그래프",
+        "영향 범위 및 순환 의존성 분석",
+        "프로젝트 단위 팀 협업"
+      ],
+      "securityItems": [
+        "서버 IP, 호스트 등 민감한 인프라 정보는 암호화되어 안전하게 보관됩니다",
+        "회원 정보는 암호화 저장되며 외부에 노출되지 않습니다",
+        "담당자 연락처는 기본적으로 가려지며, 본인 확인 후에만 열람할 수 있습니다",
+        "로그인 세션은 안전하게 관리되며 언제든지 로그아웃할 수 있습니다"
+      ],
+      "cta_primary": "시작하기",
+      "cta_secondary": "로그인"
+    },
+    "visual": {
+      "description": "macOS 스타일 윈도우 프레임 안에 서버 토폴로지 그래프 미리보기 SVG",
+      "nodeTypes": ["CDN", "L7-A", "L7-B", "API Server", "Auth", "PostgreSQL", "Redis", "Payment API", "Worker"],
+      "animatedEdges": true,
+      "nodeGlowEffect": true
+    }
+  }
+}

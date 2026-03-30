@@ -171,9 +171,11 @@ onUnmounted(() => document.removeEventListener('mousedown', onOutsideClick))
   align-items: center;
   background: var(--bg-base);
   border: 1px solid var(--border-default);
-  border-radius: 6px;
-  padding: 0 10px;
+  border-radius: 7px;
+  padding: 0 12px;
+  gap: 8px;
   transition: border-color 0.15s;
+  box-sizing: border-box;
 }
 .input-wrap:hover { border-color: var(--border-strong); }
 .input-wrap.focused { border-color: var(--accent-focus); }
@@ -184,7 +186,7 @@ onUnmounted(() => document.removeEventListener('mousedown', onOutsideClick))
   outline: none;
   color: var(--text-secondary);
   font-size: var(--text-sm);
-  padding: 8px 0;
+  padding: 9px 0;
 }
 .input-wrap input::placeholder { color: var(--border-strong); }
 .chevron {

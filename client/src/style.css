@@ -53,6 +53,13 @@
   --color-warning-light: #fbbf24;   /* amber-400, dirty 상태·방화벽 */
   --color-danger: #ef4444;
   --color-danger-hover: #dc2626;
+  --color-danger-bg: #450a0a;
+  --color-danger-bg-hover: #7f1d1d;
+  --color-danger-text: #fca5a5;
+  --color-danger-text-hover: #fecaca;
+  --color-danger-border: #ef4444;
+  --color-danger-surface: #1c0a0a;
+  --color-danger-muted: #f87171;
   --color-info: #3ec6d6;
   --color-ip-text: #7dd3fc;         /* IP·포트 등 기술 데이터 텍스트 (sky-300) */
 
@@ -65,6 +72,7 @@
   --node-l7-bg: #2a1f52;
   --node-l7-bg-deep: #2e0a5a;
   --node-l7-text: #e9d5ff;          /* 뱃지 텍스트 purple-200 */
+  --node-l7-hover: #6d28d9;
   --node-l7-glow: rgba(180, 148, 247, 0.3);
 
   --node-infra-color: #3ec6d6;
@@ -78,6 +86,7 @@
   --node-ext-bg: #0d2e1c;
   --node-ext-bg-deep: #052e16;
   --node-ext-text: #86efac;         /* 뱃지 텍스트 green-300 */
+  --node-ext-hover: #15803d;
   --node-ext-glow: rgba(66, 184, 131, 0.3);
 
   --node-dns-color: #8b5cf6;
@@ -111,6 +120,143 @@
 
 /* ── 전역 버튼 클릭 피드백 ── */
 button:active:not(:disabled) { transform: scale(0.97); }
+
+/* ── 글로벌 버튼 시스템 ── */
+.btn-primary,
+.btn-ghost,
+.btn-danger,
+.btn-danger-ghost,
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  padding: 7px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  text-decoration: none;
+  box-sizing: border-box;
+  line-height: 1.4;
+}
+
+/* Primary */
+.btn-primary {
+  background: var(--accent-primary);
+  color: #fff;
+  border: none;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  box-shadow: 0 0 12px rgba(217,119,6,0.35);
+}
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Ghost */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-default);
+}
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--text-secondary);
+}
+.btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Danger */
+.btn-danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger);
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--color-danger-bg-hover);
+  color: var(--color-danger-text-hover);
+}
+.btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Danger Ghost */
+.btn-danger-ghost {
+  background: transparent;
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+}
+.btn-danger-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-danger) 30%, transparent);
+}
+.btn-danger-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Outline (accent) */
+.btn-outline {
+  background: var(--accent-bg);
+  color: var(--accent-soft);
+  border: 1px solid var(--accent-hover);
+}
+.btn-outline:hover:not(:disabled) {
+  background: var(--accent-bg-medium);
+  color: var(--accent-light);
+  box-shadow: 0 0 12px rgba(217,119,6,0.3);
+}
+.btn-outline:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Size: small */
+.btn-sm {
+  font-size: var(--text-xs);
+  padding: 0 10px;
+  height: 28px;
+}
+
+/* Size: large */
+.btn-lg {
+  font-size: var(--text-base);
+  padding: 10px 28px;
+  border-radius: 8px;
+}
+
+/* Node type modifier: L7 */
+.btn-node-l7 {
+  background: var(--node-l7-color);
+}
+.btn-node-l7:hover:not(:disabled) {
+  background: var(--node-l7-hover);
+  box-shadow: 0 0 12px var(--node-l7-glow);
+}
+
+/* Node type modifier: EXT */
+.btn-node-ext {
+  background: var(--node-ext-color);
+}
+.btn-node-ext:hover:not(:disabled) {
+  background: var(--node-ext-hover);
+  box-shadow: 0 0 12px var(--node-ext-glow);
+}
+
+/* Icon button */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-icon:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--text-secondary);
+}
+.btn-icon:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Shimmer Skeleton ── */
 @keyframes shimmer {

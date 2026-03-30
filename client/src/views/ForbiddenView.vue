@@ -8,7 +8,7 @@
       </svg>
       <div class="forbidden-title">접근 권한이 없습니다</div>
       <div class="forbidden-desc">이 프로젝트에 접근할 권한이 없습니다.<br/>프로젝트 소유자에게 초대를 요청하세요.</div>
-      <button class="forbidden-btn" @click="router.push({ name: 'projects' })">프로젝트 목록으로</button>
+      <button class="btn-ghost btn-lg forbidden-btn" @click="router.push({ name: 'projects' })">프로젝트 목록으로</button>
     </div>
   </div>
 </template>
@@ -47,20 +47,5 @@ const router = useRouter()
   color: var(--text-tertiary);
   line-height: 1.7;
 }
-.forbidden-btn {
-  margin-top: 8px;
-  font-size: var(--text-sm);
-  font-weight: 700;
-  padding: 9px 24px;
-  border-radius: 8px;
-  border: 1px solid var(--border-default);
-  background: var(--bg-base);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.forbidden-btn:hover {
-  border-color: var(--accent-focus);
-  color: var(--accent-soft);
-}
+.forbidden-btn { margin-top: 8px; }
 </style>
