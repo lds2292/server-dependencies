@@ -2139,7 +2139,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 }
 /* 의존성 링크 애니메이션 */
 @keyframes flow-dash {
-  from { stroke-dashoffset: 18; }
+  from { stroke-dashoffset: 15; }
   to   { stroke-dashoffset: 0; }
 }
 /* 장애 영향: 의존노드 → 선택노드 (빨간, forward 방향) */
@@ -2492,9 +2492,13 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 }
 
 /* 경로 탐색 */
+@keyframes flow-dash-amber {
+  from { stroke-dashoffset: 17; }
+  to   { stroke-dashoffset: 0; }
+}
 .link-amber {
   stroke-dasharray: 12 5;
-  animation: flow-dash 0.45s linear infinite;
+  animation: flow-dash-amber 0.45s linear infinite;
   filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.8));
 }
 .path-mode-banner {
