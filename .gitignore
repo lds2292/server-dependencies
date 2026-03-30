@@ -1,5 +1,6 @@
 pgdata/
 sample/
+docker-compose.yml
 /tmp
 /out-tsc
 
