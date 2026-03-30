@@ -118,6 +118,7 @@
           <g
             v-if="link.hasFirewall"
             :transform="`translate(${(link.x1 + link.x2) / 2}, ${(link.y1 + link.y2) / 2})`"
+            :opacity="linkOpacity(link)"
             pointer-events="none"
           >
             <circle r="8" fill="#1e293b" stroke="#f59e0b" stroke-width="1.2"/>
@@ -165,7 +166,7 @@
           }"
           :filter="nodeFilter(node)"
           :opacity="nodeOpacity(node)"
-          @mousedown.stop="onNodeMouseDown($event, node)"
+          @mousedown="onNodeMouseDown($event, node)"
           @click.stop="onNodeClick(node)"
           @contextmenu.prevent.stop="onNodeContextMenu($event, node)"
           @mouseenter="hoveredNodeId = (props.pathMode && node.nodeKind === 'l7') ? null : node.id"
@@ -461,7 +462,7 @@
           placeholder="노드 / IP 검색..."
           autocomplete="off"
           spellcheck="false"
-          @focus="searchFocused = true"
+          @focus="onSearchFocus"
           @blur="onSearchBlur"
           @keydown.down.prevent="searchSelectDelta(1)"
           @keydown.up.prevent="searchSelectDelta(-1)"
@@ -483,9 +484,17 @@
           @mousedown.prevent="navigateToNode(node)"
           @mouseenter="searchActiveIndex = i"
         >
-          <span class="search-result-kind" :style="{ color: searchNodeColor(node) }">{{ searchNodeKindLabel(node) }}</span>
-          <span class="search-result-name">{{ node.name }}</span>
-          <span class="search-result-ip">{{ searchNodeIp(node) }}</span>
+          <span
+            class="search-result-kind"
+            :style="{ color: searchNodeColor(node), backgroundColor: searchNodeBgColor(node) }"
+          >{{ searchNodeKindLabel(node) }}</span>
+          <div class="search-result-body">
+            <div class="search-result-main">
+              <span class="search-result-name">{{ node.name }}</span>
+              <span v-if="searchNodeSubInfo(node)" class="search-result-sub">{{ searchNodeSubInfo(node) }}</span>
+            </div>
+            <div v-if="searchNodeDescription(node)" class="search-result-desc">{{ searchNodeDescription(node) }}</div>
+          </div>
         </li>
       </ul>
       <div v-else-if="searchFocused && searchQuery.trim() && searchResults.length === 0" class="search-no-result">
@@ -868,6 +877,7 @@ const emit = defineEmits<{
   startPathFrom: [node: AnyNode]
   cancelPathMode: []
   linkDblClick: [linkId: string]
+  searchSelect: [node: AnyNode]
 }>()
 
 const container = ref<HTMLDivElement>()
@@ -1270,11 +1280,11 @@ const computedLinks = computed(() => {
     if (len < 1) return { ...link, x1: sx, y1: sy, x2: tx, y2: ty }
     const ux = dx / len, uy = dy / len
     const sEdge = edgeDist(ux, uy)
-    const tEdge = edgeDist(ux, uy)
+    const tEdge = edgeDist(-ux, -uy)
     return {
       ...link,
       x1: sx + ux * (sEdge + 2), y1: sy + uy * (sEdge + 2),
-      x2: tx - ux * (tEdge + 2), y2: ty - uy * (tEdge + 2),
+      x2: tx - ux * (tEdge + 8), y2: ty - uy * (tEdge + 8),
     }
   })
 })
@@ -1766,6 +1776,8 @@ function onCanvasSvgMouseDown(event: MouseEvent) {
 function onNodeMouseDown(event: MouseEvent, node: D3Node) {
   contextMenu.value.visible = false
   if (props.readOnly) return
+  if (spaceHeld.value) return // 이벤트 전파를 막지 않아 SVG zoom 패닝이 처리
+  event.stopPropagation()
   if (props.pathMode || props.pathNodes.size > 0) return
   if (event.ctrlKey || event.metaKey) startArrowDrag(event, node)
   else startNodeDrag(event, node)
@@ -1799,6 +1811,7 @@ onUnmounted(() => {
 })
 
 function onNodeClick(node: AnyNode) {
+  if (spaceHeld.value) return
   if (arrowPreview.value) return
   if (nodeDragMoved) { nodeDragMoved = false; return }
   contextMenu.value.visible = false
@@ -1963,13 +1976,46 @@ function searchNodeColor(node: D3Node): string {
   return cssVar('--node-srv-color')
 }
 
-function searchNodeIp(node: D3Node): string {
-  const parts: string[] = []
-  if ((node as any).internalIps?.length) parts.push(...(node as any).internalIps)
-  if ((node as any).natIps?.length) parts.push(...(node as any).natIps)
-  if ('ip' in node && (node as any).ip) parts.push((node as any).ip)
-  if ('host' in node && (node as any).host) parts.push((node as any).host)
-  return parts.join(' / ')
+function searchNodeBgColor(node: D3Node): string {
+  if (node.nodeKind === 'l7') return cssVar('--node-l7-bg')
+  if (node.nodeKind === 'infra') return cssVar('--node-infra-bg')
+  if (node.nodeKind === 'external') return cssVar('--node-ext-bg')
+  if (node.nodeKind === 'dns') return cssVar('--node-dns-bg')
+  return cssVar('--node-srv-bg')
+}
+
+function searchNodeSubInfo(node: D3Node): string {
+  const q = searchQuery.value.trim().toLowerCase()
+
+  if (!node.nodeKind || node.nodeKind === 'server') {
+    const internal: string[] = (node as any).internalIps ?? []
+    const nat: string[] = (node as any).natIps ?? []
+    const allIps = [...internal, ...nat]
+    // 검색어가 IP 패턴이면 매칭된 IP를 우선 표시
+    if (q) {
+      const matched = allIps.filter(ip => ip.toLowerCase().includes(q))
+      if (matched.length > 0) {
+        const rest = allIps.length - matched.length
+        const label = matched[0] + (matched.length > 1 ? ` 외 ${matched.length - 1}개 매칭` : '')
+        return rest > 0 ? `${label} (총 ${allIps.length}개)` : label
+      }
+    }
+    // 기본: 대표 IP + 총 개수
+    if (allIps.length === 0) return ''
+    return allIps.length > 1 ? `${allIps[0]} 외 ${allIps.length - 1}개` : allIps[0]
+  }
+  if (node.nodeKind === 'l7') return (node as any).ip ?? ''
+  if (node.nodeKind === 'infra') {
+    const host = (node as any).host ?? ''
+    const port = (node as any).port ?? ''
+    return port ? `${host}:${port}` : host
+  }
+  if (node.nodeKind === 'dns') return (node as any).recordValue ?? ''
+  return ''
+}
+
+function searchNodeDescription(node: D3Node): string {
+  return (node as any).description ?? ''
 }
 
 function navigateToNode(node: D3Node) {
@@ -1985,13 +2031,21 @@ function navigateToNode(node: D3Node) {
     zoomBehavior.transform,
     d3.zoomIdentity.translate(tx, ty).scale(k)
   )
-  emit('nodeClick', node)
+  emit('searchSelect', node)
   searchQuery.value = ''
   searchFocused.value = false
+  // input에서 focus를 제거하여 다음 클릭 시 focus 이벤트가 정상 발생하도록
+  const input = container.value?.querySelector('.search-input') as HTMLInputElement | null
+  input?.blur()
 }
 
+let searchBlurTimer: ReturnType<typeof setTimeout> | null = null
 function onSearchBlur() {
-  setTimeout(() => { searchFocused.value = false }, 150)
+  searchBlurTimer = setTimeout(() => { searchFocused.value = false }, 150)
+}
+function onSearchFocus() {
+  if (searchBlurTimer) { clearTimeout(searchBlurTimer); searchBlurTimer = null }
+  searchFocused.value = true
 }
 
 function searchSelectDelta(delta: number) {
@@ -2432,7 +2486,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 /* 검색 바 */
 .search-bar {
   position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-  z-index: 60; width: 280px;
+  z-index: 60; width: 400px;
 }
 .search-input-wrap {
   display: flex; align-items: center; gap: 6px;
@@ -2462,11 +2516,11 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
   background: rgba(15, 23, 42, 0.96); border: 1px solid var(--border-default);
   border-radius: 8px; backdrop-filter: blur(6px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-  max-height: 280px; overflow-y: auto;
+  max-height: 360px; overflow-y: auto;
 }
 .search-result-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 7px 12px; cursor: pointer;
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 8px 12px; cursor: pointer;
   transition: background 0.1s;
 }
 .search-result-item:hover, .search-result-item.active {
@@ -2474,15 +2528,28 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 }
 .search-result-kind {
   font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
-  min-width: 30px; flex-shrink: 0;
+  flex-shrink: 0; padding: 2px 6px; border-radius: 3px;
+  text-align: center; min-width: 34px; margin-top: 1px; line-height: 1.4;
+}
+.search-result-body {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;
+}
+.search-result-main {
+  display: flex; align-items: center; gap: 8px;
 }
 .search-result-name {
   flex: 1; font-size: var(--text-sm); color: var(--text-secondary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.search-result-ip {
-  font-size: var(--text-xs); color: var(--text-disabled);
-  white-space: nowrap; flex-shrink: 0;
+.search-result-sub {
+  font-size: var(--text-xs); font-family: var(--font-mono);
+  color: var(--color-ip-text); white-space: nowrap; flex-shrink: 0;
+  max-width: 140px; overflow: hidden; text-overflow: ellipsis;
+}
+.search-result-desc {
+  font-size: var(--text-xs); color: var(--text-tertiary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.3;
 }
 .search-no-result {
   padding: 10px 14px; font-size: var(--text-xs); color: var(--border-strong);
