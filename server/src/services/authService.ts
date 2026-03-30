@@ -124,6 +124,40 @@ export async function changePassword(
   await prisma.user.update({ where: { id: userId }, data: { passwordHash: passwordHashValue } })
 }
 
+export async function deleteAccount(userId: string, password: string) {
+  // 비밀번호 확인
+  await verifyUserPassword(userId, password)
+
+  // MASTER 역할인 프로젝트가 있으면 탈퇴 차단
+  const masterProjects = await prisma.projectMember.findMany({
+    where: { userId, role: 'MASTER' },
+    include: { project: { select: { name: true } } },
+  })
+  if (masterProjects.length > 0) {
+    const names = masterProjects.map(m => m.project.name).join(', ')
+    const err = new Error(`MASTER 권한을 보유한 프로젝트가 있습니다: ${names}. 권한을 이전한 후 탈퇴해 주세요.`)
+    ;(err as unknown as { code: string }).code = 'MASTER_ROLE_EXISTS'
+    throw err
+  }
+
+  // 데이터 변경은 트랜잭션으로 원자성 보장
+  await prisma.$transaction(async (tx) => {
+    // 감사 로그에서 userId 연결 해제 (기록 보존)
+    await tx.auditLog.updateMany({
+      where: { userId },
+      data: { userId: null },
+    })
+
+    // 초대 관련 레코드 삭제
+    await tx.projectInvitation.deleteMany({
+      where: { OR: [{ inviterId: userId }, { inviteeId: userId }] },
+    })
+
+    // 사용자 삭제 (Session, ProjectMember는 onDelete: Cascade로 자동 삭제)
+    await tx.user.delete({ where: { id: userId } })
+  })
+}
+
 export async function logout(refreshToken: string) {
   await prisma.session.deleteMany({ where: { token: refreshToken } })
 }

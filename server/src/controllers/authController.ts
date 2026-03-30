@@ -175,6 +175,35 @@ export async function changePassword(req: Request, res: Response): Promise<void>
   }
 }
 
+export async function deleteAccount(req: Request, res: Response): Promise<void> {
+  const { ipAddress, userAgent } = getClientInfo(req)
+  try {
+    const { password } = req.body
+    if (!password) {
+      res.status(400).json({ error: '비밀번호를 입력하세요.', code: 'VALIDATION_ERROR' })
+      return
+    }
+    const userId = req.user!.userId
+    await authService.deleteAccount(userId, password)
+    await auditLogService.createAuditLog({
+      action: 'ACCOUNT_DELETE', status: 'SUCCESS',
+      email: req.user!.email, ipAddress, userAgent,
+    }).catch(() => {})
+    logger.info('AUTH account deleted', { userId, ipAddress })
+    res.status(204).send()
+  } catch (err: unknown) {
+    const e = err as { code?: string; message?: string }
+    if (e.code === 'INVALID_CREDENTIALS') {
+      res.status(401).json({ error: '비밀번호가 올바르지 않습니다.', code: e.code })
+    } else if (e.code === 'MASTER_ROLE_EXISTS') {
+      res.status(409).json({ error: e.message, code: e.code })
+    } else {
+      logger.error('AUTH account delete error', { userId: req.user!.userId, error: (err as Error).message })
+      res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+    }
+  }
+}
+
 export async function me(req: Request, res: Response): Promise<void> {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user!.userId } })

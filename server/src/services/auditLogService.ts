@@ -16,6 +16,7 @@ export type AuditAction =
   | 'INVITATION_REJECTED'
   | 'PROFILE_UPDATE'
   | 'PASSWORD_CHANGE'
+  | 'ACCOUNT_DELETE'
 export type AuditStatus = 'SUCCESS' | 'FAILED'
 
 interface CreateAuditLogParams {

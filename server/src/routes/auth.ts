@@ -11,5 +11,6 @@ router.post('/refresh', authController.refresh)
 router.get('/me', authenticate, authController.me)
 router.put('/profile', authenticate, authController.updateProfile)
 router.put('/password', authenticate, authController.changePassword)
+router.delete('/account', authenticate, authController.deleteAccount)
 
 export default router
