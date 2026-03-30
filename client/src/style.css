@@ -99,6 +99,16 @@
   --role-readonly-bg: rgba(148, 163, 184, 0.15);
 }
 
+/* ── 스크롤바 ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
 /* ── 전역 버튼 클릭 피드백 ── */
 button:active:not(:disabled) { transform: scale(0.97); }
 

@@ -294,6 +294,24 @@ GraphCanvas 배경 격자는 "엔지니어링 청사진" 패턴을 사용한다.
 
 ---
 
+## 스크롤바
+
+`style.css`에 전역 정의됨. 별도 구현 불필요.
+
+| 속성 | 값 | 비고 |
+|------|----|------|
+| 너비/높이 | `6px` | Webkit 전용 (`-webkit-scrollbar`) |
+| Track 배경 | `transparent` | 배경과 자연스럽게 통합 |
+| Thumb 색상 | `var(--border-strong)` | `#3a3a42` |
+| Thumb hover | `var(--text-tertiary)` | `#787878` |
+| Thumb 라운딩 | `3px` | |
+| Firefox | `scrollbar-width: thin` | 표준 프로퍼티 |
+
+Webkit(Chrome, Edge, Safari)과 Firefox 모두 지원한다.
+`overflow-y: auto` 또는 `overflow-y: scroll`이 적용된 모든 요소에 자동 적용된다.
+
+---
+
 ## JS에서 CSS 변수 읽기
 
 GraphCanvas 등 D3/Canvas 기반 컴포넌트에서는 `getComputedStyle`로 CSS 변수를 읽는다.
