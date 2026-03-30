@@ -7,6 +7,6 @@
 
 ## 목록
 
-| 파일 | 설명 |
-|------|------|
-| [terraform_import.md](terraform_import.md) | Terraform 등 IaC state 파일 import 기능 |
+| 파일 | 설명 | 상태 |
+|------|------|------|
+| [terraform_import.md](terraform_import.md) | Terraform 등 IaC import 기능 (원격 연동, HCL 파싱, 자동 동기화 로드맵) | v1 Beta 구현 완료, Phase 2~5 미착수 |
