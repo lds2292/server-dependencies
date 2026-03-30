@@ -17,8 +17,6 @@
         @add-dns="openAddDnsModal"
         @edit="onEditNode"
         @delete="onDeleteNode"
-        @export-j-s-o-n="store.exportJSON"
-        @import-j-s-o-n="store.importJSON"
       />
     </aside>
 
@@ -43,18 +41,19 @@
               <span :class="['autosave-dot', { active: store.autosaveEnabled }]"></span>
               자동저장
             </button>
-            <select
+            <CustomSelect
               v-if="store.autosaveEnabled"
               class="select-interval"
-              :value="store.autosaveInterval"
-              @change="store.setAutosaveInterval(Number(($event.target as HTMLSelectElement).value))"
-            >
-              <option value="30">30초</option>
-              <option value="60">60초</option>
-              <option value="90">90초</option>
-              <option value="120">120초</option>
-              <option value="180">180초</option>
-            </select>
+              :model-value="String(store.autosaveInterval)"
+              :options="[
+                { value: '30', label: '30초' },
+                { value: '60', label: '60초' },
+                { value: '90', label: '90초' },
+                { value: '120', label: '120초' },
+                { value: '180', label: '180초' },
+              ]"
+              @update:model-value="store.setAutosaveInterval(Number($event))"
+            />
           </div>
         </div>
         <div class="toolbar-right">
@@ -98,6 +97,7 @@
           :cycle-nodes="cycleNodeIds"
           @node-click="onSelectNode"
           @deselect="selectedNode = null"
+          @search-select="selectedNode = $event"
           @edit-node="onEditNode"
           @delete-node="onDeleteNode"
           @delete-nodes="onDeleteNodes"
@@ -448,21 +448,20 @@
                 <span v-if="member.userId === authStore.user?.id" :class="['role-badge', member.role.toLowerCase()]">
                   {{ roleLabel(member.role) }} (나)
                 </span>
-                <select
+                <CustomSelect
                   v-else-if="canChangeRole(member.role)"
                   class="role-select"
-                  :value="member.role"
-                  @change="onChangeRole(member.userId, ($event.target as HTMLSelectElement).value)"
-                >
-                  <option v-for="r in assignableRoles(member.role)" :key="r" :value="r">{{ roleLabel(r) }}</option>
-                </select>
+                  :model-value="member.role"
+                  :options="assignableRoles(member.role).map(r => ({ value: r, label: roleLabel(r) }))"
+                  @update:model-value="onChangeRole(member.userId, $event)"
+                />
                 <span v-else :class="['role-badge', member.role.toLowerCase()]">{{ roleLabel(member.role) }}</span>
                 <button
                   v-if="canRemoveMember(member.role, member.userId)"
-                  class="member-remove-btn"
+                  class="btn-danger-ghost btn-sm"
                   @click="onRemoveMember(member.userId)"
-                  title="멤버 제거"
-                >x</button>
+                  title="멤버 해제"
+                >해제</button>
               </div>
             </div>
           </div>
@@ -475,9 +474,11 @@
               placeholder="이메일"
               @keydown.enter="onSendInvitation"
             />
-            <select v-model="addMemberRole" class="role-select">
-              <option v-for="r in addableRoles" :key="r" :value="r">{{ roleLabel(r) }}</option>
-            </select>
+            <CustomSelect
+              v-model="addMemberRole"
+              class="role-select"
+              :options="addableRoles.map(r => ({ value: r, label: roleLabel(r) }))"
+            />
             <button class="btn-outline btn-sm" @click="onSendInvitation" :disabled="!addMemberIdentifier.trim()">초대</button>
           </div>
           <div v-if="memberError" class="member-error">{{ memberError }}</div>
@@ -489,8 +490,9 @@
               <div class="pending-inv-info">
                 <span class="member-name">{{ inv.invitee.email }}</span>
                 <span :class="['role-badge', inv.role.toLowerCase()]">{{ roleLabel(inv.role) }}</span>
+                <span class="pending-status">대기 중</span>
               </div>
-              <button class="member-remove-btn" @click="onCancelInvitation(inv.id)" title="초대 취소">x</button>
+              <button class="btn-danger-ghost btn-sm" @click="onCancelInvitation(inv.id)" title="초대 취소">취소</button>
             </div>
           </div>
         </div>
@@ -533,6 +535,7 @@ import DnsModal from '../components/DnsModal.vue'
 import ImpactPanel from '../components/ImpactPanel.vue'
 import UserProfileDropdown from '../components/UserProfileDropdown.vue'
 import Icon from '../components/Icon.vue'
+import CustomSelect from '../components/CustomSelect.vue'
 import { graphApi } from '../api/graphApi'
 import type { Server, L7Node, InfraNode, ExternalServiceNode, DnsNode, AnyNode, Dependency, D3Link } from '../types'
 
@@ -644,38 +647,29 @@ function applyPath(targetNode: AnyNode) {
     showToast('연결된 경로가 없습니다')
     return
   }
-  // 경로에 L7이 포함되면 해당 L7의 모든 멤버 서버도 포함
+  // 경로에 L7이 포함되면 실제 경로에 관여하는 멤버만 포함
+  const pathSet = new Set(path)
   const expandedPath = [...path]
   for (const nodeId of path) {
     const l7 = store.l7Nodes.find(n => n.id === nodeId)
-    if (l7) {
-      for (const memberId of l7.memberServerIds) {
-        if (!expandedPath.includes(memberId)) expandedPath.push(memberId)
-      }
+    if (!l7) continue
+    for (const memberId of l7.memberServerIds) {
+      if (expandedPath.includes(memberId)) continue
+      // 이 멤버가 경로 내 다른 노드와 의존성이 있는지 확인
+      const isRelevant = store.dependencies.some(d =>
+        (d.source === memberId && pathSet.has(d.target)) ||
+        (d.target === memberId && pathSet.has(d.source))
+      )
+      if (isRelevant) expandedPath.push(memberId)
     }
   }
   const pathNodeSet = new Set(expandedPath)
   pathNodeIds.value = pathNodeSet
+  // 경로 노드 집합 내의 모든 의존성 링크를 수집
   const linkIds = new Set<string>()
-  // L7 멤버 맵 구성
-  const l7MemberMap = new Map<string, string[]>()
-  for (const l7 of store.l7Nodes) {
-    l7MemberMap.set(l7.id, l7.memberServerIds)
-  }
-  // 원본 경로의 연속 쌍으로 링크 수집 (L7 멤버도 고려)
-  for (let i = 0; i < path.length - 1; i++) {
-    const srcIds = [path[i], ...(l7MemberMap.get(path[i]) ?? [])]
-    const tgtIds = [path[i + 1], ...(l7MemberMap.get(path[i + 1]) ?? [])]
-    for (const dep of store.dependencies) {
-      if (srcIds.includes(dep.source) && tgtIds.includes(dep.target)) linkIds.add(dep.id)
-    }
-  }
-  // L7 확장으로 추가된 멤버 노드들의 의존성 링크도 수집 (경로 내 노드와 연결된 것)
-  for (const nodeId of expandedPath) {
-    if (path.includes(nodeId)) continue
-    for (const dep of store.dependencies) {
-      if (dep.source === nodeId && pathNodeSet.has(dep.target)) linkIds.add(dep.id)
-      if (dep.target === nodeId && pathNodeSet.has(dep.source)) linkIds.add(dep.id)
+  for (const dep of store.dependencies) {
+    if (pathNodeSet.has(dep.source) && pathNodeSet.has(dep.target)) {
+      linkIds.add(dep.id)
     }
   }
   pathLinkIds.value = linkIds
@@ -1211,12 +1205,7 @@ watch(() => route.params.id, async (newId) => {
   background: var(--border-strong); transition: background 0.2s;
 }
 .autosave-dot.active { background: var(--color-success); box-shadow: 0 0 4px rgba(34,197,94,0.6); }
-.select-interval {
-  font-size: var(--text-xs); font-weight: 600; padding: 0 10px; height: 36px; border-radius: 6px;
-  border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
-  cursor: pointer; transition: all 0.15s; outline: none;
-}
-.select-interval:hover { border-color: var(--border-strong); }
+.select-interval { width: 100px; }
 
 /* 단축키 툴팁 */
 [data-tooltip] { position: relative; }
@@ -1466,28 +1455,19 @@ watch(() => route.params.id, async (newId) => {
 .role-badge.admin    { background: var(--role-admin-bg); border-color: var(--role-admin); color: var(--role-admin-text); }
 .role-badge.writer   { background: var(--role-writer-bg); border-color: var(--role-writer); color: var(--node-ext-text); }
 .role-badge.readonly { background: var(--role-readonly-bg); border-color: var(--role-readonly); color: var(--text-muted); }
-.role-select {
-  font-size: var(--text-xs); font-weight: 600; padding: 3px 7px; border-radius: 6px;
-  border: 1px solid var(--border-default); background: var(--bg-base); color: var(--text-tertiary);
-  cursor: pointer; outline: none;
-}
-.role-select:hover { border-color: var(--border-strong); }
-.member-remove-btn {
-  width: 20px; height: 20px; border-radius: 4px; border: 1px solid #ef444433;
-  background: transparent; color: #ef4444; cursor: pointer; font-size: var(--text-xs);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  transition: all 0.15s;
-}
-.member-remove-btn:hover { background: #ef444422; border-color: #ef4444; }
+.role-select { width: 130px; }
 .member-add-form { display: flex; gap: 8px; align-items: center; }
-.pending-invitations { margin-top: 12px; border-top: 1px solid var(--bg-surface); padding-top: 12px; }
-.pending-invitations-title { font-size: var(--text-xs); font-weight: 600; color: var(--text-disabled); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
-.pending-inv-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
-.pending-inv-info { display: flex; align-items: center; gap: 8px; }
+.pending-invitations { margin-top: 16px; border-top: 1px solid var(--border-default); padding-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.pending-invitations-title { font-size: var(--text-xs); font-weight: 600; color: var(--text-disabled); text-transform: uppercase; letter-spacing: 0.06em; }
+.pending-inv-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 8px; }
+.pending-inv-info { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.pending-status { font-size: var(--text-xs); font-weight: 600; color: var(--text-disabled); }
 .member-input {
-  flex: 1; padding: 6px 10px; background: var(--bg-base); border: 1px solid var(--border-default);
-  border-radius: 6px; color: var(--text-secondary); font-size: var(--text-xs); outline: none;
+  flex: 1; padding: 9px 12px; background: var(--bg-base); border: 1px solid var(--border-default);
+  border-radius: 7px; color: var(--text-secondary); font-size: var(--text-sm); outline: none;
+  transition: border-color 0.15s; box-sizing: border-box;
 }
+.member-input::placeholder { color: var(--border-strong); }
 .member-input:focus { border-color: var(--accent-focus); }
 .member-error { font-size: var(--text-xs); color: #f87171; }
 </style>

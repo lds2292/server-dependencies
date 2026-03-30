@@ -67,14 +67,13 @@
                 <span v-if="member.userId === authStore.user?.id" :class="['role-badge', member.role.toLowerCase()]">
                   {{ roleLabel(member.role) }} (나)
                 </span>
-                <select
+                <CustomSelect
                   v-else-if="canChangeRole(member.role)"
                   class="role-select"
-                  :value="member.role"
-                  @change="onChangeRole(member.userId, ($event.target as HTMLSelectElement).value)"
-                >
-                  <option v-for="r in assignableRoles(member.role)" :key="r" :value="r">{{ roleLabel(r) }}</option>
-                </select>
+                  :model-value="member.role"
+                  :options="assignableRoles(member.role).map(r => ({ value: r, label: roleLabel(r) }))"
+                  @update:model-value="onChangeRole(member.userId, $event)"
+                />
                 <span v-else :class="['role-badge', member.role.toLowerCase()]">{{ roleLabel(member.role) }}</span>
                 <button
                   v-if="canRemoveMember(member.role, member.userId)"
@@ -93,9 +92,11 @@
               placeholder="이메일"
               @keydown.enter="onSendInvitation"
             />
-            <select v-model="addMemberRole" class="role-select">
-              <option v-for="r in addableRoles" :key="r" :value="r">{{ roleLabel(r) }}</option>
-            </select>
+            <CustomSelect
+              v-model="addMemberRole"
+              class="role-select"
+              :options="addableRoles.map(r => ({ value: r, label: roleLabel(r) }))"
+            />
             <button class="btn-outline btn-sm" @click="onSendInvitation" :disabled="!addMemberIdentifier.trim()">초대</button>
           </div>
           <div v-if="memberError" class="member-error">{{ memberError }}</div>
@@ -197,12 +198,12 @@
           </div>
           <div class="transfer-field">
             <label class="transfer-field-label">위임 대상</label>
-            <select v-model="transferTargetUserId" class="form-input">
-              <option value="" disabled>멤버 선택</option>
-              <option v-for="m in transferableMembers" :key="m.userId" :value="m.userId">
-                {{ m.user.username }} ({{ m.user.email }})
-              </option>
-            </select>
+            <CustomSelect
+              v-model="transferTargetUserId"
+              class="transfer-select"
+              placeholder="멤버 선택"
+              :options="transferableMembers.map(m => ({ value: m.userId, label: `${m.user.username} (${m.user.email})` }))"
+            />
           </div>
           <div class="transfer-field">
             <label class="transfer-field-label">비밀번호 확인</label>
@@ -256,6 +257,7 @@ import { useAuthStore } from '../stores/auth'
 import type { ProjectMemberRole } from '../api/projectApi'
 import UserProfileDropdown from '../components/UserProfileDropdown.vue'
 import Icon from '../components/Icon.vue'
+import CustomSelect from '../components/CustomSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -621,18 +623,8 @@ onMounted(async () => {
 .role-badge.admin    { background: var(--role-admin-bg); border-color: var(--role-admin); color: var(--role-admin-text); }
 .role-badge.writer   { background: var(--role-writer-bg); border-color: var(--role-writer); color: var(--node-ext-text); }
 .role-badge.readonly { background: var(--role-readonly-bg); border-color: var(--role-readonly); color: var(--text-muted); }
-.role-select {
-  font-size: var(--text-sm); font-weight: 600; padding: 9px 32px 9px 12px; border-radius: 7px;
-  background: var(--bg-base); border: 1px solid var(--border-default); color: var(--text-secondary); cursor: pointer;
-  outline: none; transition: border-color 0.15s;
-  appearance: none; -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23525252'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 16px 16px;
-}
-.role-select:hover { border-color: var(--border-strong); }
-.role-select:focus { border-color: var(--accent-focus); }
+.role-select { width: 130px; }
+.transfer-select { width: 100%; }
 .member-add-form { display: flex; gap: 8px; align-items: center; }
 .member-input {
   flex: 1;

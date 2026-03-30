@@ -119,13 +119,6 @@
       </li>
     </ul>
 
-    <div v-if="!readOnly" class="panel-footer">
-      <button class="btn-ghost btn-sm panel-footer-btn" @click="emit('exportJSON')">Export JSON</button>
-      <label class="btn-ghost btn-sm panel-footer-btn">
-        Import JSON
-        <input type="file" accept=".json" style="display:none" @change="onImport" />
-      </label>
-    </div>
   </div>
 </template>
 
@@ -187,8 +180,6 @@ const emit = defineEmits<{
   addExternal: []
   edit: [node: AnyNode]
   delete: [node: AnyNode]
-  exportJSON: []
-  importJSON: [file: File]
 }>()
 
 const search = ref('')
@@ -250,10 +241,6 @@ onUnmounted(() => {
   document.removeEventListener('click', closeKfMenu)
 })
 
-function onImport(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]
-  if (file) emit('importJSON', file)
-}
 </script>
 
 <style scoped>
@@ -399,8 +386,4 @@ function onImport(e: Event) {
 }
 .empty-label { font-size: var(--text-sm); font-weight: 600; color: var(--text-disabled); }
 .empty-hint  { font-size: var(--text-xs); color: var(--border-strong); }
-.panel-footer {
-  display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border-default);
-}
-.panel-footer-btn { flex: 1; text-align: center; }
 </style>
