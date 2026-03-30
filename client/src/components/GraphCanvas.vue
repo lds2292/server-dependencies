@@ -296,16 +296,6 @@
             <text x="-52" dy="19" text-anchor="start" class="node-meta">{{ (node as Server).internalIps?.[0] || '-' }}</text>
           </template>
 
-          <!-- 연결 포트 힌트 -->
-          <circle
-            v-if="hoveredNodeId === node.id && !props.readOnly && !arrowSource"
-            cx="101" cy="0" r="6"
-            :fill="nodeKindColor(node.nodeKind ?? 'server')"
-            stroke="white" stroke-width="1.5"
-            class="connect-handle"
-            cursor="crosshair"
-            @mousedown.stop="startArrowDrag($event, node)"
-          />
 
           <!-- 순환 의존성 경고 배지 -->
           <g v-if="cycleNodes.has(node.id)" class="cycle-badge" pointer-events="none">
@@ -1172,6 +1162,14 @@ function isHighlighted(node: D3Node): boolean {
     || blockedTarget.value?.id === node.id
 }
 
+// ─── 노드 경계까지 거리 계산 ─────────────────────────────
+function edgeDist(ux: number, uy: number, hw = 93, hh = 37): number {
+  return Math.min(
+    Math.abs(ux) > 0.001 ? hw / Math.abs(ux) : Infinity,
+    Math.abs(uy) > 0.001 ? hh / Math.abs(uy) : Infinity
+  )
+}
+
 // ─── 링크 끝점 계산 (노드 경계까지) ────────────────────
 const computedLinks = computed(() => {
   return renderedLinks.value.map(link => {
@@ -1183,16 +1181,12 @@ const computedLinks = computed(() => {
     const len = Math.hypot(dx, dy)
     if (len < 1) return { ...link, x1: sx, y1: sy, x2: tx, y2: ty }
     const ux = dx / len, uy = dy / len
-    const hw = 93, hh = 37
-    const tEdge = Math.min(
-      Math.abs(ux) > 0.001 ? hw / Math.abs(ux) : Infinity,
-      Math.abs(uy) > 0.001 ? hh / Math.abs(uy) : Infinity
-    )
+    const sEdge = edgeDist(ux, uy)
+    const tEdge = edgeDist(ux, uy)
     return {
       ...link,
-      x1: sx, y1: sy,
-      x2: tx - ux * (tEdge + 2),
-      y2: ty - uy * (tEdge + 2),
+      x1: sx + ux * (sEdge + 2), y1: sy + uy * (sEdge + 2),
+      x2: tx - ux * (tEdge + 2), y2: ty - uy * (tEdge + 2),
     }
   })
 })
@@ -1610,7 +1604,16 @@ function startArrowDrag(event: MouseEvent, node: D3Node) {
       if (Math.hypot(x - startPos.x, y - startPos.y) < 8) return
       isDragging = true
     }
-    arrowPreview.value = { x1: node.x ?? 0, y1: node.y ?? 0, x2: x, y2: y }
+    const nx = node.x ?? 0, ny = node.y ?? 0
+    const pdx = x - nx, pdy = y - ny
+    const plen = Math.hypot(pdx, pdy)
+    if (plen > 1) {
+      const pux = pdx / plen, puy = pdy / plen
+      const pe = edgeDist(pux, puy)
+      arrowPreview.value = { x1: nx + pux * (pe + 2), y1: ny + puy * (pe + 2), x2: x, y2: y }
+    } else {
+      arrowPreview.value = { x1: nx, y1: ny, x2: x, y2: y }
+    }
     const found = findNodeAt(x, y, node.id)
     if (found && isConnectionBlocked(node, found)) {
       connectTarget.value = null
@@ -2051,8 +2054,6 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .node-meta { font-size: 9.5px; fill: rgba(255,255,255,0.5); pointer-events: none; }
 .hover-tooltip { opacity: 0; animation: tooltip-fade-in 0.15s ease forwards; }
 @keyframes tooltip-fade-in { to { opacity: 1; } }
-.connect-handle { opacity: 0.85; transition: opacity 0.15s, r 0.15s; }
-.connect-handle:hover { opacity: 1; }
 /* 의존성 링크 애니메이션 */
 @keyframes flow-dash {
   from { stroke-dashoffset: 18; }
