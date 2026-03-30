@@ -306,31 +306,93 @@
 
         <!-- 호버 툴팁 -->
         <g v-if="tooltipNode && !arrowSource && !boxSelect"
-           :transform="`translate(${(tooltipNode.x ?? 0) + 100},${(tooltipNode.y ?? 0) - 37})`"
+           :transform="`translate(${(tooltipNode.x ?? 0) + 113},${(tooltipNode.y ?? 0) - 20})`"
            pointer-events="none"
            class="hover-tooltip"
         >
+          <!-- 그림자 레이어 -->
+          <rect
+            x="-2" y="-2"
+            :width="tooltipWidth + 4"
+            :height="getTooltipData(tooltipNode).length * 18 + 44"
+            rx="8"
+            fill="rgba(0,0,0,0.3)"
+            filter="url(#tooltip-shadow)"
+          />
+          <!-- 배경 -->
           <rect
             x="0" y="0"
-            width="180"
-            :height="getTooltipLines(tooltipNode).length * 16 + 12"
-            rx="4"
-            :fill="cssVar('--bg-surface')"
-            :stroke="nodeKindColor(tooltipNode.nodeKind ?? 'server')"
+            :width="tooltipWidth"
+            :height="getTooltipData(tooltipNode).length * 18 + 40"
+            rx="7"
+            :fill="cssVar('--bg-elevated')"
+            :stroke="cssVar('--border-default')"
             stroke-width="1"
-            opacity="0.95"
           />
-          <text v-for="(line, i) in getTooltipLines(tooltipNode)" :key="i"
-            x="8" :y="16 + i * 16"
+          <!-- 좌측 타입 컬러 바 -->
+          <rect
+            x="0" y="3"
+            width="3"
+            :height="getTooltipData(tooltipNode).length * 18 + 34"
+            :fill="nodeKindColor(tooltipNode.nodeKind ?? 'server')"
+            rx="1.5"
+          />
+          <!-- 상단 글래스 엣지 -->
+          <line
+            x1="4" :x2="tooltipWidth - 4" y1="1" y2="1"
+            stroke="rgba(255,255,255,0.06)"
+            stroke-width="1"
+          />
+          <!-- 헤더: 노드 이름 -->
+          <text
+            x="12" y="16"
+            text-anchor="start"
+            :font-size="cssVar('--text-xs')"
+            font-weight="700"
+            :fill="nodeKindColor(tooltipNode.nodeKind ?? 'server')"
+          >{{ tooltipNode.name }}</text>
+          <!-- 헤더: 타입 레이블 -->
+          <text
+            x="12" y="28"
             text-anchor="start"
             font-size="9"
-            :fill="cssVar('--text-primary')"
-            opacity="0.85"
-          >{{ line }}</text>
+            font-weight="500"
+            :fill="cssVar('--text-tertiary')"
+          >{{ nodeKindLabel(tooltipNode.nodeKind ?? 'server') }}</text>
+          <!-- 구분선 -->
+          <line
+            x1="8" :x2="tooltipWidth - 8"
+            y1="34" y2="34"
+            :stroke="cssVar('--border-subtle')"
+            stroke-width="0.5"
+          />
+          <!-- 정보 행 -->
+          <g v-for="(line, i) in getTooltipData(tooltipNode)" :key="i">
+            <text v-if="line.label"
+              x="12" :y="50 + i * 18"
+              text-anchor="start"
+              font-size="9"
+              font-weight="600"
+              :fill="cssVar('--text-tertiary')"
+            >{{ line.label }}</text>
+            <text
+              :x="line.label ? 52 : 12"
+              :y="50 + i * 18"
+              text-anchor="start"
+              font-size="10"
+              :font-family="line.isTech ? cssVar('--font-mono') : cssVar('--font-sans')"
+              font-weight="400"
+              :fill="line.isTech ? cssVar('--color-ip-text') : cssVar('--text-secondary')"
+            >{{ line.value }}</text>
+          </g>
         </g>
 
         <!-- glow 필터 + 엣지 그라디언트 -->
         <defs>
+          <!-- 툴팁 그림자 필터 -->
+          <filter id="tooltip-shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.5)" flood-opacity="1"/>
+          </filter>
           <!-- glow 필터 -->
           <filter id="glow-selected" x="-50%" y="-50%" width="200%" height="200%">
             <feFlood flood-color="#f59e0b" flood-opacity="0.12" result="amber"/>
@@ -1014,39 +1076,55 @@ function contactSummary(contacts?: ExternalContact[]): string {
   return `${contacts[0].name} 외 ${contacts.length - 1}명`
 }
 
-function getTooltipLines(node: D3Node): string[] {
-  const lines: string[] = []
+interface TooltipLine {
+  label?: string
+  value: string
+  isTech?: boolean
+}
+
+const tooltipWidth = 200
+
+function getTooltipData(node: D3Node): TooltipLine[] {
+  const lines: TooltipLine[] = []
   if (!node.nodeKind || node.nodeKind === 'server') {
     const s = node as unknown as Server
-    if (s.team) lines.push(`팀: ${s.team}`)
-    s.internalIps?.forEach(ip => lines.push(`내부: ${ip}`))
-    s.natIps?.forEach(ip => lines.push(`NAT: ${ip}`))
-    if (s.description) lines.push(truncate(s.description, 30))
+    if (s.team) lines.push({ label: '팀', value: s.team })
+    s.internalIps?.forEach(ip => lines.push({ label: '내부', value: ip, isTech: true }))
+    s.natIps?.forEach(ip => lines.push({ label: 'NAT', value: ip, isTech: true }))
+    if (s.description) lines.push({ value: truncate(s.description, 30) })
   } else if (node.nodeKind === 'l7') {
     const l = node as unknown as L7Node
-    if (l.ip) lines.push(`IP: ${l.ip}`)
-    if (l.natIp) lines.push(`NAT: ${l.natIp}`)
-    lines.push(`멤버: ${l.memberServerIds?.length ?? 0}개 서버`)
-    if (l.description) lines.push(truncate(l.description, 30))
+    if (l.ip) lines.push({ label: 'IP', value: l.ip, isTech: true })
+    if (l.natIp) lines.push({ label: 'NAT', value: l.natIp, isTech: true })
+    lines.push({ label: '멤버', value: `${l.memberServerIds?.length ?? 0}개 서버` })
+    if (l.description) lines.push({ value: truncate(l.description, 30) })
   } else if (node.nodeKind === 'infra') {
     const i = node as unknown as InfraNode
-    if (i.infraType) lines.push(`타입: ${i.infraType}`)
-    if (i.host) lines.push(`${i.host}${i.port ? ':' + i.port : ''}`)
-    if (i.description) lines.push(truncate(i.description, 30))
+    if (i.infraType) lines.push({ label: '타입', value: i.infraType })
+    if (i.host) lines.push({ label: '호스트', value: `${i.host}${i.port ? ':' + i.port : ''}`, isTech: true })
+    if (i.description) lines.push({ value: truncate(i.description, 30) })
   } else if (node.nodeKind === 'external') {
     const e = node as unknown as ExternalServiceNode
-    if (e.hasFirewall) lines.push('방화벽 적용')
-    if (e.hasWhitelist) lines.push('화이트리스트 적용')
-    e.contacts?.forEach(c => lines.push(`담당: ${c.name}`))
-    if (e.description) lines.push(truncate(e.description, 30))
+    if (e.hasFirewall) lines.push({ value: '방화벽 적용' })
+    if (e.hasWhitelist) lines.push({ value: '화이트리스트 적용' })
+    e.contacts?.forEach(c => lines.push({ label: '담당', value: c.name }))
+    if (e.description) lines.push({ value: truncate(e.description, 30) })
   } else if (node.nodeKind === 'dns') {
     const d = node as unknown as DnsNode
-    lines.push(`타입: ${d.dnsType}`)
-    if (d.recordValue) lines.push(`값: ${d.recordValue}`)
-    if (d.ttl != null) lines.push(`TTL: ${d.ttl}`)
-    if (d.description) lines.push(truncate(d.description, 30))
+    lines.push({ label: '타입', value: d.dnsType })
+    if (d.recordValue) lines.push({ label: '값', value: d.recordValue, isTech: true })
+    if (d.ttl != null) lines.push({ label: 'TTL', value: String(d.ttl), isTech: true })
+    if (d.description) lines.push({ value: truncate(d.description, 30) })
   }
   return lines
+}
+
+function nodeKindLabel(kind: string): string {
+  if (kind === 'l7') return 'L7 로드밸런서'
+  if (kind === 'infra') return '인프라'
+  if (kind === 'external') return '외부 서비스'
+  if (kind === 'dns') return 'DNS'
+  return '서버'
 }
 
 // ─── 색상 ───────────────────────────────────────────────
@@ -2052,8 +2130,13 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .node-ip { font-size: 10px; fill: rgba(255,255,255,0.75); pointer-events: none; }
 .node-sub { font-size: 9px; fill: rgba(255,255,255,0.65); pointer-events: none; font-weight: 600; letter-spacing: 0.02em; }
 .node-meta { font-size: 9.5px; fill: rgba(255,255,255,0.5); pointer-events: none; }
-.hover-tooltip { opacity: 0; animation: tooltip-fade-in 0.15s ease forwards; }
-@keyframes tooltip-fade-in { to { opacity: 1; } }
+.hover-tooltip {
+  opacity: 0;
+  animation: tooltip-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes tooltip-fade-in {
+  to { opacity: 1; }
+}
 /* 의존성 링크 애니메이션 */
 @keyframes flow-dash {
   from { stroke-dashoffset: 18; }
