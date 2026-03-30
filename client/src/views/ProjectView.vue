@@ -72,8 +72,17 @@
             <div v-if="showSettingsDropdown" class="toolbar-dropdown">
               <button v-if="projectStore.canAdmin" @click="router.push({ name: 'auditLogs', params: { id: projectStore.currentProject!.id } }); showSettingsDropdown = false">감사 로그</button>
               <button v-if="projectStore.canAdmin" @click="onOpenMembersModal(); showSettingsDropdown = false">멤버 관리</button>
-              <div v-if="projectStore.canAdmin && projectStore.canWrite && !hasData" class="toolbar-dropdown-divider"></div>
+              <div v-if="projectStore.canAdmin && projectStore.canWrite" class="toolbar-dropdown-divider"></div>
               <button v-if="projectStore.canWrite && !hasData" @click="onSampleClick(); showSettingsDropdown = false">샘플 데이터 불러오기</button>
+              <div v-if="projectStore.canWrite" class="submenu-item" @mouseenter="showImportSub = true" @mouseleave="showImportSub = false">
+                <span>Import</span>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3.5 2L7 5L3.5 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div v-if="showImportSub" class="toolbar-submenu">
+                  <button @click="showTerraformImport = true; showSettingsDropdown = false; showImportSub = false">
+                    Terraform <span class="menu-beta-badge">Beta</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -313,6 +322,11 @@
       @close="externalModal.visible = false"
       @submit="onExternalModalSubmit"
     />
+    <TerraformImportModal
+      v-if="showTerraformImport"
+      @close="showTerraformImport = false"
+      @import="onTerraformImport"
+    />
     <!-- Sample 로드 확인 다이얼로그 -->
     <transition name="toast-fade">
       <div v-if="sampleConfirm" class="delete-overlay" @click.self="sampleConfirm = false">
@@ -532,6 +546,8 @@ import InfraModal from '../components/InfraModal.vue'
 import ExternalServiceModal from '../components/ExternalServiceModal.vue'
 import DependencyModal from '../components/DependencyModal.vue'
 import DnsModal from '../components/DnsModal.vue'
+import TerraformImportModal from '../components/TerraformImportModal.vue'
+import type { TfParseResult } from '../utils/terraformParser'
 import ImpactPanel from '../components/ImpactPanel.vue'
 import UserProfileDropdown from '../components/UserProfileDropdown.vue'
 import Icon from '../components/Icon.vue'
@@ -549,6 +565,8 @@ const selectedNode = ref<AnyNode | null>(null)
 const readOnly = ref(false)
 const showShortcuts = ref(false)
 const showSettingsDropdown = ref(false)
+const showTerraformImport = ref(false)
+const showImportSub = ref(false)
 const settingsWrapRef = ref<HTMLDivElement>()
 const showHelp = ref(false)
 const detailPanelOpen = ref(true)
@@ -895,7 +913,132 @@ const sampleConfirm = ref(false)
 const hasData = computed(() =>
   store.servers.length + store.l7Nodes.length + store.infraNodes.length + store.externalNodes.length > 0
 )
-const hasSettingsItems = computed(() => projectStore.canAdmin || (projectStore.canWrite && !hasData.value))
+const hasSettingsItems = computed(() => projectStore.canAdmin || projectStore.canWrite)
+
+function onTerraformImport(result: TfParseResult) {
+  const selectedNodes = result.nodes.filter(n => n.selected)
+  const selectedDeps = result.dependencies.filter(d => d.selected)
+
+  // tempId -> 실제 store id 매핑
+  // tfResourceKey -> tempId 매핑
+  const keyToTempId = new Map<string, string>()
+  for (const node of selectedNodes) {
+    keyToTempId.set(node.tfResourceKey, node.tempId)
+  }
+  const tempIdToRealId = new Map<string, string>()
+
+  store.beginBatch()
+
+  for (const node of selectedNodes) {
+    let created: { id: string } | null = null
+    switch (node.nodeKind) {
+      case 'server':
+        created = store.addServer({
+          nodeKind: 'server',
+          name: node.name,
+          team: node.team ?? '',
+          internalIps: node.internalIps ?? [],
+          natIps: node.natIps ?? [],
+          description: node.description,
+        })
+        break
+      case 'l7':
+        created = store.addL7Node({
+          nodeKind: 'l7',
+          name: node.name,
+          memberServerIds: [],
+          description: node.description,
+        })
+        break
+      case 'infra':
+        created = store.addInfraNode({
+          nodeKind: 'infra',
+          name: node.name,
+          infraType: node.infraType,
+          host: node.host,
+          port: node.port,
+          description: node.description,
+        })
+        break
+      case 'dns':
+        created = store.addDnsNode({
+          nodeKind: 'dns',
+          name: node.name,
+          dnsType: node.dnsType ?? 'A',
+          recordValue: node.recordValue,
+          description: node.description,
+        })
+        break
+      case 'external':
+        created = store.addExternalNode({
+          nodeKind: 'external',
+          name: node.name,
+          contacts: [],
+          description: node.description,
+        })
+        break
+    }
+    if (created) {
+      tempIdToRealId.set(node.tempId, created.id)
+    }
+  }
+
+  for (const dep of selectedDeps) {
+    const sourceTempId = keyToTempId.get(dep.sourceKey)
+    const targetTempId = keyToTempId.get(dep.targetKey)
+    if (!sourceTempId || !targetTempId) continue
+    const sourceId = tempIdToRealId.get(sourceTempId)
+    const targetId = tempIdToRealId.get(targetTempId)
+    if (!sourceId || !targetId) continue
+    store.addDependency({
+      source: sourceId,
+      target: targetId,
+      type: dep.type,
+      description: dep.description,
+    })
+  }
+
+  store.endBatch()
+
+  // import된 노드에 계층적 초기 위치 부여 (DNS → L7 → Server → Infra 순으로 상단→하단)
+  const layerOrder: Record<string, number> = { dns: 0, l7: 1, server: 2, external: 2, infra: 3 }
+  const layerGroups = new Map<number, string[]>()
+  for (const node of selectedNodes) {
+    const realId = tempIdToRealId.get(node.tempId)
+    if (!realId) continue
+    const layer = layerOrder[node.nodeKind] ?? 2
+    if (!layerGroups.has(layer)) layerGroups.set(layer, [])
+    layerGroups.get(layer)!.push(realId)
+  }
+
+  // 기존 노드들의 중심점 계산 (빈 그래프면 0,0 기준)
+  const existingPositions = store.getPositions()
+  const existingCoords = Object.values(existingPositions)
+  let centerX = 0, centerY = 0
+  if (existingCoords.length > 0) {
+    centerX = existingCoords.reduce((s, p) => s + p.x, 0) / existingCoords.length + 400
+    centerY = existingCoords.reduce((s, p) => s + p.y, 0) / existingCoords.length
+  }
+
+  const positions = { ...existingPositions }
+  const layerGap = 180
+  const nodeGap = 200
+  const sortedLayers = [...layerGroups.entries()].sort((a, b) => a[0] - b[0])
+
+  let currentY = centerY - ((sortedLayers.length - 1) * layerGap) / 2
+  for (const [, nodeIds] of sortedLayers) {
+    let currentX = centerX - ((nodeIds.length - 1) * nodeGap) / 2
+    for (const id of nodeIds) {
+      positions[id] = { x: currentX, y: currentY }
+      currentX += nodeGap
+    }
+    currentY += layerGap
+  }
+
+  store.savePositions(positions)
+  store.saveGraph()
+  showTerraformImport.value = false
+}
 
 function onSampleClick() {
   if (hasData.value) {
@@ -1190,6 +1333,29 @@ watch(() => route.params.id, async (newId) => {
 }
 .toolbar-dropdown button:hover { background: var(--border-default); }
 .toolbar-dropdown-divider { height: 1px; background: var(--border-default); margin: 3px 0; }
+.submenu-item {
+  position: relative; display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 16px; color: var(--text-secondary); font-size: var(--text-sm); cursor: pointer;
+  transition: background 0.1s;
+}
+.submenu-item:hover { background: var(--border-default); }
+.toolbar-submenu {
+  position: absolute; left: 100%; top: -4px;
+  background: var(--bg-surface); border: 1px solid var(--border-default);
+  border-radius: 8px; padding: 4px 0; min-width: 160px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 210;
+}
+.toolbar-submenu button {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 16px;
+  background: none; border: none; color: var(--text-secondary); text-align: left;
+  cursor: pointer; font-size: var(--text-sm); transition: background 0.1s;
+}
+.toolbar-submenu button:hover { background: var(--border-default); }
+.menu-beta-badge {
+  font-size: 9px; font-weight: 700; color: var(--accent-soft);
+  background: var(--accent-bg); border: 1px solid var(--accent-primary);
+  border-radius: 3px; padding: 0 4px; letter-spacing: 0.05em; text-transform: uppercase;
+}
 .autosave-group { display: flex; align-items: center; gap: 4px; }
 .btn-save-local.dirty { border-color: var(--color-warning); color: var(--color-warning-light); background: #1c1200; }
 .btn-save-local.dirty:hover { background: #292100; border-color: var(--color-warning-light); }
