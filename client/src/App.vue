@@ -11,7 +11,6 @@ const authStore = useAuthStore()
 const { isWarningVisible, remainingSeconds, start, stop, extend } = useIdleTimeout({
   onExpire: async () => {
     await authStore.logout()
-    router.push({ name: 'login' })
   },
 })
 
@@ -34,7 +33,6 @@ function handleExtend(): void {
 async function handleLogout(): Promise<void> {
   stop()
   await authStore.logout()
-  router.push({ name: 'login' })
 }
 </script>
 

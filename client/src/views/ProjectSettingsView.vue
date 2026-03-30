@@ -269,7 +269,6 @@ const loading = ref(true)
 const showLogoutConfirm = ref(false)
 async function onLogout() {
   await authStore.logout()
-  router.push({ name: 'login' })
 }
 
 // ─── 토스트 ───────────────────────────────────────────────

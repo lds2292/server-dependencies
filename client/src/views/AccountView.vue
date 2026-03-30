@@ -177,7 +177,6 @@ function goBack() {
 
 async function onLogout() {
   await authStore.logout()
-  router.push({ name: 'login' })
 }
 
 // ─── 프로필 정보 ────────────────────────────────────────
@@ -281,7 +280,7 @@ async function onDeleteAccount() {
   deletingAccount.value = true
   try {
     await authStore.deleteAccount(deletePassword.value)
-    router.push({ name: 'login' })
+    window.location.replace('/login')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string; code?: string } } }
     const msg = e.response?.data?.error || '계정 삭제에 실패했습니다.'

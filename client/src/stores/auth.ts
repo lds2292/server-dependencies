@@ -49,6 +49,8 @@ export const useAuthStore = defineStore('auth', () => {
     setAccessToken(null)
     localStorage.removeItem('refreshToken')
     user.value = null
+    // 히스토리를 초기화하여 뒤로가기로 인증 필요 페이지에 접근 방지
+    window.location.replace('/login')
   }
 
   async function updateProfile(data: { username?: string }): Promise<void> {

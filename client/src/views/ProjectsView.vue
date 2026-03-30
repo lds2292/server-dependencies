@@ -309,7 +309,6 @@ async function onRejectInvitation(invId: string) {
 
 async function onLogout() {
   await auth.logout()
-  router.push({ name: 'hero' })
 }
 
 async function onCreateProject() {

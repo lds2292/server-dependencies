@@ -145,7 +145,6 @@ const authStore = useAuthStore()
 const showLogoutConfirm = ref(false)
 async function onLogout() {
   await authStore.logout()
-  router.push({ name: 'login' })
 }
 
 const projectId = route.params.id as string
