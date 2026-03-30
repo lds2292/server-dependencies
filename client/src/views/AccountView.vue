@@ -2,12 +2,10 @@
   <div class="settings-page">
     <div class="settings-topbar">
       <button class="back-btn" @click="goBack">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <Icon name="chevron-left" :size="16" />
         돌아가기
       </button>
-      <span class="settings-title">내 정보 수정</span>
+      <span class="topbar-title">내 정보 수정</span>
       <span class="topbar-spacer"></span>
       <UserProfileDropdown @logout="showLogoutConfirm = true" />
     </div>
@@ -16,10 +14,7 @@
       <!-- 프로필 정보 -->
       <section class="settings-section">
         <h2 class="section-title">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" class="section-icon">
-            <circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M2 14c0-3.31 2.69-6 6-6s6 2.69 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+          <Icon name="user-profile" :size="13" class="section-icon" />
           프로필 정보
         </h2>
 
@@ -47,10 +42,7 @@
       <!-- 비밀번호 변경 -->
       <section class="settings-section">
         <h2 class="section-title">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" class="section-icon">
-            <rect x="3" y="7" width="10" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+          <Icon name="lock" :size="13" class="section-icon" />
           비밀번호 변경
         </h2>
 
@@ -87,11 +79,7 @@
       <!-- 회원탈퇴 -->
       <section class="settings-section danger-section">
         <h2 class="section-title section-title-danger">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" class="section-icon">
-            <path d="M8 1L1 14h14L8 1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-            <path d="M8 6v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            <circle cx="8" cy="12" r="0.5" fill="currentColor"/>
-          </svg>
+          <Icon name="warning-triangle" :size="13" class="section-icon" />
           계정 삭제
         </h2>
         <p class="danger-desc">
@@ -160,6 +148,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import UserProfileDropdown from '../components/UserProfileDropdown.vue'
+import Icon from '../components/Icon.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -334,17 +323,19 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: none;
-  border: none;
-  color: var(--text-disabled);
+  height: 36px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-tertiary);
   font-size: var(--text-sm);
+  font-weight: 600;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 5px;
-  transition: color 0.15s, background 0.15s;
+  padding: 0 12px;
+  border-radius: 6px;
+  transition: all 0.15s;
 }
-.back-btn:hover { color: var(--text-secondary); background: var(--border-default); }
-.settings-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); }
+.back-btn:hover { color: var(--text-secondary); border-color: var(--border-strong); background: var(--bg-elevated); }
+.topbar-title { font-size: var(--text-sm); font-weight: 700; color: var(--text-primary); }
 .topbar-spacer { flex: 1; }
 
 /* 본문 */

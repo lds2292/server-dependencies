@@ -2,13 +2,12 @@
   <div class="settings-page">
     <div class="settings-topbar">
       <button class="back-btn" @click="router.push({ name: 'projects' })">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <Icon name="chevron-left" :size="16" />
         돌아가기
       </button>
-      <span class="settings-title">프로젝트 설정</span>
-      <span class="project-name-label">{{ projectStore.currentProject?.name }}</span>
+      <span class="topbar-title">프로젝트 설정</span>
+      <span class="topbar-sep">&gt;</span>
+      <span class="topbar-project">{{ projectStore.currentProject?.name }}</span>
       <span class="topbar-spacer"></span>
       <UserProfileDropdown @logout="showLogoutConfirm = true" />
     </div>
@@ -36,10 +35,7 @@
         <!-- 프로젝트 정보 -->
         <section class="settings-section">
           <h2 class="section-title">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" class="section-icon">
-              <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
+            <Icon name="project-info" :size="13" class="section-icon" />
             프로젝트 정보
           </h2>
           <div class="form-group">
@@ -58,12 +54,7 @@
         <!-- 멤버 관리 -->
         <section class="settings-section">
           <h2 class="section-title">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" class="section-icon">
-              <circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M1 13c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              <circle cx="12.5" cy="5" r="2" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M12.5 10c1.66 0 3 1.34 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
+            <Icon name="members" :size="13" class="section-icon" />
             멤버 관리
           </h2>
           <div class="members-list">
@@ -87,7 +78,7 @@
                 <span v-else :class="['role-badge', member.role.toLowerCase()]">{{ roleLabel(member.role) }}</span>
                 <button
                   v-if="canRemoveMember(member.role, member.userId)"
-                  class="member-remove-btn"
+                  class="btn-danger-ghost btn-sm"
                   @click="onRemoveMember(member.userId)"
                   title="멤버 해제"
                 >해제</button>
@@ -115,8 +106,9 @@
               <div class="pending-inv-info">
                 <span class="member-name">{{ inv.invitee.email }}</span>
                 <span :class="['role-badge', inv.role.toLowerCase()]">{{ roleLabel(inv.role) }}</span>
+                <span class="pending-status">대기 중</span>
               </div>
-              <button class="member-remove-btn" @click="onCancelInvitation(inv.id)" title="초대 취소">취소</button>
+              <button class="btn-danger-ghost btn-sm" @click="onCancelInvitation(inv.id)" title="초대 취소">취소</button>
             </div>
           </div>
         </section>
@@ -124,10 +116,7 @@
         <!-- 위험 영역 (MASTER only) -->
         <section v-if="projectStore.isMaster" class="settings-section danger-zone">
           <h2 class="section-title danger-title">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" class="section-icon">
-              <path d="M8 1.5L14.5 13.5H1.5L8 1.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M8 6.5v2.5M8 11h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
+            <Icon name="warning-triangle-alt" :size="13" class="section-icon" />
             위험 영역
           </h2>
           <div class="danger-item">
@@ -266,6 +255,7 @@ import { useProjectStore } from '../stores/project'
 import { useAuthStore } from '../stores/auth'
 import type { ProjectMemberRole } from '../api/projectApi'
 import UserProfileDropdown from '../components/UserProfileDropdown.vue'
+import Icon from '../components/Icon.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -496,18 +486,21 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: none;
-  border: none;
-  color: var(--text-disabled);
+  height: 36px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-tertiary);
   font-size: var(--text-sm);
+  font-weight: 600;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 5px;
-  transition: color 0.15s, background 0.15s;
+  padding: 0 12px;
+  border-radius: 6px;
+  transition: all 0.15s;
 }
-.back-btn:hover { color: var(--text-secondary); background: var(--border-default); }
-.settings-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); }
-.project-name-label { font-size: var(--text-xs); color: var(--border-strong); }
+.back-btn:hover { color: var(--text-secondary); border-color: var(--border-strong); background: var(--bg-elevated); }
+.topbar-title { font-size: var(--text-sm); font-weight: 700; color: var(--text-primary); }
+.topbar-sep { font-size: var(--text-sm); color: var(--text-disabled); font-weight: 400; }
+.topbar-project { font-size: var(--text-sm); font-weight: 700; color: var(--text-disabled); }
 .topbar-spacer { flex: 1; }
 
 /* 로그아웃 모달 */
@@ -640,22 +633,16 @@ onMounted(async () => {
 }
 .role-select:hover { border-color: var(--border-strong); }
 .role-select:focus { border-color: var(--accent-focus); }
-.member-remove-btn {
-  padding: 2px 8px; border-radius: 4px; border: 1px solid #ef444433;
-  background: transparent; color: #ef4444; font-size: var(--text-xs); font-weight: 600; line-height: 1.4;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s; white-space: nowrap;
-}
-.member-remove-btn:hover { background: #ef444422; border-color: #ef4444; }
 .member-add-form { display: flex; gap: 8px; align-items: center; }
 .member-input {
   flex: 1;
 }
 .member-error { font-size: var(--text-xs); color: #f87171; margin-top: 8px; }
-.pending-invitations { margin-top: 16px; border-top: 1px solid var(--bg-surface); padding-top: 16px; }
-.pending-invitations-title { font-size: var(--text-xs); font-weight: 600; color: var(--text-disabled); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
-.pending-inv-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
-.pending-inv-info { display: flex; align-items: center; gap: 8px; }
+.pending-invitations { margin-top: 16px; border-top: 1px solid var(--border-default); padding-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.pending-invitations-title { font-size: var(--text-xs); font-weight: 600; color: var(--text-disabled); text-transform: uppercase; letter-spacing: 0.06em; }
+.pending-inv-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 8px; }
+.pending-inv-info { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.pending-status { font-size: var(--text-xs); font-weight: 600; color: var(--text-disabled); }
 
 /* 위험 영역 */
 .danger-zone {

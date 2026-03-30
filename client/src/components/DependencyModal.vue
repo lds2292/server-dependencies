@@ -27,11 +27,14 @@
         <p v-else-if="isDuplicate" class="error">
           이미 동일한 의존성이 존재합니다.
         </p>
-        <p v-else-if="isDbToServerBlocked" class="error">
-          인프라 노드는 서버 노드에 의존성을 추가할 수 없습니다.
+        <p v-else-if="isInfraSourceBlocked" class="error">
+          인프라 노드는 다른 노드에 대한 의존성을 가질 수 없습니다.
         </p>
         <p v-else-if="isDnsTargetBlocked" class="error">
           DNS 노드는 의존성의 대상이 될 수 없습니다.
+        </p>
+        <p v-else-if="isL7MemberBlocked" class="error">
+          L7 노드와 해당 그룹 멤버 서버 간에는 의존성을 추가할 수 없습니다.
         </p>
         <label>
           연결 유형
@@ -58,7 +61,7 @@
           <button
             type="submit"
             class="btn-primary"
-            :disabled="!form.source || !form.target || form.source === form.target || isDuplicate || isDbToServerBlocked || isDnsTargetBlocked"
+            :disabled="!form.source || !form.target || form.source === form.target || isDuplicate || isInfraSourceBlocked || isDnsTargetBlocked || isL7MemberBlocked"
           >
             {{ editingDep ? '저장' : '추가' }}
           </button>
@@ -70,7 +73,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
-import type { AnyNode, Dependency, DependencyType } from '../types'
+import type { AnyNode, Dependency, DependencyType, L7Node } from '../types'
 import CustomSelect from './CustomSelect.vue'
 
 const backdropDown = ref(false)
@@ -101,11 +104,6 @@ const nodeOptions = computed(() =>
 const sourceNode = computed(() => props.nodes.find(n => n.id === form.source))
 
 const targetOptions = computed(() => {
-  if (sourceNode.value?.nodeKind === 'infra') {
-    return props.nodes
-      .filter(n => n.nodeKind === 'infra')
-      .map(n => ({ value: n.id, label: `[INFRA] ${n.name}` }))
-  }
   if (sourceNode.value?.nodeKind === 'dns') {
     return props.nodes
       .filter(n => n.nodeKind !== 'infra')
@@ -117,16 +115,26 @@ const targetOptions = computed(() => {
   return nodeOptions.value
 })
 
-const isDbToServerBlocked = computed(() => {
-  if (!form.source || !form.target) return false
-  const target = props.nodes.find(n => n.id === form.target)
-  return sourceNode.value?.nodeKind === 'infra' && (!target?.nodeKind || target.nodeKind === 'server')
+const isInfraSourceBlocked = computed(() => {
+  if (!form.source) return false
+  return sourceNode.value?.nodeKind === 'infra'
 })
 
 const isDnsTargetBlocked = computed(() => {
   if (!form.source || !form.target) return false
   const target = props.nodes.find(n => n.id === form.target)
   return target?.nodeKind === 'dns'
+})
+
+const isL7MemberBlocked = computed(() => {
+  if (!form.source || !form.target) return false
+  const l7Nodes = props.nodes.filter((n): n is L7Node => n.nodeKind === 'l7')
+  for (const l7 of l7Nodes) {
+    const members = l7.memberServerIds
+    if (l7.id === form.source && members.includes(form.target)) return true
+    if (l7.id === form.target && members.includes(form.source)) return true
+  }
+  return false
 })
 
 const typeOptions = [
@@ -145,14 +153,7 @@ function defaultTypeForTarget(targetId: string): DependencyType {
 }
 
 function resolveInitialTarget(): string {
-  const targetId = props.defaultTarget ?? ''
-  if (!targetId) return ''
-  const src = props.nodes.find(n => n.id === (props.defaultSource ?? ''))
-  if (src?.nodeKind === 'infra') {
-    const tgt = props.nodes.find(n => n.id === targetId)
-    if (tgt?.nodeKind !== 'infra') return ''
-  }
-  return targetId
+  return props.defaultTarget ?? ''
 }
 
 const form = reactive({
@@ -180,7 +181,7 @@ const isDuplicate = computed(() =>
 )
 
 function onSubmit() {
-  if (form.source === form.target || isDuplicate.value || isDbToServerBlocked.value || isDnsTargetBlocked.value) return
+  if (form.source === form.target || isDuplicate.value || isInfraSourceBlocked.value || isDnsTargetBlocked.value || isL7MemberBlocked.value) return
   const firewallUrl = form.hasFirewall ? form.firewallUrl : ''
   if (props.editingDep) {
     emit('update', props.editingDep.id, {

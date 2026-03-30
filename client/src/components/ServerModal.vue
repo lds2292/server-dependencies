@@ -82,8 +82,18 @@ const form = reactive<Omit<Server, 'id'> & { internalIps: string[]; natIps: stri
   description: props.server?.description ?? '',
 })
 
+function isEmptyIp(ip: string): boolean {
+  const trimmed = ip.trim()
+  if (!trimmed) return true
+  return /^[0.:]+$/.test(trimmed)
+}
+
 function onSubmit() {
-  emit('submit', { ...form })
+  emit('submit', {
+    ...form,
+    internalIps: form.internalIps.filter(ip => !isEmptyIp(ip)),
+    natIps: form.natIps.filter(ip => !isEmptyIp(ip)),
+  })
 }
 </script>
 

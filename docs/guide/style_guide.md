@@ -236,6 +236,58 @@
 
 ---
 
+## 헤더 버튼 규격
+
+모든 뷰의 헤더(topbar, toolbar)에 배치되는 버튼은 동일한 높이와 기본 스타일을 공유한다.
+
+### 공통 속성
+
+| 속성 | 값 | 비고 |
+|------|----|------|
+| height | `36px` | 프로필 버튼과 동일 |
+| border-radius | `6px` | |
+| border | `1px solid var(--border-default)` | |
+| background | `var(--bg-surface)` | |
+| font-size | `var(--text-xs)` 또는 `var(--text-sm)` | 텍스트 양에 따라 |
+| font-weight | `600` 또는 `700` | |
+| color | `var(--text-tertiary)` | |
+| padding | `0 12px` | 텍스트 버튼 기준 |
+| transition | `all 0.15s` | |
+
+### hover 상태
+
+| 속성 | 값 |
+|------|----|
+| border-color | `var(--border-strong)` |
+| color | `var(--text-secondary)` |
+| background | `var(--bg-elevated)` (선택) |
+
+### 아이콘 버튼 (정사각형)
+
+`width: 36px; height: 36px; padding: 0;` — 설정, 도움말 등 아이콘만 있는 버튼.
+원형이 필요하면 `border-radius: 50%` 추가.
+
+### 적용 대상
+
+| 뷰 | 버튼 | 클래스 |
+|----|------|--------|
+| ProjectSettings / AuditLog / Account | 돌아가기 | `.back-btn` |
+| ProjectView | 목록으로 | `.btn-ghost.btn-sm` (scoped override) |
+| ProjectView | 편집/읽기 전용 | `.btn-mode-toggle` |
+| ProjectView | 설정 아이콘 | `.btn-toolbar-icon` |
+| ProjectView | 자동저장 | `.btn-autosave` |
+| ProjectView | 간격 선택 | `.select-interval` |
+| ProjectView | 도움말 | `.btn-help` |
+| 모든 뷰 | 프로필 | `.btn-user-trigger` |
+
+### 규칙
+
+- 헤더 버튼은 반드시 `height: 36px`을 사용한다. padding으로 높이를 결정하지 않는다.
+- 글로벌 `.btn-sm`(28px)을 헤더에서 사용할 경우 scoped에서 `height: 36px`로 override한다.
+- 프로필 버튼(`UserProfileDropdown`)이 기준이 되므로, 새 헤더 버튼 추가 시 프로필과 높이를 맞춘다.
+
+---
+
 ## 전역 유틸리티
 
 ### 버튼 클릭 피드백
@@ -405,6 +457,129 @@ Webkit(Chrome, Edge, Safari)과 Firefox 모두 지원한다.
 
 - native `<select>` 대신 `CustomSelect` 컴포넌트를 사용할 것
 - 색상 하드코딩 금지, 반드시 CSS 변수 사용
+
+---
+
+## 프로필 버튼 (UserProfileDropdown)
+
+헤더 우측에 배치되는 사용자 프로필 드롭다운 트리거 버튼의 규격.
+
+### 트리거 버튼 (`.btn-user-trigger`)
+
+| 속성 | 값 |
+|------|----|
+| height | `36px` |
+| padding | `3px 12px 3px 4px` |
+| border | `1px solid var(--border-strong)` |
+| border-radius | `6px` |
+| background | `var(--bg-surface)` |
+| color | `var(--text-tertiary)` |
+| font-size | `var(--text-sm)` |
+| font-weight | `600` |
+
+### 아바타 (`.user-avatar`)
+
+| 속성 | 값 |
+|------|----|
+| width / height | `28px` |
+| border-radius | `50%` |
+| background | `var(--accent-primary)` |
+| color | `var(--bg-base)` |
+| font-size | `12px` |
+| font-weight | `700` |
+| box-shadow | `0 0 6px rgba(217,119,6,0.25)` |
+
+### hover 상태
+
+| 속성 | 값 |
+|------|----|
+| border-color | `var(--accent-focus)` |
+| color | `var(--text-secondary)` |
+| box-shadow | `0 0 8px rgba(217,119,6,0.15)` |
+
+---
+
+## 아이콘 컴포넌트
+
+프로젝트 전역에서 반복 사용되는 SVG 아이콘은 `Icon.vue` 단일 컴포넌트로 관리한다.
+
+### 파일 위치
+
+`client/src/components/Icon.vue`
+
+### 사용법
+
+```vue
+<script setup lang="ts">
+import Icon from '../components/Icon.vue'
+</script>
+
+<template>
+  <!-- 기본 (16px) -->
+  <Icon name="chevron-left" />
+
+  <!-- 크기 지정 -->
+  <Icon name="settings" :size="20" />
+
+  <!-- 색상은 부모의 color를 상속 (currentColor) -->
+  <span style="color: var(--text-tertiary)">
+    <Icon name="lock" :size="13" />
+  </span>
+
+  <!-- class 전달 가능 -->
+  <Icon name="chevron-down" :size="12" class="expand-icon" />
+</template>
+```
+
+### Props
+
+| Prop | 타입 | 기본값 | 설명 |
+|------|------|--------|------|
+| `name` | `string` | (필수) | 아이콘 이름 |
+| `size` | `number` | `16` | width/height (px) |
+
+### 등록된 아이콘 목록
+
+| 이름 | 설명 | 사용처 |
+|------|------|--------|
+| `chevron-left` | 왼쪽 화살표 | 돌아가기 버튼 |
+| `chevron-down` | 아래 화살표 (12x12) | 펼치기/접기, 아코디언 |
+| `chevron-down-sm` | 아래 화살표 (10x10) | 필터 드롭다운 |
+| `close` | X 닫기 | 모달/팝업 닫기 |
+| `panel-right` | 오른쪽 삼각형 | 패널 접기 |
+| `panel-left` | 왼쪽 삼각형 | 패널 열기 |
+| `settings` | 톱니바퀴 | 설정 버튼 |
+| `copy` | 클립보드 복사 | IP/연락처 복사 |
+| `filter` | 필터 라인 | 카테고리 필터 |
+| `user-profile` | 사용자 실루엣 | 프로필 섹션 |
+| `lock` | 자물쇠 | 비밀번호 섹션 |
+| `warning-triangle` | 경고 삼각형 | 위험 섹션 (AccountView) |
+| `warning-triangle-alt` | 경고 삼각형 (변형) | 위험 영역 (ProjectSettingsView) |
+| `project-info` | 문서 아이콘 | 프로젝트 정보 섹션 |
+| `members` | 사용자 그룹 | 멤버 관리 섹션 |
+| `node-server` | 서버 랙 | 노드 추가 메뉴 |
+| `node-l7` | 로드밸런서 | 노드 추가 메뉴 |
+| `node-infra` | 데이터베이스 | 노드 추가 메뉴 |
+| `node-dns` | 지구본 (DNS) | 노드 추가 메뉴 |
+| `node-external` | 외부 서비스 | 노드 추가 메뉴 |
+
+### 새 아이콘 추가 방법
+
+`Icon.vue`의 `icons` 맵에 항목을 추가한다:
+
+```typescript
+'icon-name': {
+  viewBox: '0 0 16 16',
+  content: '<path d="..." stroke="currentColor" .../>'
+}
+```
+
+### 규칙
+
+- 반복 사용되는 기능적 아이콘만 등록한다 (장식용/일회용 SVG는 인라인 유지)
+- 모든 path의 stroke/fill은 `currentColor`를 사용한다
+- 브랜드 로고 SVG, GraphCanvas 내부 SVG, 다이얼로그 아이콘(하드코딩 색상)은 Icon 컴포넌트로 교체하지 않는다
+- import는 상대 경로를 사용한다: `import Icon from '../components/Icon.vue'`
 
 ---
 

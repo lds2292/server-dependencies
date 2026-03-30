@@ -15,7 +15,7 @@
             <div v-for="ip in (selectedNode as any).internalIps" :key="ip" class="ip-row">
               <span class="detail-row mono ip-chip">{{ ip }}</span>
               <button class="btn-copy" @click="copyText(ip)" :title="'복사'" type="button">
-                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="0.5" width="7" height="7" rx="1" stroke="currentColor"/><path d="M1 3.5H0.5V10.5H7.5V10" stroke="currentColor" stroke-linecap="round"/></svg>
+                <Icon name="copy" :size="11" />
               </button>
             </div>
             <span v-if="!(selectedNode as any).internalIps?.length" class="detail-row mono">-</span>
@@ -25,7 +25,7 @@
             <div v-for="ip in (selectedNode as any).natIps" :key="ip" class="ip-row">
               <span class="detail-row mono ip-chip">{{ ip }}</span>
               <button class="btn-copy" @click="copyText(ip)" :title="'복사'" type="button">
-                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="0.5" width="7" height="7" rx="1" stroke="currentColor"/><path d="M1 3.5H0.5V10.5H7.5V10" stroke="currentColor" stroke-linecap="round"/></svg>
+                <Icon name="copy" :size="11" />
               </button>
             </div>
             <span v-if="!(selectedNode as any).natIps?.length" class="detail-row mono">-</span>
@@ -37,13 +37,13 @@
           <div v-if="(selectedNode as any).ip" class="ip-row">
             <span class="detail-row mono">IP: {{ (selectedNode as any).ip }}</span>
             <button class="btn-copy" @click="copyText((selectedNode as any).ip)" title="복사" type="button">
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="0.5" width="7" height="7" rx="1" stroke="currentColor"/><path d="M1 3.5H0.5V10.5H7.5V10" stroke="currentColor" stroke-linecap="round"/></svg>
+              <Icon name="copy" :size="11" />
             </button>
           </div>
           <div v-if="(selectedNode as any).natIp" class="ip-row">
             <span class="detail-row mono">NAT IP: {{ (selectedNode as any).natIp }}</span>
             <button class="btn-copy" @click="copyText((selectedNode as any).natIp)" title="복사" type="button">
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="0.5" width="7" height="7" rx="1" stroke="currentColor"/><path d="M1 3.5H0.5V10.5H7.5V10" stroke="currentColor" stroke-linecap="round"/></svg>
+              <Icon name="copy" :size="11" />
             </button>
           </div>
         </template>
@@ -54,7 +54,7 @@
           <div v-if="(selectedNode as any).host" class="ip-row">
             <span class="detail-row mono">{{ (selectedNode as any).host }}{{ (selectedNode as any).port ? ':' + (selectedNode as any).port : '' }}</span>
             <button class="btn-copy" @click="copyText((selectedNode as any).host + ((selectedNode as any).port ? ':' + (selectedNode as any).port : ''))" title="복사" type="button">
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="0.5" width="7" height="7" rx="1" stroke="currentColor"/><path d="M1 3.5H0.5V10.5H7.5V10" stroke="currentColor" stroke-linecap="round"/></svg>
+              <Icon name="copy" :size="11" />
             </button>
           </div>
         </template>
@@ -109,13 +109,13 @@
             <div v-if="c.phone" class="contact-copy-row">
               <span class="contact-info">{{ unmaskedContacts ? formatPhone(c.phone) : c.phone }}</span>
               <button v-if="unmaskedContacts" class="btn-copy" @click="copyText(c.phone)" title="복사" type="button">
-                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="0.5" width="7" height="7" rx="1" stroke="currentColor"/><path d="M1 3.5H0.5V10.5H7.5V10" stroke="currentColor" stroke-linecap="round"/></svg>
+                <Icon name="copy" :size="11" />
               </button>
             </div>
             <div v-if="c.email" class="contact-copy-row">
               <span class="contact-info">{{ c.email }}</span>
               <button v-if="unmaskedContacts" class="btn-copy" @click="copyText(c.email!)" title="복사" type="button">
-                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="0.5" width="7" height="7" rx="1" stroke="currentColor"/><path d="M1 3.5H0.5V10.5H7.5V10" stroke="currentColor" stroke-linecap="round"/></svg>
+                <Icon name="copy" :size="11" />
               </button>
             </div>
           </li>
@@ -205,6 +205,7 @@ import { computed, ref, watch } from 'vue'
 import type { Server, AnyNode, Dependency, ExternalContact } from '../types'
 import { projectApi } from '../api/projectApi'
 import { formatPhone } from '../composables/useContactValidation'
+import Icon from './Icon.vue'
 
 function typeLabel(node: AnyNode): string {
   if (node.nodeKind === 'l7') return 'L7'

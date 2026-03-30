@@ -68,9 +68,7 @@
 
           <div v-if="hasSettingsItems" class="toolbar-dropdown-wrap" ref="settingsWrapRef">
             <button class="btn-toolbar-icon" @click.stop="showSettingsDropdown = !showSettingsDropdown" data-tooltip="설정">
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                <path d="M8.325 2.317a1 1 0 0 1 .967-.734h1.416a1 1 0 0 1 .967.734l.244.976a6.47 6.47 0 0 1 1.218.703l.954-.305a1 1 0 0 1 1.142.422l.708 1.226a1 1 0 0 1-.176 1.157l-.71.67a6.5 6.5 0 0 1 0 1.408l.71.67a1 1 0 0 1 .176 1.157l-.708 1.226a1 1 0 0 1-1.142.422l-.954-.305a6.47 6.47 0 0 1-1.218.703l-.244.976a1 1 0 0 1-.967.734H9.292a1 1 0 0 1-.967-.734l-.244-.976a6.47 6.47 0 0 1-1.218-.703l-.954.305a1 1 0 0 1-1.142-.422l-.708-1.226a1 1 0 0 1 .176-1.157l.71-.67a6.5 6.5 0 0 1 0-1.408l-.71-.67a1 1 0 0 1-.176-1.157l.708-1.226a1 1 0 0 1 1.142-.422l.954.305a6.47 6.47 0 0 1 1.218-.703l.244-.976ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-              </svg>
+              <Icon name="settings" :size="16" />
             </button>
             <div v-if="showSettingsDropdown" class="toolbar-dropdown">
               <button v-if="projectStore.canAdmin" @click="router.push({ name: 'auditLogs', params: { id: projectStore.currentProject!.id } }); showSettingsDropdown = false">감사 로그</button>
@@ -123,9 +121,7 @@
 
     <aside :class="['detail-panel', { collapsed: !detailPanelOpen }]">
       <button class="detail-toggle" @click="detailPanelOpen = !detailPanelOpen" :title="detailPanelOpen ? '패널 접기' : '패널 열기'">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path :d="detailPanelOpen ? 'M3 2l6 4-6 4' : 'M9 2L3 6l6 4'" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <Icon :name="detailPanelOpen ? 'panel-right' : 'panel-left'" :size="12" />
       </button>
       <div v-if="detailPanelOpen" class="detail-panel-content">
         <ImpactPanel
@@ -151,10 +147,7 @@
           <div class="shortcuts-header">
             <span class="shortcuts-title">키보드 단축키</span>
             <button class="shortcuts-close" @click="showShortcuts = false">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <line x1="1" y1="1" x2="11" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <line x1="11" y1="1" x2="1" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
+              <Icon name="close" :size="12" />
             </button>
           </div>
           <div class="shortcuts-section-title">전역</div>
@@ -189,10 +182,7 @@
           <div class="shortcuts-header">
             <span class="shortcuts-title">사용 방법</span>
             <button class="shortcuts-close" @click="showHelp = false">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <line x1="1" y1="1" x2="11" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <line x1="11" y1="1" x2="1" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
+              <Icon name="close" :size="12" />
             </button>
           </div>
 
@@ -439,10 +429,7 @@
           <div class="shortcuts-header">
             <span class="shortcuts-title">멤버 관리</span>
             <button class="shortcuts-close" @click="showMembersModal = false">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <line x1="1" y1="1" x2="11" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <line x1="11" y1="1" x2="1" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
+              <Icon name="close" :size="12" />
             </button>
           </div>
 
@@ -545,6 +532,7 @@ import DependencyModal from '../components/DependencyModal.vue'
 import DnsModal from '../components/DnsModal.vue'
 import ImpactPanel from '../components/ImpactPanel.vue'
 import UserProfileDropdown from '../components/UserProfileDropdown.vue'
+import Icon from '../components/Icon.vue'
 import { graphApi } from '../api/graphApi'
 import type { Server, L7Node, InfraNode, ExternalServiceNode, DnsNode, AnyNode, Dependency, D3Link } from '../types'
 
@@ -855,9 +843,23 @@ function onAddNodeAt(nodeKind: 'server' | 'l7' | 'infra' | 'external' | 'dns') {
   else openAddServerModal()
 }
 
-function openAddDepModal(node?: AnyNode) { depModal.value = { visible: true, defaultSource: node?.id ?? '', defaultTarget: '' } }
+function openAddDepModal(node?: AnyNode) {
+  if (node && store.isInfraSourceDependency(node.id)) {
+    showToast('인프라 노드는 다른 노드에 대한 의존성을 가질 수 없습니다')
+    return
+  }
+  depModal.value = { visible: true, defaultSource: node?.id ?? '', defaultTarget: '' }
+}
 function openEditDepModal(dep: Dependency) { depModal.value = { visible: true, defaultSource: '', defaultTarget: '', editingDep: dep } }
 function onQuickConnect(source: AnyNode, target: AnyNode) {
+  if (store.isInfraSourceDependency(source.id)) {
+    showToast('인프라 노드는 다른 노드에 대한 의존성을 가질 수 없습니다')
+    return
+  }
+  if (store.isL7MemberDependency(source.id, target.id)) {
+    showToast('L7 노드와 그룹 멤버 서버 간에는 의존성을 추가할 수 없습니다')
+    return
+  }
   const isDuplicate = store.dependencies.some(d => d.source === source.id && d.target === target.id)
   if (isDuplicate) {
     showToast('이미 동일한 의존성이 존재합니다')
@@ -1149,7 +1151,7 @@ watch(() => route.params.id, async (newId) => {
 .toolbar-right { display: flex; align-items: center; gap: 10px; }
 /* -- 모드 토글 버튼 -- */
 .btn-mode-toggle {
-  font-size: var(--text-xs); font-weight: 700; padding: 0 10px; height: 30px; border-radius: 6px;
+  font-size: var(--text-xs); font-weight: 700; padding: 0 12px; height: 36px; border-radius: 6px;
   border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
   cursor: pointer; transition: all 0.15s; white-space: nowrap; position: relative;
   display: inline-flex; align-items: center;
@@ -1162,7 +1164,7 @@ watch(() => route.params.id, async (newId) => {
 .toolbar-dropdown-wrap { position: relative; }
 .btn-toolbar-icon {
   display: flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px; border-radius: 6px;
+  width: 36px; height: 36px; border-radius: 6px;
   border: 1px solid var(--border-default); background: var(--bg-surface);
   color: var(--text-tertiary); cursor: pointer; transition: all 0.15s;
 }
@@ -1185,7 +1187,7 @@ watch(() => route.params.id, async (newId) => {
 .btn-save-local.dirty:hover { background: #292100; border-color: var(--color-warning-light); }
 .btn-autosave {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: var(--text-xs); font-weight: 600; padding: 0 10px; height: 30px; border-radius: 6px;
+  font-size: var(--text-xs); font-weight: 600; padding: 0 12px; height: 36px; border-radius: 6px;
   border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-disabled);
   cursor: pointer; transition: all 0.15s; white-space: nowrap; position: relative;
 }
@@ -1196,7 +1198,7 @@ watch(() => route.params.id, async (newId) => {
 }
 .autosave-dot.active { background: var(--color-success); box-shadow: 0 0 4px rgba(34,197,94,0.6); }
 .select-interval {
-  font-size: var(--text-xs); font-weight: 600; padding: 0 8px; height: 30px; border-radius: 6px;
+  font-size: var(--text-xs); font-weight: 600; padding: 0 10px; height: 36px; border-radius: 6px;
   border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-tertiary);
   cursor: pointer; transition: all 0.15s; outline: none;
 }
@@ -1378,8 +1380,9 @@ watch(() => route.params.id, async (newId) => {
 
 /* 타이틀 + 도움말 버튼 */
 .title-group { display: flex; align-items: center; gap: 8px; }
+.title-group .btn-sm { height: 36px; padding: 0 12px; }
 .btn-help {
-  width: 30px; height: 30px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;
   border: 1px solid var(--border-default); background: var(--bg-surface);
   color: var(--text-disabled); font-size: var(--text-xs); font-weight: 700;
   cursor: pointer; display: flex; align-items: center; justify-content: center;

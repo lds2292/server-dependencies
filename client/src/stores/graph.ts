@@ -488,10 +488,30 @@ export const useGraphStore = defineStore('graph', () => {
     dependencies.value = dependencies.value.filter(d => d.source !== id && d.target !== id)
   }
 
+  // --- L7 멤버 의존성 차단 검증 ---
+  function isL7MemberDependency(sourceId: string, targetId: string): boolean {
+    for (const l7 of l7Nodes.value) {
+      const members = l7.memberServerIds
+      // L7 -> 자신의 멤버 서버
+      if (l7.id === sourceId && members.includes(targetId)) return true
+      // 멤버 서버 -> 자신이 속한 L7
+      if (l7.id === targetId && members.includes(sourceId)) return true
+    }
+    return false
+  }
+
+  // --- 인프라 노드 source 차단 검증 ---
+  function isInfraSourceDependency(sourceId: string): boolean {
+    const source = findNodeById(sourceId)
+    return source?.nodeKind === 'infra'
+  }
+
   // --- Dependency CRUD ---
   function addDependency(data: Omit<Dependency, 'id'>): Dependency | null {
     const exists = dependencies.value.some(d => d.source === data.source && d.target === data.target)
     if (exists) return null
+    if (isL7MemberDependency(data.source, data.target)) return null
+    if (isInfraSourceDependency(data.source)) return null
     saveSnapshot()
     const dep: Dependency = { ...data, id: generateId() }
     dependencies.value.push(dep)
@@ -517,9 +537,8 @@ export const useGraphStore = defineStore('graph', () => {
   }
 
   function getImpactedNodes(targetId: string): Set<string> {
-    // L7 memberServerIds lookup
-    const memberToL7 = new Map<string, string>()
     const l7ToMembers = new Map<string, string[]>()
+    const memberToL7 = new Map<string, string>()
     for (const l7 of l7Nodes.value) {
       l7ToMembers.set(l7.id, l7.memberServerIds)
       for (const mid of l7.memberServerIds) {
@@ -528,22 +547,52 @@ export const useGraphStore = defineStore('graph', () => {
     }
 
     const impacted = new Set<string>()
+    const visited = new Set<string>()
     const queue = [targetId]
+    visited.add(targetId)
+
     while (queue.length > 0) {
       const current = queue.shift()!
-      // Target IDs to check: current + its L7 members
+      // current + L7 멤버를 함께 target으로 간주
       const targetIds = [current]
       const members = l7ToMembers.get(current)
       if (members) targetIds.push(...members)
 
       dependencies.value.forEach(d => {
         if (!targetIds.includes(d.target)) return
-        let src = d.source
-        const parentL7 = memberToL7.get(src)
-        if (parentL7) src = parentL7
+        const src = d.source
+
+        // source 자체를 impacted에 추가
         if (!impacted.has(src) && src !== targetId) {
           impacted.add(src)
-          queue.push(src)
+        }
+        // source가 L7 멤버이면 부모 L7과 다른 멤버도 impacted에 추가
+        const parentL7 = memberToL7.get(src)
+        if (parentL7) {
+          if (!impacted.has(parentL7) && parentL7 !== targetId) {
+            impacted.add(parentL7)
+          }
+          for (const mid of (l7ToMembers.get(parentL7) ?? [])) {
+            if (!impacted.has(mid) && mid !== targetId) {
+              impacted.add(mid)
+            }
+          }
+        }
+        // source가 L7이면 멤버도 impacted에 추가
+        const srcMembers = l7ToMembers.get(src)
+        if (srcMembers) {
+          for (const mid of srcMembers) {
+            if (!impacted.has(mid) && mid !== targetId) {
+              impacted.add(mid)
+            }
+          }
+        }
+
+        // BFS 계속: source를 큐에 추가 (L7이면 L7 기준으로)
+        const queueId = parentL7 ?? src
+        if (!visited.has(queueId)) {
+          visited.add(queueId)
+          queue.push(queueId)
         }
       })
     }
@@ -729,7 +778,7 @@ export const useGraphStore = defineStore('graph', () => {
     addInfraNode, updateInfraNode, deleteInfraNode,
     addExternalNode, updateExternalNode, deleteExternalNode,
     addDnsNode, updateDnsNode, deleteDnsNode,
-    addDependency, removeDependency, updateDependency,
+    addDependency, removeDependency, updateDependency, isL7MemberDependency, isInfraSourceDependency,
     findNodeById, getImpactedNodes, getCycleNodes, findPath, exportJSON, importJSON, loadData,
     undo, redo, beginBatch, endBatch, canUndo, canRedo, saveSnapshot, positionRestoreVersion,
     setProject, resetGraph, saveGraph, savePositions, flushPositions, getPositions, syncExternalNodes,

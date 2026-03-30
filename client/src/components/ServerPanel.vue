@@ -8,50 +8,23 @@
         <button class="btn-add" @click.stop="toggleMenu">+ 추가 ▾</button>
         <div v-if="showMenu" class="add-menu" @click.stop>
           <button @click="emit('addServer'); showMenu=false">
-            <svg width="13" height="13" viewBox="0 0 11 9" fill="none" class="menu-icon">
-              <rect x="0.5" y="0.5" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="0.9"/>
-              <line x1="0.5" y1="3.7" x2="10.5" y2="3.7" stroke="currentColor" stroke-width="0.7"/>
-              <circle cx="8.5" cy="6.2" r="0.9" fill="currentColor"/>
-              <circle cx="6.5" cy="6.2" r="0.9" fill="currentColor"/>
-            </svg>
+            <Icon name="node-server" :size="13" class="menu-icon" />
             서버
           </button>
           <button @click="emit('addL7'); showMenu=false">
-            <svg width="13" height="13" viewBox="0 0 11 11" fill="none" class="menu-icon">
-              <circle cx="5.5" cy="4" r="3" stroke="currentColor" stroke-width="0.9"/>
-              <line x1="5.5" y1="7" x2="2" y2="10.5" stroke="currentColor" stroke-width="0.9"/>
-              <line x1="5.5" y1="7" x2="9" y2="10.5" stroke="currentColor" stroke-width="0.9"/>
-              <line x1="2.5" y1="4" x2="8.5" y2="4" stroke="currentColor" stroke-width="0.8"/>
-            </svg>
+            <Icon name="node-l7" :size="13" class="menu-icon" />
             L7
           </button>
           <button @click="emit('addInfra'); showMenu=false">
-            <svg width="13" height="13" viewBox="0 0 11 10" fill="none" class="menu-icon">
-              <ellipse cx="5.5" cy="2" rx="5" ry="2" stroke="currentColor" stroke-width="0.9"/>
-              <line x1="0.5" y1="2" x2="0.5" y2="8" stroke="currentColor" stroke-width="0.9"/>
-              <line x1="10.5" y1="2" x2="10.5" y2="8" stroke="currentColor" stroke-width="0.9"/>
-              <ellipse cx="5.5" cy="8" rx="5" ry="2" stroke="currentColor" stroke-width="0.9"/>
-            </svg>
+            <Icon name="node-infra" :size="13" class="menu-icon" />
             인프라
           </button>
           <button @click="emit('addDns'); showMenu=false">
-            <svg width="13" height="13" viewBox="0 0 11 11" fill="none" class="menu-icon">
-              <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9"/>
-              <line x1="5.5" y1="0.5" x2="5.5" y2="10.5" stroke="currentColor" stroke-width="0.7"/>
-              <line x1="0.5" y1="5.5" x2="10.5" y2="5.5" stroke="currentColor" stroke-width="0.7"/>
-              <path d="M1.5 3.5C3 3.5 4 2 5.5 2S8 3.5 9.5 3.5" stroke="currentColor" stroke-width="0.5"/>
-              <path d="M1.5 7.5C3 7.5 4 9 5.5 9S8 7.5 9.5 7.5" stroke="currentColor" stroke-width="0.5"/>
-            </svg>
+            <Icon name="node-dns" :size="13" class="menu-icon" />
             DNS
           </button>
           <button @click="emit('addExternal'); showMenu=false">
-            <svg width="13" height="13" viewBox="0 0 11 11" fill="none" class="menu-icon">
-              <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9"/>
-              <ellipse cx="5.5" cy="5.5" rx="2.2" ry="5" stroke="currentColor" stroke-width="0.7"/>
-              <line x1="0.5" y1="5.5" x2="10.5" y2="5.5" stroke="currentColor" stroke-width="0.7"/>
-              <line x1="1" y1="3" x2="10" y2="3" stroke="currentColor" stroke-width="0.5"/>
-              <line x1="1" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="0.5"/>
-            </svg>
+            <Icon name="node-external" :size="13" class="menu-icon" />
             외부서비스
           </button>
         </div>
@@ -65,14 +38,10 @@
     <!-- 카테고리 필터 드롭다운 -->
     <div class="kf-wrap" ref="kfWrapRef">
       <button class="kf-trigger" :class="{ active: !allKindsChecked }" @click.stop="showKfMenu = !showKfMenu">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M1 3h10M3 6h6M5 9h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
+        <Icon name="filter" :size="12" />
         필터
         <span v-if="!allKindsChecked" class="kf-active-count">{{ activeKindCount }}/5</span>
-        <svg class="kf-chevron" :class="{ open: showKfMenu }" width="10" height="10" viewBox="0 0 10 10" fill="none">
-          <path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <Icon name="chevron-down-sm" :size="10" class="kf-chevron" :class="{ open: showKfMenu }" />
       </button>
 
       <div v-if="showKfMenu" class="kf-menu" @click.stop>
@@ -163,6 +132,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { Server, L7Node, InfraNode, ExternalServiceNode, DnsNode, AnyNode } from '../types'
+import Icon from './Icon.vue'
 
 function typeLabel(node: AnyNode): string {
   if (node.nodeKind === 'l7') return 'L7'

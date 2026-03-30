@@ -2,13 +2,12 @@
   <div class="audit-page">
     <div class="audit-topbar">
       <button class="back-btn" @click="router.push({ name: 'project', params: { id: projectId } })">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <Icon name="chevron-left" :size="16" />
         돌아가기
       </button>
-      <span class="audit-title">감사 로그</span>
-      <span class="project-name">{{ projectName }}</span>
+      <span class="topbar-title">감사 로그</span>
+      <span class="topbar-sep">&gt;</span>
+      <span class="topbar-project">{{ projectName }}</span>
       <span class="topbar-spacer"></span>
       <UserProfileDropdown @logout="showLogoutConfirm = true" />
     </div>
@@ -92,13 +91,12 @@
                   {{ item.status === 'SUCCESS' ? '성공' : '실패' }}
                 </span>
                 <!-- 상세 정보가 있으면 펼치기 화살표 -->
-                <svg
+                <Icon
                   v-if="parseDetail(item)"
+                  name="chevron-down"
+                  :size="12"
                   :class="['expand-icon', { open: expandedId === item.id }]"
-                  width="12" height="12" viewBox="0 0 12 12" fill="none"
-                >
-                  <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                />
               </div>
 
               <!-- 상세 패널 -->
@@ -137,6 +135,7 @@ import { projectApi, type AuditLog } from '../api/projectApi'
 import { useProjectStore } from '../stores/project'
 import { useAuthStore } from '../stores/auth'
 import UserProfileDropdown from '../components/UserProfileDropdown.vue'
+import Icon from '../components/Icon.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -364,27 +363,21 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: none;
-  border: none;
-  color: var(--text-disabled);
+  height: 36px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-tertiary);
   font-size: var(--text-sm);
+  font-weight: 600;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 5px;
-  transition: color 0.15s, background 0.15s;
+  padding: 0 12px;
+  border-radius: 6px;
+  transition: all 0.15s;
 }
-.back-btn:hover { color: var(--text-secondary); background: var(--border-default); }
-
-.audit-title {
-  font-size: var(--text-base);
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.project-name {
-  font-size: var(--text-xs);
-  color: var(--border-strong);
-}
+.back-btn:hover { color: var(--text-secondary); border-color: var(--border-strong); background: var(--bg-elevated); }
+.topbar-title { font-size: var(--text-sm); font-weight: 700; color: var(--text-primary); }
+.topbar-sep { font-size: var(--text-sm); color: var(--text-disabled); font-weight: 400; }
+.topbar-project { font-size: var(--text-sm); font-weight: 700; color: var(--text-disabled); }
 .topbar-spacer { flex: 1; }
 
 /* 로그아웃 모달 */

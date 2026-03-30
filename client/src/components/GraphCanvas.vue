@@ -955,7 +955,17 @@ const connectBlockedMsg = ref('')
 function isConnectionBlocked(source: D3Node, target: D3Node): boolean {
   if (target.nodeKind === 'dns') return true
   if (source.nodeKind === 'dns' && target.nodeKind === 'infra') return true
-  return source.nodeKind === 'infra' && (!target.nodeKind || target.nodeKind === 'server')
+  if (source.nodeKind === 'infra') return true
+  if (graphStore.isL7MemberDependency(source.id, target.id)) return true
+  return false
+}
+
+function getBlockedMessage(source: D3Node, target: D3Node): string {
+  if (source.nodeKind === 'infra') return '인프라 노드는 다른 노드에 대한 의존성을 가질 수 없습니다'
+  if (graphStore.isL7MemberDependency(source.id, target.id)) return 'L7 노드와 그룹 멤버 서버 간에는 의존성을 추가할 수 없습니다'
+  if (target.nodeKind === 'dns') return 'DNS 노드는 의존성의 대상이 될 수 없습니다'
+  if (source.nodeKind === 'dns' && target.nodeKind === 'infra') return 'DNS 노드에서 인프라 노드로 의존성을 추가할 수 없습니다'
+  return '연결할 수 없습니다'
 }
 
 let blockMsgTimer: ReturnType<typeof setTimeout> | null = null
@@ -1705,7 +1715,7 @@ function startArrowDrag(event: MouseEvent, node: D3Node) {
     window.removeEventListener('mousemove', handleMove)
     window.removeEventListener('mouseup', handleUp)
     if (isDragging && blockedTarget.value) {
-      showBlockedMsg(`인프라 노드는 서버 노드에 의존성을 추가할 수 없습니다`)
+      showBlockedMsg(getBlockedMessage(node, blockedTarget.value))
     } else if (isDragging && connectTarget.value) {
       emit('quickConnect', node, connectTarget.value)
     }

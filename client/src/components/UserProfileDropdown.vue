@@ -52,17 +52,22 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
 <style scoped>
 .user-dropdown-wrap { position: relative; }
 .btn-user-trigger {
-  display: flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px;
-  height: 30px; border-radius: 6px; border: 1px solid var(--border-default);
+  display: flex; align-items: center; gap: 6px; padding: 3px 12px 3px 4px;
+  height: 36px; border-radius: 6px; border: 1px solid var(--border-strong);
   background: var(--bg-surface); color: var(--text-tertiary); cursor: pointer;
-  transition: all 0.15s; white-space: nowrap; font-size: var(--text-xs); font-weight: 600;
+  transition: all 0.15s; white-space: nowrap; font-size: var(--text-sm); font-weight: 600;
 }
-.btn-user-trigger:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+.btn-user-trigger:hover {
+  border-color: var(--accent-focus);
+  color: var(--text-secondary);
+  box-shadow: 0 0 8px rgba(217,119,6,0.15);
+}
 .user-avatar {
   display: flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; border-radius: 50%;
+  width: 28px; height: 28px; border-radius: 50%;
   background: var(--accent-primary); color: var(--bg-base);
-  font-size: var(--text-xs); font-weight: 700; flex-shrink: 0;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(217,119,6,0.25);
 }
 .user-name { max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
 .user-dropdown-menu {
