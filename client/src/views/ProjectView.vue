@@ -577,7 +577,21 @@ const impactedLinkIds = computed(() => {
   if (!selectedNode.value) return new Set<string>()
   const ids = impactedNodeIds.value
   const tid = selectedNode.value.id
-  return new Set(store.dependencies.filter(d => ids.has(d.source) && (ids.has(d.target) || d.target === tid)).map(d => d.id))
+  // 선택된 노드 + L7 그룹 확장을 target 집합으로 구성
+  const targetSet = new Set<string>([tid])
+  // 선택된 노드가 L7이면 멤버도 포함
+  const l7 = store.l7Nodes.find(n => n.id === tid)
+  if (l7) l7.memberServerIds.forEach(mid => targetSet.add(mid))
+  // 선택된 노드가 L7 멤버이면 부모 L7과 다른 멤버도 포함
+  for (const l7n of store.l7Nodes) {
+    if (l7n.memberServerIds.includes(tid)) {
+      targetSet.add(l7n.id)
+      l7n.memberServerIds.forEach(mid => targetSet.add(mid))
+    }
+  }
+  // impacted 집합에도 target 집합의 노드를 추가 (양쪽 모두 매칭 가능하게)
+  const allRelevant = new Set([...ids, ...targetSet])
+  return new Set(store.dependencies.filter(d => allRelevant.has(d.source) && allRelevant.has(d.target)).map(d => d.id))
 })
 
 const outgoingLinkIds = computed(() => {

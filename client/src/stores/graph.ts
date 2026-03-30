@@ -553,10 +553,19 @@ export const useGraphStore = defineStore('graph', () => {
 
     while (queue.length > 0) {
       const current = queue.shift()!
-      // current + L7 멤버를 함께 target으로 간주
+      // current + L7 관련 노드를 함께 target으로 간주
       const targetIds = [current]
+      // current가 L7이면 멤버도 target에 포함
       const members = l7ToMembers.get(current)
       if (members) targetIds.push(...members)
+      // current가 L7 멤버이면 부모 L7과 다른 멤버도 target에 포함
+      const parentL7 = memberToL7.get(current)
+      if (parentL7) {
+        if (!targetIds.includes(parentL7)) targetIds.push(parentL7)
+        for (const mid of (l7ToMembers.get(parentL7) ?? [])) {
+          if (!targetIds.includes(mid)) targetIds.push(mid)
+        }
+      }
 
       dependencies.value.forEach(d => {
         if (!targetIds.includes(d.target)) return
