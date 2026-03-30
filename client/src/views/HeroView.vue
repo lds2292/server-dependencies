@@ -22,13 +22,6 @@
           Server Dependencies
         </div>
 
-        <nav class="header-nav">
-          <a href="#features" class="nav-link">기능 소개</a>
-          <a href="#security" class="nav-link">보안</a>
-          <a href="#" class="nav-link">요금제</a>
-          <a href="#" class="nav-link">문서</a>
-        </nav>
-
         <div class="header-actions">
           <router-link to="/login" class="nav-login">로그인</router-link>
           <transition name="fade">
