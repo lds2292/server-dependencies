@@ -681,7 +681,6 @@ export const useGraphStore = defineStore('graph', () => {
   function findPath(sourceId: string, targetId: string): string[] | null {
     if (sourceId === targetId) return [sourceId]
 
-    // L7 memberServerIds lookup: member -> L7 id, L7 id -> member ids
     const memberToL7 = new Map<string, string>()
     const l7ToMembers = new Map<string, string[]>()
     for (const l7 of l7Nodes.value) {
@@ -691,30 +690,52 @@ export const useGraphStore = defineStore('graph', () => {
       }
     }
 
-    const visited = new Set<string>([sourceId])
+    // BFS로 모든 경로를 탐색하여 경유 노드를 합산
+    const allPathNodes = new Set<string>()
+    const found: string[][] = []
     const queue: Array<[string, string[]]> = [[sourceId, [sourceId]]]
+    // visited를 경로별이 아닌 레벨별로 관리 (같은 레벨의 다른 경로 허용)
+    const visited = new Set<string>([sourceId])
+    const pendingVisit = new Set<string>()
+
     while (queue.length > 0) {
-      const [current, path] = queue.shift()!
-      // Collect source IDs to check: current node + its L7 members (if L7)
-      const sourceIds = [current]
-      const members = l7ToMembers.get(current)
-      if (members) sourceIds.push(...members)
+      const levelSize = queue.length
+      for (let li = 0; li < levelSize; li++) {
+        const [current, path] = queue.shift()!
+        const sourceIds = [current]
+        const members = l7ToMembers.get(current)
+        if (members) sourceIds.push(...members)
 
-      for (const dep of dependencies.value) {
-        if (!sourceIds.includes(dep.source)) continue
-        let next = dep.target
-        // If target is a member of an L7, treat the L7 as the next node
-        const parentL7 = memberToL7.get(next)
-        if (parentL7 && !path.includes(parentL7)) next = parentL7
+        for (const dep of dependencies.value) {
+          if (!sourceIds.includes(dep.source)) continue
+          let next = dep.target
+          const parentL7 = memberToL7.get(next)
+          if (parentL7 && !path.includes(parentL7)) next = parentL7
 
-        if (next === targetId) return [...path, next]
-        if (!visited.has(next)) {
-          visited.add(next)
-          queue.push([next, [...path, next]])
+          if (next === targetId) {
+            found.push([...path, next])
+          } else if (!visited.has(next)) {
+            pendingVisit.add(next)
+            queue.push([next, [...path, next]])
+          }
         }
       }
+      // 레벨 완료 후 visited 갱신
+      for (const id of pendingVisit) visited.add(id)
+      pendingVisit.clear()
     }
-    return null
+
+    if (found.length === 0) return null
+    // 모든 경로의 노드를 합산하여 반환
+    for (const p of found) {
+      for (const id of p) allPathNodes.add(id)
+    }
+    // 첫 번째 경로를 기본 순서로, 나머지 노드를 뒤에 추가
+    const result = [...found[0]]
+    for (const id of allPathNodes) {
+      if (!result.includes(id)) result.push(id)
+    }
+    return result
   }
 
   function exportJSON() {
