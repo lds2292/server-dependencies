@@ -1230,26 +1230,26 @@ function nodeOpacity(node: D3Node): number {
 }
 
 function nodeStroke(node: D3Node): string {
-  if (props.pathNodes.has(node.id)) return '#f59e0b'
-  if ((props.pathMode || props.pathNodes.size > 0) && hoveredNodeId.value === node.id) return '#f59e0b'
-  if (props.cycleNodes.has(node.id)) return '#dc2626'
-  if (blockedTarget.value?.id === node.id) return '#ef4444'
-  if (connectTarget.value?.id === node.id) return '#42b883'
+  if (props.pathNodes.has(node.id)) return cssVar('--accent-focus')
+  if ((props.pathMode || props.pathNodes.size > 0) && hoveredNodeId.value === node.id) return cssVar('--accent-focus')
+  if (props.cycleNodes.has(node.id)) return cssVar('--color-danger-hover')
+  if (blockedTarget.value?.id === node.id) return cssVar('--color-danger-border')
+  if (connectTarget.value?.id === node.id) return cssVar('--node-ext-color')
   if (arrowSource.value?.id === node.id) return cssVar('--accent-soft')
 
   if (props.selectedId === node.id) {
-    if (node.nodeKind === 'l7') return '#b494f7'
-    if (node.nodeKind === 'infra') return '#3ec6d6'
-    if (node.nodeKind === 'external') return '#42b883'
-    if (node.nodeKind === 'dns') return '#8b5cf6'
+    if (node.nodeKind === 'l7') return cssVar('--node-l7-color')
+    if (node.nodeKind === 'infra') return cssVar('--node-infra-color')
+    if (node.nodeKind === 'external') return cssVar('--node-ext-color')
+    if (node.nodeKind === 'dns') return cssVar('--node-dns-color')
     return cssVar('--node-srv-color')
   }
-  if (props.impactedNodes.has(node.id)) return '#ef4444'
-  if (node.nodeKind === 'l7') return '#7c3aed'
-  if (node.nodeKind === 'infra') return '#7dd3fc'
-  if (node.nodeKind === 'external') return '#42b883'
-  if (node.nodeKind === 'dns') return '#a78bfa'
-  return cssVar('--border-strong')
+  if (props.impactedNodes.has(node.id)) return cssVar('--color-danger-border')
+  if (node.nodeKind === 'l7') return cssVar('--node-l7-color')
+  if (node.nodeKind === 'infra') return cssVar('--node-infra-color')
+  if (node.nodeKind === 'external') return cssVar('--node-ext-color')
+  if (node.nodeKind === 'dns') return cssVar('--node-dns-color')
+  return cssVar('--node-srv-color')
 }
 
 function isHighlighted(node: D3Node): boolean {
@@ -2363,7 +2363,7 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
 .legend-l7    { background: var(--node-l7-bg-deep);     border-color: var(--node-l7-color); }
 .legend-infra { background: var(--node-infra-bg-light); border-color: var(--node-infra-color); }
 .legend-ext   { background: var(--node-ext-bg-deep);    border-color: var(--node-ext-color); }
-.legend-dns   { background: var(--node-dns-color);      border-color: var(--node-dns-color); }
+.legend-dns   { background: var(--node-dns-bg-light);   border-color: var(--node-dns-color); }
 .legend-divider {
   height: 2px; background: var(--border-default); margin: 3px 0;
 }

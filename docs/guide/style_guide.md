@@ -175,6 +175,17 @@
 | `--node-ext-text` | `#86efac` |
 | `--node-ext-glow` | `rgba(66,184,131,0.3)` |
 
+### DNS (도메인 네임 시스템)
+| 변수 | 값 |
+|------|----|
+| `--node-dns-color` | `#f472b6` |
+| `--node-dns-bg` | `#2e1228` |
+| `--node-dns-bg-deep` | `#1f0a1a` |
+| `--node-dns-bg-light` | `#fdf2f8` |
+| `--node-dns-text` | `#f9a8d4` |
+| `--node-dns-glow` | `rgba(244,114,182,0.3)` |
+| `--node-dns-hover` | `#be185d` |
+
 ---
 
 ## 역할(Role) 뱃지
