@@ -84,11 +84,59 @@
           </div>
         </template>
       </section>
+      <!-- 회원탈퇴 -->
+      <section class="settings-section danger-section">
+        <h2 class="section-title section-title-danger">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" class="section-icon">
+            <path d="M8 1L1 14h14L8 1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M8 6v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="8" cy="12" r="0.5" fill="currentColor"/>
+          </svg>
+          계정 삭제
+        </h2>
+        <p class="danger-desc">
+          계정을 삭제하면 모든 데이터가 영구적으로 삭제되며 복구할 수 없습니다.
+          소유한 프로젝트 중 다른 관리자가 있는 프로젝트는 소유권이 이전되고,
+          그렇지 않은 프로젝트는 함께 삭제됩니다.
+        </p>
+        <button class="btn-danger" @click="showDeleteConfirm = true">계정 삭제</button>
+      </section>
     </div>
 
     <!-- 토스트 -->
     <transition name="toast-fade">
       <div v-if="toastMsg" :class="['app-toast', toastType]">{{ toastMsg }}</div>
+    </transition>
+
+    <!-- 회원탈퇴 확인 모달 -->
+    <transition name="fade">
+      <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="onCancelDelete">
+        <div class="modal-card" style="max-width:400px">
+          <h2 class="modal-title">계정 삭제</h2>
+          <p class="modal-desc">이 작업은 되돌릴 수 없습니다. 계속하려면 비밀번호를 입력하세요.</p>
+          <div class="form-group" style="margin-bottom:16px">
+            <label class="form-label">비밀번호 확인</label>
+            <input
+              v-model="deletePassword"
+              class="form-input"
+              type="password"
+              placeholder="비밀번호를 입력하세요"
+              @keyup.enter="onDeleteAccount"
+            />
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" @click="onCancelDelete">취소</button>
+            <button
+              type="button"
+              class="btn-confirm btn-confirm-danger"
+              :disabled="deletingAccount || !deletePassword"
+              @click="onDeleteAccount"
+            >
+              {{ deletingAccount ? '삭제 중...' : '계정 삭제' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </transition>
 
     <!-- 로그아웃 확인 모달 -->
@@ -226,6 +274,31 @@ async function onChangePassword() {
     }
   } finally {
     savingPassword.value = false
+  }
+}
+
+// ─── 회원탈퇴 ──────────────────────────────────────────────
+const showDeleteConfirm = ref(false)
+const deletePassword = ref('')
+const deletingAccount = ref(false)
+
+function onCancelDelete() {
+  showDeleteConfirm.value = false
+  deletePassword.value = ''
+}
+
+async function onDeleteAccount() {
+  if (!deletePassword.value) return
+  deletingAccount.value = true
+  try {
+    await authStore.deleteAccount(deletePassword.value)
+    router.push({ name: 'login' })
+  } catch (err: unknown) {
+    const e = err as { response?: { data?: { error?: string; code?: string } } }
+    const msg = e.response?.data?.error || '계정 삭제에 실패했습니다.'
+    showToast(msg)
+  } finally {
+    deletingAccount.value = false
   }
 }
 
@@ -372,6 +445,38 @@ onMounted(() => {
   align-items: center;
 }
 
+/* 위험 영역 (회원탈퇴) */
+.danger-section {
+  border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
+}
+.section-title-danger::before {
+  background: var(--color-danger) !important;
+}
+.section-title-danger .section-icon {
+  color: var(--color-danger);
+}
+.danger-desc {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin: 0 0 16px;
+  line-height: 1.6;
+}
+.btn-danger {
+  font-size: var(--text-xs); font-weight: 700; padding: 7px 20px; border-radius: 7px;
+  border: 1px solid var(--color-danger); background: transparent; color: var(--color-danger);
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-danger) 30%, transparent);
+}
+.modal-desc {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
 .btn-save {
   font-size: var(--text-xs); font-weight: 700; padding: 7px 20px; border-radius: 7px;
   border: 1px solid var(--accent-hover); background: var(--accent-bg); color: var(--accent-soft);
@@ -385,7 +490,7 @@ onMounted(() => {
   position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
   background: #1c0a0a; border: 1px solid #ef4444; border-radius: 10px;
   padding: 12px 24px; font-size: var(--text-base); color: #fca5a5; font-weight: 600;
-  z-index: 700; white-space: nowrap; box-shadow: 0 4px 20px rgba(239,68,68,0.25);
+  z-index: 1100; white-space: nowrap; box-shadow: 0 4px 20px rgba(239,68,68,0.25);
   pointer-events: none;
 }
 .app-toast.success {

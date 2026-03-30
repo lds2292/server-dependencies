@@ -35,4 +35,7 @@ export const authApi = {
   changePassword(data: { currentPassword: string; newPassword: string }) {
     return http.put<{ message: string }>('/auth/password', data)
   },
+  deleteAccount(password: string) {
+    return http.delete('/auth/account', { data: { password } })
+  },
 }

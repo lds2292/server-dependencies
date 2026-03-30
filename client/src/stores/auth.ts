@@ -60,5 +60,12 @@ export const useAuthStore = defineStore('auth', () => {
     await authApi.changePassword({ currentPassword, newPassword })
   }
 
-  return { user, isLoggedIn, sessionInitialized, initializeSession, login, register, logout, updateProfile, changePassword }
+  async function deleteAccount(password: string): Promise<void> {
+    await authApi.deleteAccount(password)
+    setAccessToken(null)
+    localStorage.removeItem('refreshToken')
+    user.value = null
+  }
+
+  return { user, isLoggedIn, sessionInitialized, initializeSession, login, register, logout, updateProfile, changePassword, deleteAccount }
 })
