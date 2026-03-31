@@ -67,7 +67,7 @@ export default {
     newProject: '+ 새 프로젝트',
     empty: {
       title: '아직 프로젝트가 없습니다',
-      desc: '팀과 함께 서버 의존성을 시각화해보세요',
+      desc: '팀과 함께 인프라 의존성을 시각화해보세요',
       create: '첫 번째 프로젝트 만들기',
     },
     myProjects: '내 프로젝트 ({count})',
@@ -670,9 +670,9 @@ export default {
       login: '로그인',
       start: '시작하기',
     },
-    badge: '서버 의존성 시각화 플랫폼',
-    title: '서버 의존성을\n한눈에 파악하세요',
-    desc: '서버, 로드밸런서, 인프라, 외부 서비스 간의 의존 관계를 시각화하고 팀과 함께 관리하는 협업 도구',
+    badge: 'Lightweight Infra Intelligence',
+    title: '시작은 가볍게,\n분석은 깊게',
+    desc: '에이전트 없이 인프라 의존 관계를 시각화하고 장애 영향 범위를 즉시 파악하세요',
     feature1: {
       label: '의존성 시각화',
       sub: '서버, L7, 인프라, 외부 서비스 간의 관계를 그래프로 표현',
@@ -749,7 +749,7 @@ export default {
           '감사 로그 기록',
         ],
       },
-      ctaText: '지금 바로 팀의 인프라를 시각화해보세요',
+      ctaText: '지금 바로 시작하세요',
     },
   },
 
@@ -762,7 +762,7 @@ export default {
     },
     hero: {
       badge: 'PRODUCT GUIDE',
-      title: 'Server Dependencies 시작 가이드',
+      title: 'Seraph 시작 가이드',
       subtitle: '프로젝트 생성부터 영향도 분석까지, 5분이면 충분합니다',
     },
     sections: [

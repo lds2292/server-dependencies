@@ -21,7 +21,7 @@
           <line x1="30" y1="5" x2="30" y2="9" stroke="#787878" stroke-width="1.4"/>
           <path d="M22 9 Q26 11 30 9" stroke="#787878" stroke-width="1.4" fill="none"/>
         </svg>
-        <span>Server Dependencies</span>
+        <span>Seraph</span>
       </div>
       <div class="header-right">
         <UserProfileDropdown @logout="showLogoutConfirm = true" />

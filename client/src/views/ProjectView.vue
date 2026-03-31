@@ -24,7 +24,7 @@
       <div class="toolbar">
         <div class="title-group">
           <button class="btn-ghost btn-sm" @click="router.replace({ name: 'projects' })">← {{ $t('project.toolbar.backToList') }}</button>
-          <span class="app-title">{{ projectStore.currentProject?.name ?? 'Server Dependencies' }}</span>
+          <span class="app-title">{{ projectStore.currentProject?.name ?? 'Seraph' }}</span>
           <button class="btn-help" @click="showHelp = true" :title="$t('project.toolbar.help')">?</button>
           <div v-if="!readOnly" class="autosave-group">
             <button

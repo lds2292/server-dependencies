@@ -34,7 +34,7 @@
 
     <!-- 폼 카드 -->
     <div class="auth-card">
-      <router-link to="/" class="auth-logo">Server Dependencies</router-link>
+      <router-link to="/" class="auth-logo">Seraph</router-link>
       <h1 class="auth-title">{{ $t('auth.register.title') }}</h1>
 
       <form class="auth-form" @submit.prevent="onSubmit">

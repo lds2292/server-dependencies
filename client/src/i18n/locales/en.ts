@@ -67,7 +67,7 @@ export default {
     newProject: '+ New Project',
     empty: {
       title: 'No projects yet',
-      desc: 'Visualize server dependencies with your team',
+      desc: 'Visualize infra dependencies with your team',
       create: 'Create your first project',
     },
     myProjects: 'My Projects ({count})',
@@ -670,9 +670,9 @@ export default {
       login: 'Sign in',
       start: 'Get Started',
     },
-    badge: 'Server Dependency Visualization Platform',
-    title: 'Understand server dependencies\nat a glance',
-    desc: 'A collaborative tool to visualize and manage dependencies between servers, load balancers, infrastructure, and external services',
+    badge: 'Lightweight Infra Intelligence',
+    title: 'Start light,\nAnalyze deep',
+    desc: 'Visualize infrastructure dependencies without agents and instantly identify blast radius',
     feature1: {
       label: 'Dependency Visualization',
       sub: 'Represent relationships between servers, L7, infra, and external services as a graph',
@@ -749,7 +749,7 @@ export default {
           'Audit log recording',
         ],
       },
-      ctaText: 'Visualize your team\'s infrastructure now',
+      ctaText: 'Get started now',
     },
   },
 
@@ -762,7 +762,7 @@ export default {
     },
     hero: {
       badge: 'PRODUCT GUIDE',
-      title: 'Getting Started with Server Dependencies',
+      title: 'Getting Started with Seraph',
       subtitle: 'From project creation to impact analysis -- 5 minutes is all you need',
     },
     sections: [
