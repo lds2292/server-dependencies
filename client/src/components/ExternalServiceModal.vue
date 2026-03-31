@@ -1,19 +1,19 @@
 <template>
   <div class="modal-backdrop" @mousedown.self="backdropDown = true" @mouseup.self="backdropDown && $emit('close')" @mouseup="backdropDown = false">
     <div class="modal">
-      <h3>{{ isEdit ? '외부서비스 수정' : '외부서비스 추가' }}</h3>
+      <h3>{{ isEdit ? t('modals.external.editTitle') : t('modals.external.addTitle') }}</h3>
       <form @submit.prevent="onSubmit">
         <label>
-          서비스명 *
-          <input v-model="form.name" required placeholder="예: Stripe API" :class="{ 'input-error': isDuplicate }" />
-          <span v-if="isDuplicate" class="error-msg">이미 사용 중인 이름입니다</span>
+          {{ t('modals.external.name') }}
+          <input v-model="form.name" required :placeholder="t('modals.external.namePlaceholder')" :class="{ 'input-error': isDuplicate }" />
+          <span v-if="isDuplicate" class="error-msg">{{ t('modals.server.duplicateName') }}</span>
         </label>
         <label class="checkbox-label">
           <input type="checkbox" v-model="form.hasFirewall" />
-          방화벽 오픈 필요
+          {{ t('modals.external.firewall') }}
         </label>
         <label v-if="form.hasFirewall">
-          방화벽 오픈요청 URL
+          {{ t('modals.external.firewallUrl') }}
           <input
             v-model="form.firewallUrl"
             type="url"
@@ -22,45 +22,45 @@
         </label>
         <label class="checkbox-label">
           <input type="checkbox" v-model="form.hasWhitelist" />
-          화이트리스트 요청 필요
+          {{ t('modals.external.whitelist') }}
         </label>
 
         <div class="section-row">
-          <span class="section-label">담당자 정보</span>
-          <button type="button" class="btn-add-contact" @click="addContact">+ 담당자 추가</button>
+          <span class="section-label">{{ t('modals.external.contacts') }}</span>
+          <button type="button" class="btn-add-contact" @click="addContact">{{ t('modals.external.addContact') }}</button>
         </div>
 
         <div class="contacts-list">
           <div v-for="(contact, idx) in form.contacts" :key="idx" class="contact-item">
             <div class="contact-row">
-              <input v-model="contact.name" placeholder="담당자명 *" class="contact-name" />
-              <button type="button" class="btn-remove" @click="removeContact(idx)" title="삭제">✕</button>
+              <input v-model="contact.name" :placeholder="t('modals.external.contactName')" class="contact-name" />
+              <button type="button" class="btn-remove" @click="removeContact(idx)" :title="t('common.delete')">✕</button>
             </div>
             <input
               :value="contact.phone"
               @input="onPhoneInput(idx, $event)"
               @blur="onContactBlur(idx)"
-              placeholder="연락처 (숫자만 입력: 01012345678)"
+              :placeholder="t('modals.external.contactPhone')"
               :class="{ 'input-error': contactErrors[idx]?.phone }"
             />
             <span v-if="contactErrors[idx]?.phone" class="error-msg">{{ contactErrors[idx].phone }}</span>
             <input
               v-model="contact.email"
               type="text"
-              placeholder="이메일"
+              :placeholder="t('modals.external.contactEmail')"
               @blur="onContactBlur(idx)"
               :class="{ 'input-error': contactErrors[idx]?.email }"
             />
             <span v-if="contactErrors[idx]?.email" class="error-msg">{{ contactErrors[idx].email }}</span>
           </div>
-          <p v-if="form.contacts.length === 0" class="no-contacts">담당자가 없습니다</p>
+          <p v-if="form.contacts.length === 0" class="no-contacts">{{ t('modals.external.noContacts') }}</p>
         </div>
 
-        <label>설명<textarea v-model="form.description" rows="2" placeholder="외부서비스 설명..." /></label>
+        <label>{{ t('modals.external.description') }}<textarea v-model="form.description" rows="2" :placeholder="t('modals.external.descPlaceholder')" /></label>
 
         <div class="actions">
-          <button type="button" class="btn-ghost" @click="$emit('close')">취소</button>
-          <button type="submit" class="btn-primary btn-node-ext" :disabled="!form.name.trim() || isDuplicate || hasAnyContactError">{{ isEdit ? '저장' : '추가' }}</button>
+          <button type="button" class="btn-ghost" @click="$emit('close')">{{ t('common.cancel') }}</button>
+          <button type="submit" class="btn-primary btn-node-ext" :disabled="!form.name.trim() || isDuplicate || hasAnyContactError">{{ isEdit ? t('common.save') : t('common.add') }}</button>
         </div>
       </form>
     </div>
@@ -69,7 +69,10 @@
 
 <script setup lang="ts">
 import { reactive, ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { ExternalServiceNode, ExternalContact } from '../types'
+
+const { t } = useI18n()
 import { graphApi } from '../api/graphApi'
 import { useContactValidation } from '../composables/useContactValidation'
 import type { ContactErrors } from '../composables/useContactValidation'

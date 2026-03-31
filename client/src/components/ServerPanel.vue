@@ -1,45 +1,45 @@
 <template>
   <div class="server-panel">
     <div class="panel-header">
-      <h2>노드 목록 <span class="count-badge">{{ allItems.length }}</span></h2>
+      <h2>{{ $t('serverPanel.title') }} <span class="count-badge">{{ allItems.length }}</span></h2>
 
       <!-- 단일 추가 버튼 + 드롭다운 -->
       <div v-if="!readOnly" class="add-wrap" ref="addWrapRef">
-        <button class="btn-add" @click.stop="toggleMenu">+ 추가 ▾</button>
+        <button class="btn-add" @click.stop="toggleMenu">{{ $t('serverPanel.addMenu') }} ▾</button>
         <div v-if="showMenu" class="add-menu" @click.stop>
           <button @click="emit('addServer'); showMenu=false">
             <Icon name="node-server" :size="13" class="menu-icon" />
-            서버
+            {{ $t('nodes.server') }}
           </button>
           <button @click="emit('addL7'); showMenu=false">
             <Icon name="node-l7" :size="13" class="menu-icon" />
-            L7
+            {{ $t('nodes.l7Short') }}
           </button>
           <button @click="emit('addInfra'); showMenu=false">
             <Icon name="node-infra" :size="13" class="menu-icon" />
-            인프라
+            {{ $t('nodes.infra') }}
           </button>
           <button @click="emit('addDns'); showMenu=false">
             <Icon name="node-dns" :size="13" class="menu-icon" />
-            DNS
+            {{ $t('nodes.dns') }}
           </button>
           <button @click="emit('addExternal'); showMenu=false">
             <Icon name="node-external" :size="13" class="menu-icon" />
-            외부서비스
+            {{ $t('nodes.externalShort') }}
           </button>
         </div>
       </div>
     </div>
 
     <div class="search-box">
-      <input v-model="search" placeholder="노드 검색..." />
+      <input v-model="search" :placeholder="$t('serverPanel.search')" />
     </div>
 
     <!-- 카테고리 필터 드롭다운 -->
     <div class="kf-wrap" ref="kfWrapRef">
       <button class="kf-trigger" :class="{ active: !allKindsChecked }" @click.stop="showKfMenu = !showKfMenu">
         <Icon name="filter" :size="12" />
-        필터
+        {{ $t('serverPanel.filter') }}
         <span v-if="!allKindsChecked" class="kf-active-count">{{ activeKindCount }}/5</span>
         <Icon name="chevron-down-sm" :size="10" class="kf-chevron" :class="{ open: showKfMenu }" />
       </button>
@@ -52,33 +52,33 @@
             :indeterminate="someKindsChecked && !allKindsChecked"
             @change="toggleAllKinds"
           />
-          전체 선택
+          {{ $t('serverPanel.selectAll') }}
         </label>
         <div class="kf-divider"></div>
         <label class="kf-menu-item">
           <input type="checkbox" v-model="filterKinds.server" />
           <span class="kf-dot kf-server">SRV</span>
-          서버
+          {{ $t('nodes.server') }}
         </label>
         <label class="kf-menu-item">
           <input type="checkbox" v-model="filterKinds.l7" />
           <span class="kf-dot kf-l7">L7</span>
-          L7 로드밸런서
+          {{ $t('nodes.l7') }}
         </label>
         <label class="kf-menu-item">
           <input type="checkbox" v-model="filterKinds.infra" />
           <span class="kf-dot kf-infra">INFRA</span>
-          인프라
+          {{ $t('nodes.infra') }}
         </label>
         <label class="kf-menu-item">
           <input type="checkbox" v-model="filterKinds.dns" />
           <span class="kf-dot kf-dns">DNS</span>
-          DNS
+          {{ $t('nodes.dns') }}
         </label>
         <label class="kf-menu-item">
           <input type="checkbox" v-model="filterKinds.external" />
           <span class="kf-dot kf-ext">EXT</span>
-          외부 서비스
+          {{ $t('nodes.external') }}
         </label>
       </div>
     </div>
@@ -96,8 +96,8 @@
             <span :class="['type-badge', item.nodeKind ?? 'server']">{{ typeLabel(item) }}</span>
           </div>
           <div v-if="!readOnly" class="card-actions">
-            <button title="수정" @click.stop="emit('edit', item)">✎</button>
-            <button title="삭제" class="danger" @click.stop="emit('delete', item)">✕</button>
+            <button :title="$t('common.edit')" @click.stop="emit('edit', item)">✎</button>
+            <button :title="$t('common.delete')" class="danger" @click.stop="emit('delete', item)">✕</button>
           </div>
         </div>
         <!-- 행2: 노드명 -->
@@ -114,8 +114,8 @@
           <circle cx="30" cy="13" r="1.5" fill="#3a3a42"/>
           <circle cx="30" cy="28" r="1.5" fill="#3a3a42"/>
         </svg>
-        <span class="empty-label">노드가 없습니다</span>
-        <span v-if="!readOnly" class="empty-hint">+ 추가 버튼으로 노드를 등록하세요</span>
+        <span class="empty-label">{{ $t('serverPanel.empty') }}</span>
+        <span v-if="!readOnly" class="empty-hint">{{ $t('serverPanel.emptyHint') }}</span>
       </li>
     </ul>
 

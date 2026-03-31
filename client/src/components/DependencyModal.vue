@@ -1,55 +1,55 @@
 <template>
   <div class="modal-backdrop" @mousedown.self="backdropDown = true" @mouseup.self="backdropDown && $emit('close')" @mouseup="backdropDown = false">
     <div class="modal">
-      <h3>{{ editingDep ? '의존성 수정' : '의존성 추가' }}</h3>
+      <h3>{{ editingDep ? t('modals.dep.editTitle') : t('modals.dep.addTitle') }}</h3>
       <form @submit.prevent="onSubmit">
         <label>
-          출발 노드 (source) *
+          {{ t('modals.dep.source') }}
           <CustomSelect
             v-model="form.source"
             :options="nodeOptions"
-            placeholder="서버 / L7 선택..."
+            :placeholder="t('modals.dep.selectNode')"
             :disabled="!!editingDep"
           />
         </label>
         <label>
-          대상 노드 (target) *
+          {{ t('modals.dep.target') }}
           <CustomSelect
             v-model="form.target"
             :options="targetOptions"
-            placeholder="서버 / L7 선택..."
+            :placeholder="t('modals.dep.selectNode')"
             :disabled="!!editingDep"
           />
         </label>
         <p v-if="form.source && form.source === form.target" class="error">
-          source와 target이 같을 수 없습니다.
+          {{ t('modals.dep.sameNodeError') }}
         </p>
         <p v-else-if="isDuplicate" class="error">
-          이미 동일한 의존성이 존재합니다.
+          {{ t('modals.dep.duplicateError') }}
         </p>
         <p v-else-if="isInfraSourceBlocked" class="error">
-          인프라 노드는 다른 노드에 대한 의존성을 가질 수 없습니다.
+          {{ t('modals.dep.infraSourceError') }}
         </p>
         <p v-else-if="isDnsTargetBlocked" class="error">
-          DNS 노드는 의존성의 대상이 될 수 없습니다.
+          {{ t('modals.dep.dnsTargetError') }}
         </p>
         <p v-else-if="isL7MemberBlocked" class="error">
-          L7 노드와 해당 그룹 멤버 서버 간에는 의존성을 추가할 수 없습니다.
+          {{ t('modals.dep.l7MemberError') }}
         </p>
         <label>
-          연결 유형
+          {{ t('modals.dep.type') }}
           <CustomSelect v-model="form.type" :options="typeOptions" />
         </label>
         <label>
-          설명
-          <input v-model="form.description" placeholder="예: REST API 호출" />
+          {{ t('modals.dep.description') }}
+          <input v-model="form.description" :placeholder="t('modals.dep.descPlaceholder')" />
         </label>
         <label class="checkbox-label">
           <input type="checkbox" v-model="form.hasFirewall" />
-          방화벽 오픈 필요
+          {{ t('modals.dep.firewall') }}
         </label>
         <label v-if="form.hasFirewall">
-          방화벽 오픈요청 URL
+          {{ t('modals.dep.firewallUrl') }}
           <input
             v-model="form.firewallUrl"
             type="url"
@@ -57,13 +57,13 @@
           />
         </label>
         <div class="actions">
-          <button type="button" class="btn-ghost" @click="$emit('close')">취소</button>
+          <button type="button" class="btn-ghost" @click="$emit('close')">{{ t('common.cancel') }}</button>
           <button
             type="submit"
             class="btn-primary"
             :disabled="!form.source || !form.target || form.source === form.target || isDuplicate || isInfraSourceBlocked || isDnsTargetBlocked || isL7MemberBlocked"
           >
-            {{ editingDep ? '저장' : '추가' }}
+            {{ editingDep ? t('common.save') : t('common.add') }}
           </button>
         </div>
       </form>
@@ -73,8 +73,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { AnyNode, Dependency, DependencyType, L7Node } from '../types'
 import CustomSelect from './CustomSelect.vue'
+
+const { t } = useI18n()
 
 const backdropDown = ref(false)
 

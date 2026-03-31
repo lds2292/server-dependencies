@@ -26,9 +26,9 @@ function formatTime(seconds: number): string {
           <div class="session-timeout-icon">
             <Icon name="warning-triangle" :size="24" />
           </div>
-          <h3 class="session-timeout-title">세션 만료 경고</h3>
+          <h3 class="session-timeout-title">{{ $t('session.warningTitle') }}</h3>
           <p class="session-timeout-desc">
-            활동이 없어 곧 자동 로그아웃됩니다.
+            {{ $t('session.warningDesc') }}
           </p>
           <div
             class="session-timeout-countdown"
@@ -38,10 +38,10 @@ function formatTime(seconds: number): string {
           </div>
           <div class="session-timeout-actions">
             <button class="btn-ghost" @click="$emit('logout')">
-              로그아웃
+              {{ $t('common.logout') }}
             </button>
             <button class="btn-primary" @click="$emit('extend')">
-              세션 연장
+              {{ $t('session.extend') }}
             </button>
           </div>
         </div>

@@ -1,22 +1,22 @@
 <template>
   <div class="modal-backdrop" @mousedown.self="backdropDown = true" @mouseup.self="backdropDown && $emit('close')" @mouseup="backdropDown = false">
     <div class="modal">
-      <h3>{{ isEdit ? '인프라 노드 수정' : '인프라 노드 추가' }}</h3>
+      <h3>{{ isEdit ? $t('modals.infra.editTitle') : $t('modals.infra.addTitle') }}</h3>
       <form @submit.prevent="onSubmit">
         <label>
-          이름 *
+          {{ $t('modals.infra.name') }}
           <input v-model="form.name" required placeholder="예: user-db-prod" :class="{ 'input-error': isDuplicate }" />
-          <span v-if="isDuplicate" class="error-msg">이미 사용 중인 이름입니다</span>
+          <span v-if="isDuplicate" class="error-msg">{{ $t('modals.server.duplicateName') }}</span>
         </label>
-        <label>인프라 유형
+        <label>{{ $t('modals.infra.type') }}
           <CustomSelect v-model="form.infraType" :options="infraTypeOptions" />
         </label>
         <label>Host<input v-model="form.host" placeholder="예: db.internal.com" /></label>
         <label>Port<input v-model="form.port" placeholder="예: 5432" /></label>
-        <label>설명<textarea v-model="form.description" rows="2" placeholder="인프라 설명..." /></label>
+        <label>{{ $t('modals.infra.description') }}<textarea v-model="form.description" rows="2" :placeholder="$t('modals.infra.descPlaceholder')" /></label>
         <div class="actions">
-          <button type="button" class="btn-ghost" @click="$emit('close')">취소</button>
-          <button type="submit" class="btn-primary" :disabled="!form.name.trim() || isDuplicate">{{ isEdit ? '저장' : '추가' }}</button>
+          <button type="button" class="btn-ghost" @click="$emit('close')">{{ $t('common.cancel') }}</button>
+          <button type="submit" class="btn-primary" :disabled="!form.name.trim() || isDuplicate">{{ isEdit ? $t('common.save') : $t('common.add') }}</button>
         </div>
       </form>
     </div>

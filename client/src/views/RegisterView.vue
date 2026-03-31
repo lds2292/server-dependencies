@@ -35,37 +35,37 @@
     <!-- 폼 카드 -->
     <div class="auth-card">
       <router-link to="/" class="auth-logo">Server Dependencies</router-link>
-      <h1 class="auth-title">회원가입</h1>
+      <h1 class="auth-title">{{ $t('auth.register.title') }}</h1>
 
       <form class="auth-form" @submit.prevent="onSubmit">
         <div class="form-group">
-          <label class="form-label">이메일</label>
+          <label class="form-label">{{ $t('auth.register.email') }}</label>
           <input v-model="form.email" type="email" class="form-input" placeholder="you@example.com" autocomplete="email" required />
         </div>
         <div class="form-group">
-          <label class="form-label">사용자명</label>
-          <input v-model="form.username" type="text" class="form-input" placeholder="표시 이름" autocomplete="username" required minlength="2" />
+          <label class="form-label">{{ $t('auth.register.username') }}</label>
+          <input v-model="form.username" type="text" class="form-input" :placeholder="$t('auth.register.usernamePlaceholder')" autocomplete="username" required minlength="2" />
         </div>
         <div class="form-group">
-          <label class="form-label">비밀번호</label>
-          <input v-model="form.password" type="password" class="form-input" placeholder="8자 이상" autocomplete="new-password" required minlength="8" />
+          <label class="form-label">{{ $t('auth.register.password') }}</label>
+          <input v-model="form.password" type="password" class="form-input" :placeholder="$t('auth.register.passwordPlaceholder')" autocomplete="new-password" required minlength="8" />
         </div>
         <div class="form-group">
-          <label class="form-label">비밀번호 확인</label>
-          <input v-model="form.confirm" type="password" class="form-input" placeholder="비밀번호 재입력" autocomplete="new-password" required />
+          <label class="form-label">{{ $t('auth.register.confirmPassword') }}</label>
+          <input v-model="form.confirm" type="password" class="form-input" :placeholder="$t('auth.register.confirmPlaceholder')" autocomplete="new-password" required />
         </div>
         <div v-if="errorMsg" class="form-error">{{ errorMsg }}</div>
         <button type="submit" class="btn-primary btn-lg btn-auth-submit" :disabled="loading">
-          {{ loading ? '가입 중...' : '회원가입' }}
+          {{ loading ? $t('auth.register.submitting') : $t('auth.register.submit') }}
         </button>
       </form>
 
-      <!-- 소셜 로그인 구분선 + Google 버튼 -->
-      <div class="auth-divider"><span>또는</span></div>
+      <!-- Social login divider + Google button -->
+      <div class="auth-divider"><span>{{ $t('auth.register.or') }}</span></div>
       <div ref="googleBtnRef" class="google-btn-container"></div>
       <div v-if="googleError" class="form-error">{{ googleError }}</div>
 
-      <p class="auth-link">이미 계정이 있으신가요? <router-link to="/login">로그인</router-link></p>
+      <p class="auth-link">{{ $t('auth.register.hasAccount') }} <router-link to="/login">{{ $t('auth.register.login') }}</router-link></p>
     </div>
   </div>
 </template>
@@ -73,9 +73,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { renderGoogleButton, isGoogleAuthAvailable } from '../utils/googleAuth'
 
+const { t } = useI18n()
 const router = useRouter()
 const auth = useAuthStore()
 
@@ -88,7 +90,7 @@ const googleError = ref('')
 async function onSubmit() {
   errorMsg.value = ''
   if (form.value.password !== form.value.confirm) {
-    errorMsg.value = '비밀번호가 일치하지 않습니다.'
+    errorMsg.value = t('auth.register.passwordMismatch')
     return
   }
   loading.value = true
@@ -98,9 +100,9 @@ async function onSubmit() {
   } catch (err: unknown) {
     const e = err as { response?: { data?: { code?: string } } }
     const code = e.response?.data?.code
-    if (code === 'EMAIL_TAKEN') errorMsg.value = '이미 사용 중인 이메일입니다.'
-    else if (code === 'USERNAME_TAKEN') errorMsg.value = '이미 사용 중인 사용자명입니다.'
-    else errorMsg.value = '회원가입 중 오류가 발생했습니다.'
+    if (code === 'EMAIL_TAKEN') errorMsg.value = t('auth.register.emailTaken')
+    else if (code === 'USERNAME_TAKEN') errorMsg.value = t('auth.register.usernameTaken')
+    else errorMsg.value = t('auth.register.error')
   } finally {
     loading.value = false
   }
@@ -115,9 +117,9 @@ async function onGoogleToken(idToken: string) {
     const e = err as { response?: { data?: { code?: string } } }
     const code = e.response?.data?.code
     if (code === 'EMAIL_NOT_VERIFIED') {
-      googleError.value = '이메일이 인증되지 않은 Google 계정입니다.'
+      googleError.value = t('auth.google.emailNotVerified')
     } else {
-      googleError.value = 'Google 인증에 실패했습니다. 다시 시도해 주세요.'
+      googleError.value = t('auth.google.error')
     }
   }
 }

@@ -2,7 +2,7 @@
   <div class="tf-modal-backdrop" @mousedown.self="backdropDown = true" @mouseup.self="backdropDown && $emit('close')" @mouseup="backdropDown = false">
     <div class="tf-modal">
       <div class="tf-modal-header">
-        <h3 class="tf-modal-title">Terraform Import <span class="tf-beta-badge">Beta</span></h3>
+        <h3 class="tf-modal-title">{{ t('terraform.title') }} <span class="tf-beta-badge">{{ t('terraform.beta') }}</span></h3>
         <button class="tf-modal-close" @click="$emit('close')">
           <Icon name="close" :size="14" />
         </button>
@@ -26,8 +26,8 @@
                 <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
             </div>
-            <div class="tf-dropzone-text">.tfstate 파일을 드래그하거나 클릭하여 선택</div>
-            <div class="tf-dropzone-hint">JSON 형식, 최대 10MB</div>
+            <div class="tf-dropzone-text">{{ t('terraform.dropzoneText') }}</div>
+            <div class="tf-dropzone-hint">{{ t('terraform.dropzoneHint') }}</div>
             <input
               ref="fileInputRef"
               type="file"
@@ -44,12 +44,8 @@
               </svg>
             </div>
             <div class="tf-privacy-content">
-              <div class="tf-privacy-title">민감 정보를 수집하지 않습니다</div>
-              <div class="tf-privacy-desc">
-                업로드된 파일은 브라우저에서만 처리되며 서버로 전송되지 않습니다.
-                서버 이름, IP, 연결 관계 등 인프라 구성 정보만 파악하여 시각화에 사용합니다.
-                비밀번호, API 키 등 민감 정보는 자동으로 감지하여 경고를 표시하며, 어떠한 데이터도 외부로 전송하거나 저장하지 않습니다.
-              </div>
+              <div class="tf-privacy-title">{{ t('terraform.privacyTitle') }}</div>
+              <div class="tf-privacy-desc">{{ t('terraform.privacyDesc') }}</div>
             </div>
           </div>
           <div v-if="error" class="tf-error">{{ error }}</div>
@@ -61,14 +57,14 @@
           <div class="tf-summary">
             <span>Terraform v{{ parseResult.terraformVersion }}</span>
             <span class="tf-summary-divider"></span>
-            <span>리소스 {{ parseResult.totalResourceCount }}개 중 {{ parseResult.nodes.length }}개 매핑</span>
+            <span>{{ t('terraform.resourceSummary', { total: parseResult.totalResourceCount, mapped: parseResult.nodes.length }) }}</span>
             <span class="tf-summary-divider"></span>
-            <span>의존성 {{ parseResult.dependencies.length }}개 추론</span>
+            <span>{{ t('terraform.depSummary', { count: parseResult.dependencies.length }) }}</span>
           </div>
 
           <!-- 경고 -->
           <div v-if="parseResult.warnings.length > 0" class="tf-warnings">
-            <div class="tf-warnings-header">경고 ({{ parseResult.warnings.length }})</div>
+            <div class="tf-warnings-header">{{ t('terraform.warnings', { count: parseResult.warnings.length }) }}</div>
             <div class="tf-warning-list">
               <div
                 v-for="(w, i) in parseResult.warnings"
@@ -82,10 +78,10 @@
           <div class="tf-section">
             <div class="tf-section-header">
               <span class="tf-section-title">
-                노드<span class="tf-section-count">({{ selectedNodeCount }}/{{ parseResult.nodes.length }})</span>
+                {{ t('terraform.nodes') }}<span class="tf-section-count">({{ selectedNodeCount }}/{{ parseResult.nodes.length }})</span>
               </span>
               <button class="tf-select-all" @click="toggleAllNodes">
-                {{ allNodesSelected ? '전체 해제' : '전체 선택' }}
+                {{ allNodesSelected ? t('terraform.deselectAll') : t('terraform.selectAll') }}
               </button>
             </div>
             <div class="tf-node-list">
@@ -107,10 +103,10 @@
           <div v-if="parseResult.dependencies.length > 0" class="tf-section">
             <div class="tf-section-header">
               <span class="tf-section-title">
-                의존성<span class="tf-section-count">({{ selectedDepCount }}/{{ parseResult.dependencies.length }})</span>
+                {{ t('terraform.dependencies') }}<span class="tf-section-count">({{ selectedDepCount }}/{{ parseResult.dependencies.length }})</span>
               </span>
               <button class="tf-select-all" @click="toggleAllDeps">
-                {{ allDepsSelected ? '전체 해제' : '전체 선택' }}
+                {{ allDepsSelected ? t('terraform.deselectAll') : t('terraform.selectAll') }}
               </button>
             </div>
             <div class="tf-node-list">
@@ -130,20 +126,20 @@
 
           <!-- 매핑 노드 0개 -->
           <div v-if="parseResult.nodes.length === 0" class="tf-empty">
-            매핑 가능한 리소스가 없습니다. 지원하는 AWS 리소스 타입을 확인하세요.
+            {{ t('terraform.noResources') }}
           </div>
         </template>
       </div>
 
       <div class="tf-modal-footer">
-        <button class="btn-ghost" @click="$emit('close')">취소</button>
+        <button class="btn-ghost" @click="$emit('close')">{{ t('common.cancel') }}</button>
         <button
           v-if="step === 'preview' && parseResult && parseResult.nodes.length > 0"
           class="btn-primary"
           :disabled="selectedNodeCount === 0"
           @click="onImport"
         >
-          가져오기 ({{ selectedNodeCount }}노드, {{ selectedDepCount }}의존성)
+          {{ t('terraform.import', { nodes: selectedNodeCount, deps: selectedDepCount }) }}
         </button>
       </div>
     </div>
@@ -152,7 +148,10 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Icon from './Icon.vue'
+
+const { t } = useI18n()
 import { parseTerraformState, nodeBadgeLabel } from '../utils/terraformParser'
 import type { TfParseResult } from '../utils/terraformParser'
 
@@ -217,7 +216,7 @@ function processFile(file: File) {
   error.value = null
 
   if (file.size > MAX_FILE_SIZE) {
-    error.value = '파일 크기가 10MB를 초과합니다'
+    error.value = t('terraform.fileTooLarge')
     return
   }
 
@@ -230,16 +229,16 @@ function processFile(file: File) {
       step.value = 'preview'
     } catch (e: unknown) {
       if (e instanceof SyntaxError) {
-        error.value = '유효한 Terraform state 파일이 아닙니다 (JSON v4 형식 필요)'
+        error.value = t('terraform.invalidFormat')
       } else if (e instanceof Error) {
-        error.value = `파일 파싱 중 오류가 발생했습니다: ${e.message}`
+        error.value = t('terraform.parseError', { message: e.message })
       } else {
-        error.value = '파일 파싱 중 알 수 없는 오류가 발생했습니다'
+        error.value = t('terraform.unknownError')
       }
     }
   }
   reader.onerror = () => {
-    error.value = '파일을 읽을 수 없습니다'
+    error.value = t('terraform.readError')
   }
   reader.readAsText(file)
 }

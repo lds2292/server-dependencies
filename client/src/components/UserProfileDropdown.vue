@@ -5,11 +5,16 @@
       <span class="user-name">{{ username }}</span>
     </button>
     <div v-if="open" class="user-dropdown-menu">
-      <button v-if="showProjectsLink" @click="goProjects">프로젝트 목록으로</button>
+      <button v-if="showProjectsLink" @click="goProjects">{{ $t('userDropdown.projectList') }}</button>
       <div v-if="showProjectsLink" class="user-dropdown-divider"></div>
-      <button @click="goAccount">내 정보 수정</button>
+      <button @click="goAccount">{{ $t('userDropdown.editProfile') }}</button>
       <div class="user-dropdown-divider"></div>
-      <button class="user-dropdown-danger" @click="emit('logout'); open = false">로그아웃</button>
+      <button @click="toggleLocale">
+        {{ currentLocale === 'ko' ? '한국어 / English' : 'English / 한국어' }}
+        <span class="locale-badge">{{ currentLocale.toUpperCase() }}</span>
+      </button>
+      <div class="user-dropdown-divider"></div>
+      <button class="user-dropdown-danger" @click="emit('logout'); open = false">{{ $t('common.logout') }}</button>
     </div>
   </div>
 </template>
@@ -18,6 +23,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { getLocale, setLocale } from '../i18n'
 
 const emit = defineEmits<{ logout: []; toggle: [] }>()
 const router = useRouter()
@@ -30,6 +36,7 @@ const wrapRef = ref<HTMLDivElement>()
 const username = computed(() => auth.user?.username ?? '')
 const initial = computed(() => username.value.charAt(0).toUpperCase())
 const showProjectsLink = computed(() => route.name !== 'projects')
+const currentLocale = computed(() => getLocale())
 
 function goProjects() {
   router.push({ name: 'projects' })
@@ -39,6 +46,10 @@ function goProjects() {
 function goAccount() {
   router.push({ name: 'account' })
   open.value = false
+}
+
+function toggleLocale() {
+  setLocale(currentLocale.value === 'ko' ? 'en' : 'ko')
 }
 
 function onClickOutside(e: MouseEvent) {
@@ -77,12 +88,19 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
 .user-dropdown-menu button {
-  display: block; width: 100%; padding: 7px 16px; background: none;
+  display: flex; width: 100%; padding: 7px 16px; background: none;
   border: none; color: var(--text-secondary); text-align: left;
   cursor: pointer; font-size: var(--text-sm); transition: background 0.1s;
+  align-items: center; justify-content: space-between; gap: 8px;
 }
 .user-dropdown-menu button:hover { background: var(--border-default); }
 .user-dropdown-danger { color: var(--color-danger) !important; }
 .user-dropdown-danger:hover { background: rgba(239, 68, 68, 0.1) !important; }
 .user-dropdown-divider { height: 1px; background: var(--border-default); margin: 3px 0; }
+.locale-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.05em;
+  padding: 1px 6px; border-radius: 4px;
+  background: var(--locale-badge-bg); color: var(--locale-badge-color);
+}
 </style>

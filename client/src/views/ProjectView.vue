@@ -23,34 +23,34 @@
     <main class="main-area">
       <div class="toolbar">
         <div class="title-group">
-          <button class="btn-ghost btn-sm" @click="router.replace({ name: 'projects' })">← 목록</button>
+          <button class="btn-ghost btn-sm" @click="router.replace({ name: 'projects' })">← {{ $t('project.toolbar.backToList') }}</button>
           <span class="app-title">{{ projectStore.currentProject?.name ?? 'Server Dependencies' }}</span>
-          <button class="btn-help" @click="showHelp = true" title="사용 방법">?</button>
+          <button class="btn-help" @click="showHelp = true" :title="$t('project.toolbar.help')">?</button>
           <div v-if="!readOnly" class="autosave-group">
             <button
               :class="['btn-outline', 'btn-sm', 'btn-save-local', { dirty: store.positionsDirty }]"
               @click="manualSave"
-              data-tooltip="위치 수동 저장"
+              :data-tooltip="$t('project.toolbar.save')"
               data-shortcut="Cmd+S"
-            >저장{{ store.positionsDirty ? ' *' : '' }}</button>
+            >{{ $t('project.toolbar.save') }}{{ store.positionsDirty ? ' *' : '' }}</button>
             <button
               class="btn-autosave"
               @click="store.setAutosaveEnabled(!store.autosaveEnabled)"
-              :data-tooltip="store.autosaveEnabled ? '자동저장 켜짐' : '자동저장 꺼짐'"
+              :data-tooltip="store.autosaveEnabled ? $t('project.toolbar.autoSaveOn') : $t('project.toolbar.autoSaveOff')"
             >
               <span :class="['autosave-dot', { active: store.autosaveEnabled }]"></span>
-              자동저장
+              {{ $t('project.toolbar.autoSave') }}
             </button>
             <CustomSelect
               v-if="store.autosaveEnabled"
               class="select-interval"
               :model-value="String(store.autosaveInterval)"
               :options="[
-                { value: '30', label: '30초' },
-                { value: '60', label: '60초' },
-                { value: '90', label: '90초' },
-                { value: '120', label: '120초' },
-                { value: '180', label: '180초' },
+                { value: '30', label: $t('interval.30') },
+                { value: '60', label: $t('interval.60') },
+                { value: '90', label: $t('interval.90') },
+                { value: '120', label: $t('interval.120') },
+                { value: '180', label: $t('interval.180') },
               ]"
               @update:model-value="store.setAutosaveInterval(Number($event))"
             />
@@ -60,10 +60,10 @@
           <button
             :class="['btn-mode-toggle', { active: readOnly }]"
             @click="projectStore.canWrite ? (readOnly = !readOnly) : null"
-            :data-tooltip="!projectStore.canWrite ? '읽기 전용 권한입니다' : readOnly ? '편집 모드로 전환' : '읽기 전용으로 전환'"
+            :data-tooltip="!projectStore.canWrite ? $t('project.toolbar.readOnlyHint') : readOnly ? $t('project.toolbar.switchToEdit') : $t('project.toolbar.switchToReadOnly')"
             data-shortcut="E"
             :disabled="!projectStore.canWrite"
-          >{{ readOnly ? '읽기 전용' : '편집' }}</button>
+          >{{ readOnly ? $t('project.toolbar.readOnly') : $t('project.toolbar.editMode') }}</button>
 
           <div v-if="projectStore.canWrite" class="toolbar-dropdown-wrap" ref="importWrapRef">
             <button class="btn-mode-toggle" @click.stop="showImportDropdown = !showImportDropdown; showSettingsDropdown = false">
@@ -77,15 +77,15 @@
           </div>
 
           <div v-if="hasSettingsItems" class="toolbar-dropdown-wrap" ref="settingsWrapRef">
-            <button class="btn-toolbar-icon" @click.stop="showSettingsDropdown = !showSettingsDropdown; showImportDropdown = false" data-tooltip="설정">
+            <button class="btn-toolbar-icon" @click.stop="showSettingsDropdown = !showSettingsDropdown; showImportDropdown = false" :data-tooltip="$t('project.toolbar.settings')">
               <Icon name="settings" :size="16" />
             </button>
             <div v-if="showSettingsDropdown" class="toolbar-dropdown">
-              <button v-if="projectStore.canAdmin" @click="router.push({ name: 'projectSettings', params: { id: projectStore.currentProject!.id } }); showSettingsDropdown = false">프로젝트 설정</button>
-              <button v-if="projectStore.canAdmin" @click="router.push({ name: 'auditLogs', params: { id: projectStore.currentProject!.id } }); showSettingsDropdown = false">감사 로그</button>
-              <button v-if="projectStore.canAdmin" @click="onOpenMembersModal(); showSettingsDropdown = false">멤버 관리</button>
+              <button v-if="projectStore.canAdmin" @click="router.push({ name: 'projectSettings', params: { id: projectStore.currentProject!.id } }); showSettingsDropdown = false">{{ $t('project.toolbar.projectSettings') }}</button>
+              <button v-if="projectStore.canAdmin" @click="router.push({ name: 'auditLogs', params: { id: projectStore.currentProject!.id } }); showSettingsDropdown = false">{{ $t('project.toolbar.auditLogs') }}</button>
+              <button v-if="projectStore.canAdmin" @click="onOpenMembersModal(); showSettingsDropdown = false">{{ $t('project.toolbar.memberManagement') }}</button>
               <div v-if="projectStore.canAdmin && projectStore.canWrite && !hasData" class="toolbar-dropdown-divider"></div>
-              <button v-if="projectStore.canWrite && !hasData" @click="onSampleClick(); showSettingsDropdown = false">샘플 데이터 불러오기</button>
+              <button v-if="projectStore.canWrite && !hasData" @click="onSampleClick(); showSettingsDropdown = false">{{ $t('project.toolbar.loadSample') }}</button>
             </div>
           </div>
 
@@ -121,11 +121,11 @@
           @link-dbl-click="onLinkDblClick"
         />
         <div v-if="!hasData && projectStore.canWrite && !readOnly" class="empty-state-cta">
-          <p class="empty-state-title">그래프가 비어 있습니다</p>
-          <p class="empty-state-desc">샘플 데이터로 시작하거나 직접 노드를 추가하세요.</p>
+          <p class="empty-state-title">{{ $t('project.emptyState.title') }}</p>
+          <p class="empty-state-desc">{{ $t('project.emptyState.desc') }}</p>
           <div class="empty-state-actions">
-            <button class="btn-outline btn-lg" @click="loadSample">샘플 데이터로 시작하기</button>
-            <button class="btn-ghost btn-lg" @click="openAddServerModal">직접 노드 추가하기</button>
+            <button class="btn-outline btn-lg" @click="loadSample">{{ $t('project.emptyState.loadSample') }}</button>
+            <button class="btn-ghost btn-lg" @click="openAddServerModal">{{ $t('project.emptyState.addNode') }}</button>
           </div>
         </div>
       </div>
@@ -157,31 +157,31 @@
       <div v-if="showShortcuts" class="shortcuts-overlay" @click.self="showShortcuts = false">
         <div class="shortcuts-modal">
           <div class="shortcuts-header">
-            <span class="shortcuts-title">키보드 단축키</span>
+            <span class="shortcuts-title">{{ $t('project.shortcuts.title') }}</span>
             <button class="shortcuts-close" @click="showShortcuts = false">
               <Icon name="close" :size="12" />
             </button>
           </div>
-          <div class="shortcuts-section-title">전역</div>
+          <div class="shortcuts-section-title">{{ $t('project.shortcuts.global') }}</div>
           <div class="shortcuts-grid">
-            <div class="shortcut-row"><kbd>Cmd+Z</kbd><span>실행 취소</span></div>
-            <div class="shortcut-row"><kbd>Cmd+Shift+Z</kbd><span>다시 실행</span></div>
-            <div class="shortcut-row"><kbd>E</kbd><span>Edit / Read Only 전환</span></div>
-            <div class="shortcut-row"><kbd>F</kbd><span>노드 트래킹 ON/OFF</span></div>
-            <div class="shortcut-row"><kbd>Delete</kbd><span>선택 노드 삭제</span></div>
-            <div class="shortcut-row"><kbd>?</kbd><span>이 창 열기/닫기</span></div>
-            <div class="shortcut-row"><kbd>Esc</kbd><span>이 창 닫기 / 선택 해제</span></div>
+            <div class="shortcut-row"><kbd>Cmd+Z</kbd><span>{{ $t('project.shortcuts.undo') }}</span></div>
+            <div class="shortcut-row"><kbd>Cmd+Shift+Z</kbd><span>{{ $t('project.shortcuts.redo') }}</span></div>
+            <div class="shortcut-row"><kbd>E</kbd><span>{{ $t('project.shortcuts.toggleEdit') }}</span></div>
+            <div class="shortcut-row"><kbd>F</kbd><span>{{ $t('project.shortcuts.tracking') }}</span></div>
+            <div class="shortcut-row"><kbd>Delete</kbd><span>{{ $t('project.shortcuts.deleteNode') }}</span></div>
+            <div class="shortcut-row"><kbd>?</kbd><span>{{ $t('project.shortcuts.openHelp') }}</span></div>
+            <div class="shortcut-row"><kbd>Esc</kbd><span>{{ $t('project.shortcuts.escape') }}</span></div>
           </div>
-          <div class="shortcuts-section-title">그래프 캔버스</div>
+          <div class="shortcuts-section-title">{{ $t('project.shortcuts.canvasTitle') }}</div>
           <div class="shortcuts-grid">
-            <div class="shortcut-row"><kbd>더블클릭</kbd><span>노드 추가 메뉴</span></div>
-            <div class="shortcut-row"><kbd>Ctrl</kbd><span>+ 드래그로 의존성 연결</span></div>
-            <div class="shortcut-row"><kbd>빈 공간 클릭</kbd><span>선택 해제</span></div>
-            <div class="shortcut-row"><kbd>우클릭</kbd><span>노드 컨텍스트 메뉴</span></div>
+            <div class="shortcut-row"><kbd>{{ $t('project.shortcuts.dblClick') }}</kbd><span>{{ $t('project.shortcuts.dblClick') }}</span></div>
+            <div class="shortcut-row"><kbd>Ctrl</kbd><span>{{ $t('project.shortcuts.ctrlDrag') }}</span></div>
+            <div class="shortcut-row"><kbd>Click</kbd><span>{{ $t('project.shortcuts.clickEmpty') }}</span></div>
+            <div class="shortcut-row"><kbd>Right-click</kbd><span>{{ $t('project.shortcuts.rightClick') }}</span></div>
           </div>
-          <div class="shortcuts-section-title">미니맵</div>
+          <div class="shortcuts-section-title">{{ $t('project.shortcuts.minimapTitle') }}</div>
           <div class="shortcuts-grid">
-            <div class="shortcut-row"><kbd>클릭 / 드래그</kbd><span>해당 위치로 이동</span></div>
+            <div class="shortcut-row"><kbd>Click / Drag</kbd><span>{{ $t('project.shortcuts.minimapClick') }}</span></div>
           </div>
         </div>
       </div>
@@ -192,7 +192,7 @@
       <div v-if="showHelp" class="shortcuts-overlay" @click.self="showHelp = false">
         <div class="help-modal">
           <div class="shortcuts-header">
-            <span class="shortcuts-title">사용 방법</span>
+            <span class="shortcuts-title">{{ $t('project.help.title') }}</span>
             <button class="shortcuts-close" @click="showHelp = false">
               <Icon name="close" :size="12" />
             </button>
@@ -200,51 +200,51 @@
 
           <div class="help-body">
             <div class="help-col">
-              <div class="shortcuts-section-title">노드 종류</div>
+              <div class="shortcuts-section-title">{{ $t('project.help.nodeTypes') }}</div>
               <div class="help-node-list">
                 <div class="help-node-item">
                   <span class="help-node-badge server">SRV</span>
                   <div>
-                    <div class="help-node-name">서버</div>
-                    <div class="help-node-desc">API, 웹, 배치 등 일반 서버</div>
+                    <div class="help-node-name">{{ $t('project.help.server') }}</div>
+                    <div class="help-node-desc">{{ $t('project.help.serverDesc') }}</div>
                   </div>
                 </div>
                 <div class="help-node-item">
                   <span class="help-node-badge l7">L7</span>
                   <div>
-                    <div class="help-node-name">L7 로드밸런서</div>
-                    <div class="help-node-desc">여러 서버를 묶는 로드밸런서</div>
+                    <div class="help-node-name">{{ $t('project.help.l7') }}</div>
+                    <div class="help-node-desc">{{ $t('project.help.l7Desc') }}</div>
                   </div>
                 </div>
                 <div class="help-node-item">
                   <span class="help-node-badge infra">DB</span>
                   <div>
-                    <div class="help-node-name">인프라</div>
-                    <div class="help-node-desc">DB, 캐시, 메시지큐 등</div>
+                    <div class="help-node-name">{{ $t('project.help.infra') }}</div>
+                    <div class="help-node-desc">{{ $t('project.help.infraDesc') }}</div>
                   </div>
                 </div>
                 <div class="help-node-item">
                   <span class="help-node-badge ext">EXT</span>
                   <div>
-                    <div class="help-node-name">외부 서비스</div>
-                    <div class="help-node-desc">외부 API, SaaS 등 외부 의존</div>
+                    <div class="help-node-name">{{ $t('project.help.external') }}</div>
+                    <div class="help-node-desc">{{ $t('project.help.externalDesc') }}</div>
                   </div>
                 </div>
               </div>
 
-              <div class="shortcuts-section-title">의존성 분석</div>
+              <div class="shortcuts-section-title">{{ $t('project.help.impactAnalysis') }}</div>
               <div class="help-desc-list">
                 <div class="help-desc-item">
                   <span class="help-dot red"></span>
-                  노드 선택 시 해당 노드에 의존하는 서버를 빨간색으로 표시 (영향 범위)
+                  {{ $t('impactPanel.incoming') }}
                 </div>
                 <div class="help-desc-item">
                   <span class="help-dot green"></span>
-                  선택 노드에서 나가는 의존성을 초록색으로 표시
+                  {{ $t('impactPanel.outgoing') }}
                 </div>
                 <div class="help-desc-item">
                   <span class="help-dot amber"></span>
-                  우클릭 > 경로 탐색으로 두 노드 간 의존 경로를 추적
+                  {{ $t('graph.contextMenu.pathFind') }}
                 </div>
               </div>
             </div>
@@ -252,33 +252,33 @@
             <div class="help-divider"></div>
 
             <div class="help-col">
-              <div class="shortcuts-section-title">그래프 조작</div>
+              <div class="shortcuts-section-title">{{ $t('project.shortcuts.canvasTitle') }}</div>
               <div class="shortcuts-grid">
-                <div class="shortcut-row"><kbd>드래그 (빈 공간)</kbd><span>다중 노드 박스 선택</span></div>
-                <div class="shortcut-row"><kbd>Space</kbd><span>+ 드래그로 캔버스 이동</span></div>
-                <div class="shortcut-row"><kbd>Ctrl</kbd><span>+ 노드 드래그로 의존성 연결</span></div>
-                <div class="shortcut-row"><kbd>더블클릭</kbd><span>빈 공간에 노드 추가</span></div>
-                <div class="shortcut-row"><kbd>우클릭</kbd><span>노드 컨텍스트 메뉴</span></div>
-                <div class="shortcut-row"><kbd>휠</kbd><span>줌 인 / 아웃</span></div>
-                <div class="shortcut-row"><kbd>미니맵 클릭</kbd><span>해당 위치로 이동</span></div>
+                <div class="shortcut-row"><kbd>Drag</kbd><span>Box select</span></div>
+                <div class="shortcut-row"><kbd>Space</kbd><span>+ drag to pan</span></div>
+                <div class="shortcut-row"><kbd>Ctrl</kbd><span>{{ $t('project.shortcuts.ctrlDrag') }}</span></div>
+                <div class="shortcut-row"><kbd>Dbl-click</kbd><span>{{ $t('project.shortcuts.dblClick') }}</span></div>
+                <div class="shortcut-row"><kbd>Right-click</kbd><span>{{ $t('project.shortcuts.rightClick') }}</span></div>
+                <div class="shortcut-row"><kbd>Wheel</kbd><span>Zoom in / out</span></div>
+                <div class="shortcut-row"><kbd>Minimap</kbd><span>{{ $t('project.shortcuts.minimapClick') }}</span></div>
               </div>
 
-              <div class="shortcuts-section-title">키보드 단축키</div>
+              <div class="shortcuts-section-title">{{ $t('project.shortcuts.title') }}</div>
               <div class="shortcuts-grid">
-                <div class="shortcut-row"><kbd>Cmd+Z</kbd><span>실행 취소 (Undo)</span></div>
-                <div class="shortcut-row"><kbd>Cmd+Shift+Z</kbd><span>다시 실행 (Redo)</span></div>
-                <div class="shortcut-row"><kbd>E</kbd><span>Edit / Read Only 전환</span></div>
-                <div class="shortcut-row"><kbd>F</kbd><span>노드 트래킹 ON / OFF</span></div>
-                <div class="shortcut-row"><kbd>Delete</kbd><span>선택 노드 삭제</span></div>
-                <div class="shortcut-row"><kbd>?</kbd><span>단축키 목록 열기</span></div>
-                <div class="shortcut-row"><kbd>Esc</kbd><span>선택 해제 / 팝업 닫기</span></div>
+                <div class="shortcut-row"><kbd>Cmd+Z</kbd><span>{{ $t('project.shortcuts.undo') }}</span></div>
+                <div class="shortcut-row"><kbd>Cmd+Shift+Z</kbd><span>{{ $t('project.shortcuts.redo') }}</span></div>
+                <div class="shortcut-row"><kbd>E</kbd><span>{{ $t('project.shortcuts.toggleEdit') }}</span></div>
+                <div class="shortcut-row"><kbd>F</kbd><span>{{ $t('project.shortcuts.tracking') }}</span></div>
+                <div class="shortcut-row"><kbd>Delete</kbd><span>{{ $t('project.shortcuts.deleteNode') }}</span></div>
+                <div class="shortcut-row"><kbd>?</kbd><span>{{ $t('project.shortcuts.openHelp') }}</span></div>
+                <div class="shortcut-row"><kbd>Esc</kbd><span>{{ $t('project.shortcuts.escape') }}</span></div>
               </div>
 
-              <div class="shortcuts-section-title">사이드바</div>
+              <div class="shortcuts-section-title">{{ $t('serverPanel.title') }}</div>
               <div class="shortcuts-grid">
-                <div class="shortcut-row"><kbd>+ 버튼</kbd><span>노드 추가</span></div>
-                <div class="shortcut-row"><kbd>JSON 내보내기</kbd><span>현재 그래프 저장</span></div>
-                <div class="shortcut-row"><kbd>JSON 불러오기</kbd><span>저장된 그래프 복원</span></div>
+                <div class="shortcut-row"><kbd>+</kbd><span>{{ $t('graph.contextMenu.addNode') }}</span></div>
+                <div class="shortcut-row"><kbd>JSON Export</kbd><span>{{ $t('graph.export.submit') }}</span></div>
+                <div class="shortcut-row"><kbd>JSON Import</kbd><span>Import</span></div>
               </div>
             </div>
           </div>
@@ -343,14 +343,14 @@
             </svg>
           </div>
           <div class="delete-dialog-body">
-            <div class="delete-dialog-title">샘플 데이터 불러오기</div>
+            <div class="delete-dialog-title">{{ $t('project.sampleConfirm.title') }}</div>
             <div class="delete-dialog-desc">
-              현재 데이터가 샘플로 교체됩니다.<br/>기존 작업 내용은 사라집니다.
+              {{ $t('project.sampleConfirm.desc') }}
             </div>
           </div>
           <div class="delete-dialog-actions">
-            <button class="btn-ghost delete-dialog-btn" @click="sampleConfirm = false">취소</button>
-            <button class="btn-outline delete-dialog-btn" @click="loadSample">불러오기</button>
+            <button class="btn-ghost delete-dialog-btn" @click="sampleConfirm = false">{{ $t('common.cancel') }}</button>
+            <button class="btn-outline delete-dialog-btn" @click="loadSample">{{ $t('project.sampleConfirm.load') }}</button>
           </div>
         </div>
       </div>
@@ -367,14 +367,14 @@
             </svg>
           </div>
           <div class="delete-dialog-body">
-            <div class="delete-dialog-title">노드 {{ deleteMultiConfirm.nodeIds.length }}개 삭제</div>
+            <div class="delete-dialog-title">{{ $t('project.deleteMulti.title', { count: deleteMultiConfirm.nodeIds.length }) }}</div>
             <div class="delete-dialog-desc">
-              선택된 <strong style="color:var(--text-primary)">{{ deleteMultiConfirm.nodeIds.length }}개</strong>의 노드를 삭제합니다.<br/>연결된 의존성도 함께 제거됩니다.
+              {{ $t('project.deleteMulti.desc', { count: deleteMultiConfirm.nodeIds.length }) }}
             </div>
           </div>
           <div class="delete-dialog-actions">
-            <button class="btn-ghost delete-dialog-btn" @click="cancelDeleteMulti">취소</button>
-            <button class="btn-danger delete-dialog-btn" @click="confirmDeleteMulti">삭제</button>
+            <button class="btn-ghost delete-dialog-btn" @click="cancelDeleteMulti">{{ $t('common.cancel') }}</button>
+            <button class="btn-danger delete-dialog-btn" @click="confirmDeleteMulti">{{ $t('common.delete') }}</button>
           </div>
         </div>
       </div>
@@ -391,16 +391,14 @@
             </svg>
           </div>
           <div class="delete-dialog-body">
-            <div class="delete-dialog-title">노드 삭제</div>
+            <div class="delete-dialog-title">{{ $t('project.deleteNode.title') }}</div>
             <div class="delete-dialog-desc">
-              <span class="delete-node-kind">{{ nodeKindLabel(deleteConfirm.node!) }}</span>
-              <span class="delete-node-name">{{ deleteConfirm.node!.name }}</span>
-              을(를) 삭제합니다.<br/>연결된 의존성도 함께 제거됩니다.
+              {{ $t('project.deleteNode.desc', { kind: nodeKindLabel(deleteConfirm.node!), name: deleteConfirm.node!.name }) }}
             </div>
           </div>
           <div class="delete-dialog-actions">
-            <button class="btn-ghost delete-dialog-btn" @click="cancelDelete">취소</button>
-            <button class="btn-danger delete-dialog-btn" @click="confirmDelete">삭제</button>
+            <button class="btn-ghost delete-dialog-btn" @click="cancelDelete">{{ $t('common.cancel') }}</button>
+            <button class="btn-danger delete-dialog-btn" @click="confirmDelete">{{ $t('common.delete') }}</button>
           </div>
         </div>
       </div>
@@ -428,12 +426,12 @@
       <div v-if="showLogoutConfirm" class="delete-overlay" @click.self="showLogoutConfirm = false">
         <div class="delete-dialog">
           <div class="delete-dialog-body">
-            <div class="delete-dialog-title">로그아웃</div>
-            <div class="delete-dialog-desc">로그아웃 하시겠습니까?</div>
+            <div class="delete-dialog-title">{{ $t('common.logout') }}</div>
+            <div class="delete-dialog-desc">{{ $t('common.logoutConfirm') }}</div>
           </div>
           <div class="delete-dialog-actions">
-            <button class="btn-ghost delete-dialog-btn" @click="showLogoutConfirm = false">취소</button>
-            <button class="btn-danger delete-dialog-btn" @click="authStore.logout()">로그아웃</button>
+            <button class="btn-ghost delete-dialog-btn" @click="showLogoutConfirm = false">{{ $t('common.cancel') }}</button>
+            <button class="btn-danger delete-dialog-btn" @click="authStore.logout()">{{ $t('common.logout') }}</button>
           </div>
         </div>
       </div>
@@ -444,7 +442,7 @@
       <div v-if="showMembersModal" class="delete-overlay" @mousedown.self="membersOverlayMousedown = true" @mouseup.self="membersOverlayMousedown && (showMembersModal = false); membersOverlayMousedown = false">
         <div class="members-modal">
           <div class="shortcuts-header">
-            <span class="shortcuts-title">멤버 관리</span>
+            <span class="shortcuts-title">{{ $t('project.toolbar.memberManagement') }}</span>
             <button class="shortcuts-close" @click="showMembersModal = false">
               <Icon name="close" :size="12" />
             </button>
@@ -463,7 +461,7 @@
               </div>
               <div class="member-actions">
                 <span v-if="member.userId === authStore.user?.id" :class="['role-badge', member.role.toLowerCase()]">
-                  {{ roleLabel(member.role) }} (나)
+                  {{ roleLabel(member.role) }}
                 </span>
                 <CustomSelect
                   v-else-if="canChangeRole(member.role)"
@@ -477,8 +475,8 @@
                   v-if="canRemoveMember(member.role, member.userId)"
                   class="btn-danger-ghost btn-sm"
                   @click="onRemoveMember(member.userId)"
-                  title="멤버 해제"
-                >해제</button>
+                  :title="$t('settings.removeMember')"
+                >{{ $t('settings.removeMember') }}</button>
               </div>
             </div>
           </div>
@@ -488,7 +486,7 @@
             <input
               v-model="addMemberIdentifier"
               class="member-input"
-              placeholder="이메일"
+              :placeholder="$t('settings.emailPlaceholder')"
               @keydown.enter="onSendInvitation"
             />
             <CustomSelect
@@ -496,20 +494,20 @@
               class="role-select"
               :options="addableRoles.map(r => ({ value: r, label: roleLabel(r) }))"
             />
-            <button class="btn-outline btn-sm" @click="onSendInvitation" :disabled="!addMemberIdentifier.trim()">초대</button>
+            <button class="btn-outline btn-sm" @click="onSendInvitation" :disabled="!addMemberIdentifier.trim()">{{ $t('settings.invite') }}</button>
           </div>
           <div v-if="memberError" class="member-error">{{ memberError }}</div>
 
           <!-- 대기 중인 초대 -->
           <div v-if="projectStore.canAdmin && projectStore.projectInvitations.length > 0" class="pending-invitations">
-            <div class="pending-invitations-title">대기 중인 초대</div>
+            <div class="pending-invitations-title">{{ $t('settings.pendingInvitations') }}</div>
             <div v-for="inv in projectStore.projectInvitations" :key="inv.id" class="pending-inv-row">
               <div class="pending-inv-info">
                 <span class="member-name">{{ inv.invitee.email }}</span>
                 <span :class="['role-badge', inv.role.toLowerCase()]">{{ roleLabel(inv.role) }}</span>
-                <span class="pending-status">대기 중</span>
+                <span class="pending-status">{{ $t('settings.pendingStatus') }}</span>
               </div>
-              <button class="btn-danger-ghost btn-sm" @click="onCancelInvitation(inv.id)" title="초대 취소">취소</button>
+              <button class="btn-danger-ghost btn-sm" @click="onCancelInvitation(inv.id)" :title="$t('settings.cancelInvite')">{{ $t('common.cancel') }}</button>
             </div>
           </div>
         </div>
@@ -534,6 +532,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useGraphStore } from '../stores/graph'
 import { useProjectStore } from '../stores/project'
@@ -558,6 +557,7 @@ import CustomSelect from '../components/CustomSelect.vue'
 import { graphApi } from '../api/graphApi'
 import type { Server, L7Node, InfraNode, ExternalServiceNode, DnsNode, AnyNode, Dependency, D3Link } from '../types'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const projectStore = useProjectStore()
@@ -663,10 +663,10 @@ function onCancelPathMode() {
 
 function applyPath(targetNode: AnyNode) {
   if (!pathSource.value) return
-  if (targetNode.nodeKind === 'l7') { showToast('L7 노드는 경로 탐색에 사용할 수 없습니다'); return }
+  if (targetNode.nodeKind === 'l7') { showToast(t('project.toast.l7PathBlocked')); return }
   const path = store.findPath(pathSource.value.id, targetNode.id)
   if (!path || path.length < 2) {
-    showToast('연결된 경로가 없습니다')
+    showToast(t('project.toast.noPath'))
     return
   }
   // 경로에 L7이 포함되면 실제 경로에 관여하는 멤버만 포함
@@ -754,10 +754,10 @@ function cancelDeleteMulti() {
 }
 
 function nodeKindLabel(node: AnyNode): string {
-  if (node.nodeKind === 'l7') return 'L7 로드밸런서'
-  if (node.nodeKind === 'infra') return '인프라'
-  if (node.nodeKind === 'external') return '외부 서비스'
-  return '서버'
+  if (node.nodeKind === 'l7') return t('nodes.l7')
+  if (node.nodeKind === 'infra') return t('nodes.infra')
+  if (node.nodeKind === 'external') return t('nodes.external')
+  return t('nodes.server')
 }
 
 // Server Modal
@@ -855,7 +855,7 @@ function resetAutosaveTimer() {
 async function manualSave() {
   if (readOnly.value) return
   await Promise.all([store.saveGraph(), store.flushPositions()])
-  showToast('저장되었습니다.', 'success')
+  showToast(t('project.toast.saved'), 'success')
 }
 
 watch([() => store.autosaveEnabled, () => store.autosaveInterval], resetAutosaveTimer)
@@ -875,7 +875,7 @@ function onAddNodeAt(nodeKind: 'server' | 'l7' | 'infra' | 'external' | 'dns') {
 
 function openAddDepModal(node?: AnyNode) {
   if (node && store.isInfraSourceDependency(node.id)) {
-    showToast('인프라 노드는 다른 노드에 대한 의존성을 가질 수 없습니다')
+    showToast(t('project.toast.infraSourceBlocked'))
     return
   }
   depModal.value = { visible: true, defaultSource: node?.id ?? '', defaultTarget: '' }
@@ -883,23 +883,23 @@ function openAddDepModal(node?: AnyNode) {
 function openEditDepModal(dep: Dependency) { depModal.value = { visible: true, defaultSource: '', defaultTarget: '', editingDep: dep } }
 function onQuickConnect(source: AnyNode, target: AnyNode) {
   if (store.isInfraSourceDependency(source.id)) {
-    showToast('인프라 노드는 다른 노드에 대한 의존성을 가질 수 없습니다')
+    showToast(t('project.toast.infraSourceBlocked'))
     return
   }
   if (store.isL7MemberDependency(source.id, target.id)) {
-    showToast('L7 노드와 그룹 멤버 서버 간에는 의존성을 추가할 수 없습니다')
+    showToast(t('project.toast.l7MemberBlocked'))
     return
   }
   const isDuplicate = store.dependencies.some(d => d.source === source.id && d.target === target.id)
   if (isDuplicate) {
-    showToast('이미 동일한 의존성이 존재합니다')
+    showToast(t('project.toast.duplicateDep'))
     return
   }
   depModal.value = { visible: true, defaultSource: source.id, defaultTarget: target.id }
 }
 function onDepModalSubmit(data: Omit<Dependency, 'id'>) {
   const result = store.addDependency(data)
-  if (!result) showToast('이미 동일한 의존성이 존재합니다')
+  if (!result) showToast(t('project.toast.duplicateDep'))
   depModal.value.visible = false
 }
 function onDepModalUpdate(id: string, data: Partial<Omit<Dependency, 'id' | 'source' | 'target'>>) {
@@ -1099,12 +1099,12 @@ function handleKeyDown(e: KeyboardEvent) {
   const meta = e.metaKey || e.ctrlKey
   if (meta && e.key === 'z' && !e.shiftKey) {
     e.preventDefault()
-    if (store.undo()) showToast('실행 취소')
+    if (store.undo()) showToast(t('project.toast.undo'))
     return
   }
   if (meta && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
     e.preventDefault()
-    if (store.redo()) showToast('다시 실행')
+    if (store.redo()) showToast(t('project.toast.redo'))
     return
   }
   if (meta && e.key === 's') {
@@ -1143,11 +1143,11 @@ const addMemberIdentifier = ref('')
 const addMemberRole = ref<ProjectMemberRole>('READONLY')
 const memberError = ref('')
 
-const ROLE_LABELS: Record<ProjectMemberRole, string> = {
-  MASTER: 'Master', ADMIN: 'Admin', WRITER: 'Writer', READONLY: 'ReadOnly',
-}
 function roleLabel(role: string): string {
-  return ROLE_LABELS[role as ProjectMemberRole] ?? role
+  const map: Record<string, string> = {
+    MASTER: t('roles.master'), ADMIN: t('roles.admin'), WRITER: t('roles.writer'), READONLY: t('roles.readonly'),
+  }
+  return map[role] ?? role
 }
 
 const ALL_ROLES: ProjectMemberRole[] = ['ADMIN', 'WRITER', 'READONLY']
@@ -1185,10 +1185,10 @@ async function onSendInvitation() {
     await projectStore.sendInvitation(projectStore.currentProject.id, addMemberIdentifier.value.trim(), addMemberRole.value)
     await projectStore.loadProjectInvitations(projectStore.currentProject.id)
     addMemberIdentifier.value = ''
-    showToast('초대가 전송되었습니다.', 'success')
+    showToast(t('project.toast.inviteSent'), 'success')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string } } }
-    memberError.value = e.response?.data?.error ?? '초대 전송에 실패했습니다.'
+    memberError.value = e.response?.data?.error ?? t('project.toast.inviteFailed')
   }
 }
 
@@ -1197,10 +1197,10 @@ async function onCancelInvitation(invId: string) {
   memberError.value = ''
   try {
     await projectStore.cancelInvitation(projectStore.currentProject.id, invId)
-    showToast('초대가 취소되었습니다.', 'success')
+    showToast(t('project.toast.inviteCancelled'), 'success')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string } } }
-    memberError.value = e.response?.data?.error ?? '초대 취소에 실패했습니다.'
+    memberError.value = e.response?.data?.error ?? t('project.toast.inviteCancelFailed')
   }
 }
 
@@ -1209,10 +1209,10 @@ async function onRemoveMember(targetUserId: string) {
   memberError.value = ''
   try {
     await projectStore.removeMember(projectStore.currentProject.id, targetUserId)
-    showToast('멤버가 제거되었습니다.', 'success')
+    showToast(t('project.toast.memberRemoved'), 'success')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string } } }
-    memberError.value = e.response?.data?.error ?? '멤버 제거에 실패했습니다.'
+    memberError.value = e.response?.data?.error ?? t('project.toast.memberRemoveFailed')
   }
 }
 
@@ -1221,10 +1221,10 @@ async function onChangeRole(targetUserId: string, newRole: string) {
   memberError.value = ''
   try {
     await projectStore.updateMemberRole(projectStore.currentProject.id, targetUserId, newRole as ProjectMemberRole)
-    showToast('역할이 변경되었습니다.', 'success')
+    showToast(t('project.toast.roleChanged'), 'success')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string } } }
-    memberError.value = e.response?.data?.error ?? '역할 변경에 실패했습니다.'
+    memberError.value = e.response?.data?.error ?? t('project.toast.roleChangeFailed')
   }
 }
 

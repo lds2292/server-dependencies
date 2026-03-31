@@ -23,10 +23,10 @@
         </div>
 
         <div class="header-actions">
-          <router-link to="/guide" class="nav-link">가이드</router-link>
-          <router-link to="/login" class="nav-login">로그인</router-link>
+          <router-link to="/guide" class="nav-link">{{ $t('hero.nav.guide') }}</router-link>
+          <router-link to="/login" class="nav-login">{{ $t('hero.nav.login') }}</router-link>
           <transition name="fade">
-            <router-link v-if="showHeaderCta" to="/register" class="btn-primary btn-sm">시작하기</router-link>
+            <router-link v-if="showHeaderCta" to="/register" class="btn-primary btn-sm">{{ $t('hero.nav.start') }}</router-link>
           </transition>
         </div>
       </div>
@@ -44,12 +44,12 @@
         <div class="hero-content" :class="{ 'is-visible': isVisible }">
           <div class="hero-badge">
             <span class="badge-dot"></span>
-            서버 의존성 시각화 플랫폼
+            {{ $t('hero.badge') }}
           </div>
 
-          <h1 class="hero-title">서버 의존성을<br/>한눈에 파악하세요</h1>
+          <h1 class="hero-title" v-html="$t('hero.title').replace('\\n', '<br/>')"></h1>
 
-          <p class="hero-desc">서버, 로드밸런서, 인프라, 외부 서비스 간의 의존 관계를 시각화하고 팀과 함께 관리하는 협업 도구</p>
+          <p class="hero-desc">{{ $t('hero.desc') }}</p>
 
           <div class="hero-features">
             <div class="feature-item">
@@ -59,8 +59,8 @@
                 </svg>
               </span>
               <div class="feature-text">
-                <span class="feature-label">의존성 시각화</span>
-                <span class="feature-sub">서버, L7, 인프라, 외부 서비스 간의 관계를 그래프로 표현</span>
+                <span class="feature-label">{{ $t('hero.feature1.label') }}</span>
+                <span class="feature-sub">{{ $t('hero.feature1.sub') }}</span>
               </div>
             </div>
             <div class="feature-item">
@@ -70,8 +70,8 @@
                 </svg>
               </span>
               <div class="feature-text">
-                <span class="feature-label">영향 범위 분석</span>
-                <span class="feature-sub">순환 의존성 자동 탐지 및 경로 분석 제공</span>
+                <span class="feature-label">{{ $t('hero.feature2.label') }}</span>
+                <span class="feature-sub">{{ $t('hero.feature2.sub') }}</span>
               </div>
             </div>
             <div class="feature-item">
@@ -81,20 +81,20 @@
                 </svg>
               </span>
               <div class="feature-text">
-                <span class="feature-label">팀 협업</span>
-                <span class="feature-sub">프로젝트 단위로 팀원을 초대하고 함께 관리</span>
+                <span class="feature-label">{{ $t('hero.feature3.label') }}</span>
+                <span class="feature-sub">{{ $t('hero.feature3.sub') }}</span>
               </div>
             </div>
           </div>
 
           <div class="hero-actions" ref="heroActionsRef">
             <router-link to="/register" class="hero-cta-primary">
-              무료로 시작하기
+              {{ $t('hero.cta') }}
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </router-link>
-            <router-link to="/login" class="hero-cta-secondary">로그인</router-link>
+            <router-link to="/login" class="hero-cta-secondary">{{ $t('hero.nav.login') }}</router-link>
           </div>
 
           <!-- Security section -->
@@ -110,15 +110,15 @@
             <div class="security-list">
               <div class="security-item">
                 <span class="security-dot"></span>
-                서버 IP, 호스트 등 민감한 인프라 정보 암호화 저장
+                {{ $t('hero.security.item1') }}
               </div>
               <div class="security-item">
                 <span class="security-dot"></span>
-                회원 정보 암호화 및 외부 비노출
+                {{ $t('hero.security.item2') }}
               </div>
               <div class="security-item">
                 <span class="security-dot"></span>
-                담당자 연락처 마스킹 및 본인 확인 열람
+                {{ $t('hero.security.item3') }}
               </div>
             </div>
           </div>
@@ -166,7 +166,7 @@
                 <!-- Cycle badge -->
                 <div class="canvas-cycle-badge">
                   <span class="cycle-dot"></span>
-                  순환 의존성 감지됨
+                  {{ $t('graph.cycleBadge') }}
                 </div>
 
                 <!-- SVG Graph -->
@@ -273,8 +273,8 @@
     <!-- Features Section (preserved) -->
     <section id="features" class="features-section">
       <div class="features-header">
-        <h2 class="features-title">팀의 인프라를 더 스마트하게</h2>
-        <p class="features-subtitle">복잡한 서버 구조를 그래프로 시각화하고, 변경의 영향을 즉시 파악하세요</p>
+        <h2 class="features-title">{{ $t('hero.features.title') }}</h2>
+        <p class="features-subtitle">{{ $t('hero.features.subtitle') }}</p>
       </div>
       <div class="features-grid">
         <div class="feature-card">
@@ -287,12 +287,10 @@
               <line x1="17.5" y1="10" x2="12.5" y2="14" stroke="#5b8def" stroke-width="1.5"/>
             </svg>
           </div>
-          <h3 class="feature-card-title">의존성 그래프 시각화</h3>
-          <p class="feature-card-desc">서버, L7, 인프라, 외부 서비스를 노드로 표현하고 의존 관계를 직관적인 그래프로 확인합니다.</p>
+          <h3 class="feature-card-title">{{ $t('hero.features.card1.title') }}</h3>
+          <p class="feature-card-desc">{{ $t('hero.features.card1.desc') }}</p>
           <ul class="feature-card-list">
-            <li>서버 / L7 / 인프라 / 외부 서비스 노드 타입</li>
-            <li>방향성 엣지로 호출 방향 표현</li>
-            <li>노드 클릭으로 상세 정보 확인</li>
+            <li v-for="(item, i) in ($tm('hero.features.card1.items') as string[])" :key="i">{{ item }}</li>
           </ul>
         </div>
 
@@ -304,12 +302,10 @@
               <circle cx="12" cy="12" r="10.5" stroke="#fb923c" stroke-width="1.2" stroke-dasharray="2 3" opacity="0.35"/>
             </svg>
           </div>
-          <h3 class="feature-card-title">영향 범위 분석</h3>
-          <p class="feature-card-desc">특정 노드에 장애나 변경이 발생했을 때 영향을 받는 서비스를 즉시 파악합니다.</p>
+          <h3 class="feature-card-title">{{ $t('hero.features.card2.title') }}</h3>
+          <p class="feature-card-desc">{{ $t('hero.features.card2.desc') }}</p>
           <ul class="feature-card-list">
-            <li>upstream / downstream 영향 노드 강조</li>
-            <li>순환 의존성 자동 탐지 및 경고</li>
-            <li>두 노드 간 경로 탐색</li>
+            <li v-for="(item, i) in ($tm('hero.features.card2.items') as string[])" :key="i">{{ item }}</li>
           </ul>
         </div>
 
@@ -323,12 +319,10 @@
               <line x1="14.5" y1="9.5" x2="14" y2="14" stroke="#4ade80" stroke-width="1.5" opacity="0.7"/>
             </svg>
           </div>
-          <h3 class="feature-card-title">팀 협업</h3>
-          <p class="feature-card-desc">프로젝트 단위로 팀원을 초대하고 함께 의존성 맵을 관리합니다.</p>
+          <h3 class="feature-card-title">{{ $t('hero.features.card3.title') }}</h3>
+          <p class="feature-card-desc">{{ $t('hero.features.card3.desc') }}</p>
           <ul class="feature-card-list">
-            <li>멤버 초대 및 역할 관리</li>
-            <li>담당자 정보 및 연락처 관리</li>
-            <li>변경 이력 추적</li>
+            <li v-for="(item, i) in ($tm('hero.features.card3.items') as string[])" :key="i">{{ item }}</li>
           </ul>
         </div>
 
@@ -344,12 +338,10 @@
               <line x1="12" y1="12" x2="12" y2="15" stroke="#b494f7" stroke-width="1.5"/>
             </svg>
           </div>
-          <h3 class="feature-card-title">다양한 노드 상세 정보</h3>
-          <p class="feature-card-desc">각 노드에 IP, 포트, 설명, 담당자, 태그 등 풍부한 메타데이터를 기록합니다.</p>
+          <h3 class="feature-card-title">{{ $t('hero.features.card4.title') }}</h3>
+          <p class="feature-card-desc">{{ $t('hero.features.card4.desc') }}</p>
           <ul class="feature-card-list">
-            <li>서버 다중 IP 및 포트 관리</li>
-            <li>L7 라우팅 규칙 기록</li>
-            <li>외부 서비스 엔드포인트 관리</li>
+            <li v-for="(item, i) in ($tm('hero.features.card4.items') as string[])" :key="i">{{ item }}</li>
           </ul>
         </div>
 
@@ -360,12 +352,10 @@
               <line x1="3" y1="20" x2="21" y2="20" stroke="#3ec6d6" stroke-width="1.3" opacity="0.4"/>
             </svg>
           </div>
-          <h3 class="feature-card-title">그래프 편집 및 관리</h3>
-          <p class="feature-card-desc">드래그 앤 드롭으로 직관적으로 그래프를 구성하고, 실행 취소/다시 실행을 지원합니다.</p>
+          <h3 class="feature-card-title">{{ $t('hero.features.card5.title') }}</h3>
+          <p class="feature-card-desc">{{ $t('hero.features.card5.desc') }}</p>
           <ul class="feature-card-list">
-            <li>Undo / Redo (Cmd+Z / Cmd+Shift+Z)</li>
-            <li>PNG / JSON 내보내기</li>
-            <li>우클릭 컨텍스트 메뉴</li>
+            <li v-for="(item, i) in ($tm('hero.features.card5.items') as string[])" :key="i">{{ item }}</li>
           </ul>
         </div>
 
@@ -376,21 +366,19 @@
               <path d="M9 12L10.8 13.8L15 9" stroke="#34d399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <h3 class="feature-card-title">보안 중심 설계</h3>
-          <p class="feature-card-desc">인프라 민감 정보를 암호화하여 저장하고 안전하게 관리합니다.</p>
+          <h3 class="feature-card-title">{{ $t('hero.features.card6.title') }}</h3>
+          <p class="feature-card-desc">{{ $t('hero.features.card6.desc') }}</p>
           <ul class="feature-card-list">
-            <li>서버 IP / 호스트 암호화 저장</li>
-            <li>연락처 마스킹 및 본인 확인 열람</li>
-            <li>감사 로그 기록</li>
+            <li v-for="(item, i) in ($tm('hero.features.card6.items') as string[])" :key="i">{{ item }}</li>
           </ul>
         </div>
       </div>
 
       <div class="features-cta">
-        <p class="features-cta-text">지금 바로 팀의 인프라를 시각화해보세요</p>
+        <p class="features-cta-text">{{ $t('hero.features.ctaText') }}</p>
         <div class="features-cta-actions">
-          <router-link to="/register" class="btn-primary btn-lg">무료로 시작하기</router-link>
-          <router-link to="/login" class="btn-ghost btn-lg">로그인</router-link>
+          <router-link to="/register" class="btn-primary btn-lg">{{ $t('hero.cta') }}</router-link>
+          <router-link to="/login" class="btn-ghost btn-lg">{{ $t('hero.nav.login') }}</router-link>
         </div>
       </div>
     </section>

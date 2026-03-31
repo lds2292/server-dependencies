@@ -25,9 +25,9 @@
         </div>
 
         <div class="header-actions">
-          <router-link to="/guide" class="nav-link active">가이드</router-link>
-          <router-link to="/login" class="nav-login">로그인</router-link>
-          <router-link to="/register" class="btn-primary btn-sm">시작하기</router-link>
+          <router-link to="/guide" class="nav-link active">{{ $t('guide.nav.guide') }}</router-link>
+          <router-link to="/login" class="nav-login">{{ $t('guide.nav.login') }}</router-link>
+          <router-link to="/register" class="btn-primary btn-sm">{{ $t('guide.nav.start') }}</router-link>
         </div>
       </div>
     </header>
@@ -37,9 +37,9 @@
       <div class="blueprint-bg"></div>
       <div class="guide-hero-glow"></div>
       <div class="guide-hero-inner">
-        <span class="guide-badge">PRODUCT GUIDE</span>
-        <h1 class="guide-hero-title">Server Dependencies 시작 가이드</h1>
-        <p class="guide-hero-subtitle">프로젝트 생성부터 영향도 분석까지, 5분이면 충분합니다</p>
+        <span class="guide-badge">{{ $t('guide.hero.badge') }}</span>
+        <h1 class="guide-hero-title">{{ $t('guide.hero.title') }}</h1>
+        <p class="guide-hero-subtitle">{{ $t('guide.hero.subtitle') }}</p>
       </div>
     </section>
 
@@ -368,10 +368,10 @@
 
     <!-- CTA -->
     <section class="guide-cta">
-      <h2 class="guide-cta-title">지금 바로 시작하세요</h2>
-      <p class="guide-cta-subtitle">복잡한 인프라도 한눈에 파악할 수 있습니다</p>
+      <h2 class="guide-cta-title">{{ $t('guide.cta.title') }}</h2>
+      <p class="guide-cta-subtitle">{{ $t('guide.cta.subtitle') }}</p>
       <div class="guide-cta-actions">
-        <router-link to="/register" class="btn-primary btn-lg">무료로 시작하기</router-link>
+        <router-link to="/register" class="btn-primary btn-lg">{{ $t('guide.cta.start') }}</router-link>
         <router-link to="/login" class="btn-ghost btn-lg">로그인</router-link>
       </div>
     </section>
@@ -379,7 +379,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { tm } = useI18n()
 
 const guidePageRef = ref<HTMLElement | null>(null)
 const sectionRefs = ref<HTMLElement[]>([])
@@ -393,70 +396,17 @@ interface GuideSection {
   highlights: string[]
 }
 
-const sections: GuideSection[] = [
-  {
-    number: '01',
-    title: '프로젝트를 만드세요',
-    description: '팀의 인프라 토폴로지를 프로젝트 단위로 관리합니다. 프로젝트마다 독립적인 그래프와 멤버를 설정할 수 있습니다.',
-    highlights: [
-      '프로젝트별 독립적인 의존성 그래프',
-      '팀원 초대 및 역할 기반 권한 관리',
-      '모든 변경 이력 감사 로그 추적',
-    ],
-  },
-  {
-    number: '02',
-    title: '노드를 추가하세요',
-    description: '5가지 타입의 노드로 인프라의 모든 구성 요소를 표현합니다. 각 노드에 IP, 포트, 담당자 등 상세 정보를 기록할 수 있습니다.',
-    highlights: [
-      'Server: 애플리케이션 서버, 웹 서버',
-      'L7: HTTP 로드밸런서, 리버스 프록시',
-      'Infra: 데이터베이스, 캐시, 메시지 큐',
-      'External: 외부 API, SaaS 서비스',
-      'DNS: 도메인 네임 서버',
-    ],
-  },
-  {
-    number: '03',
-    title: '의존성을 연결하세요',
-    description: '노드 사이의 호출 관계를 방향성 엣지로 표현합니다. 드래그로 직관적으로 연결하고, 연결 설명을 추가할 수 있습니다.',
-    highlights: [
-      '드래그 앤 드롭으로 노드 간 연결',
-      '엣지에 설명(description) 추가 가능',
-      'L7 노드는 멤버 서버를 자동으로 그룹핑',
-    ],
-  },
-  {
-    number: '04',
-    title: '영향 범위를 분석하세요',
-    description: '특정 노드를 선택하면 장애나 변경이 전파되는 범위를 즉시 확인할 수 있습니다. upstream과 downstream을 한눈에 파악합니다.',
-    highlights: [
-      '선택 노드에서 upstream/downstream 자동 탐색',
-      '영향받는 노드 강조, 비영향 노드 흐림 처리',
-      '영향도 깊이(depth)별 시각적 구분',
-    ],
-  },
-  {
-    number: '05',
-    title: '경로를 탐색하고 순환을 감지하세요',
-    description: '두 노드 사이의 모든 경로를 찾고, 순환 의존성이 있으면 자동으로 경고합니다.',
-    highlights: [
-      '출발/도착 노드 지정으로 경로 탐색',
-      '발견된 경로를 색상으로 강조',
-      '순환 의존성 자동 탐지 및 경고 배지',
-    ],
-  },
-  {
-    number: '06',
-    title: '팀과 함께 관리하세요',
-    description: '프로젝트에 팀원을 초대하고 역할을 부여합니다. 완성된 그래프는 이미지나 데이터로 내보낼 수 있습니다.',
-    highlights: [
-      'Master / Admin / Writer / Readonly 역할 체계',
-      '낙관적 잠금으로 동시 편집 충돌 방지',
-      'PNG 이미지 및 SVG 벡터 내보내기',
-    ],
-  },
-]
+const SECTION_NUMBERS = ['01', '02', '03', '04', '05', '06']
+
+const sections = computed<GuideSection[]>(() => {
+  const raw = tm('guide.sections') as Array<{ title: string; description: string; highlights: string[] }>
+  return raw.map((s, i) => ({
+    number: SECTION_NUMBERS[i],
+    title: s.title,
+    description: s.description,
+    highlights: s.highlights as unknown as string[],
+  }))
+})
 
 let sectionObserver: IntersectionObserver | null = null
 

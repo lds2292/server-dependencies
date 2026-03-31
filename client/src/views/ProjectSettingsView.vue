@@ -3,9 +3,9 @@
     <div class="settings-topbar">
       <button class="back-btn" @click="router.push({ name: 'projects' })">
         <Icon name="chevron-left" :size="16" />
-        돌아가기
+        {{ t('common.back') }}
       </button>
-      <span class="topbar-title">프로젝트 설정</span>
+      <span class="topbar-title">{{ t('settings.topbarTitle') }}</span>
       <span class="topbar-sep">&gt;</span>
       <span class="topbar-project">{{ projectStore.currentProject?.name }}</span>
       <span class="topbar-spacer"></span>
@@ -36,18 +36,18 @@
         <section class="settings-section">
           <h2 class="section-title">
             <Icon name="project-info" :size="13" class="section-icon" />
-            프로젝트 정보
+            {{ t('settings.projectInfo') }}
           </h2>
           <div class="form-group">
-            <label class="form-label">이름</label>
+            <label class="form-label">{{ t('settings.name') }}</label>
             <input v-model="editName" class="form-input" maxlength="100" />
           </div>
           <div class="form-group">
-            <label class="form-label">설명</label>
-            <textarea v-model="editDescription" class="form-input form-textarea" rows="3" placeholder="프로젝트 설명 (선택)" />
+            <label class="form-label">{{ t('settings.description') }}</label>
+            <textarea v-model="editDescription" class="form-input form-textarea" rows="3" :placeholder="t('settings.descPlaceholder')" />
           </div>
           <button class="btn-outline btn-sm" @click="onSaveInfo" :disabled="savingInfo || !editName.trim()">
-            {{ savingInfo ? '저장 중...' : '저장' }}
+            {{ savingInfo ? t('common.saving') : t('common.save') }}
           </button>
         </section>
 
@@ -55,7 +55,7 @@
         <section class="settings-section">
           <h2 class="section-title">
             <Icon name="members" :size="13" class="section-icon" />
-            멤버 관리
+            {{ t('settings.memberManagement') }}
           </h2>
           <div class="members-list">
             <div v-for="member in projectStore.currentProject?.members" :key="member.userId" class="member-row">
@@ -65,7 +65,7 @@
               </div>
               <div class="member-actions">
                 <span v-if="member.userId === authStore.user?.id" :class="['role-badge', member.role.toLowerCase()]">
-                  {{ roleLabel(member.role) }} (나)
+                  {{ roleLabel(member.role) }} {{ t('settings.roleSuffix') }}
                 </span>
                 <CustomSelect
                   v-else-if="canChangeRole(member.role)"
@@ -79,8 +79,8 @@
                   v-if="canRemoveMember(member.role, member.userId)"
                   class="btn-danger-ghost btn-sm"
                   @click="onRemoveMember(member.userId)"
-                  title="멤버 해제"
-                >해제</button>
+                  :title="t('settings.removeMember')"
+                >{{ t('settings.removeMember') }}</button>
               </div>
             </div>
           </div>
@@ -89,7 +89,7 @@
             <input
               v-model="addMemberIdentifier"
               class="form-input member-input"
-              placeholder="이메일"
+              :placeholder="t('settings.emailPlaceholder')"
               @keydown.enter="onSendInvitation"
             />
             <CustomSelect
@@ -97,19 +97,19 @@
               class="role-select"
               :options="addableRoles.map(r => ({ value: r, label: roleLabel(r) }))"
             />
-            <button class="btn-outline btn-sm" @click="onSendInvitation" :disabled="!addMemberIdentifier.trim()">초대</button>
+            <button class="btn-outline btn-sm" @click="onSendInvitation" :disabled="!addMemberIdentifier.trim()">{{ t('settings.invite') }}</button>
           </div>
           <div v-if="memberError" class="member-error">{{ memberError }}</div>
 
           <div v-if="projectStore.canAdmin && projectStore.projectInvitations.length > 0" class="pending-invitations">
-            <div class="pending-invitations-title">대기 중인 초대</div>
+            <div class="pending-invitations-title">{{ t('settings.pendingInvitations') }}</div>
             <div v-for="inv in projectStore.projectInvitations" :key="inv.id" class="pending-inv-row">
               <div class="pending-inv-info">
                 <span class="member-name">{{ inv.invitee.email }}</span>
                 <span :class="['role-badge', inv.role.toLowerCase()]">{{ roleLabel(inv.role) }}</span>
-                <span class="pending-status">대기 중</span>
+                <span class="pending-status">{{ t('settings.pendingStatus') }}</span>
               </div>
-              <button class="btn-danger-ghost btn-sm" @click="onCancelInvitation(inv.id)" title="초대 취소">취소</button>
+              <button class="btn-danger-ghost btn-sm" @click="onCancelInvitation(inv.id)" :title="t('settings.cancelInvite')">{{ t('common.cancel') }}</button>
             </div>
           </div>
         </section>
@@ -118,27 +118,27 @@
         <section v-if="projectStore.isMaster" class="settings-section danger-zone">
           <h2 class="section-title danger-title">
             <Icon name="warning-triangle-alt" :size="13" class="section-icon" />
-            위험 영역
+            {{ t('settings.dangerZone') }}
           </h2>
           <div class="danger-item">
             <div class="danger-desc">
-              <span class="danger-label">마스터 권한 위임</span>
-              <span class="danger-hint">다른 멤버에게 마스터 권한을 이전합니다. 기존 마스터는 Admin으로 변경됩니다.</span>
+              <span class="danger-label">{{ t('settings.transferOwnership') }}</span>
+              <span class="danger-hint">{{ t('settings.transferDesc') }}</span>
             </div>
             <button
               class="btn-danger"
               @click="showTransferConfirm = true"
               :disabled="transferableMembers.length === 0"
-              :title="transferableMembers.length === 0 ? '위임할 멤버가 없습니다.' : ''"
-            >권한 위임</button>
+              :title="transferableMembers.length === 0 ? t('settings.transferNoMembers') : ''"
+            >{{ t('settings.transferButton') }}</button>
           </div>
           <div class="danger-divider"></div>
           <div class="danger-item">
             <div class="danger-desc">
-              <span class="danger-label">프로젝트 삭제</span>
-              <span class="danger-hint">프로젝트와 모든 그래프 데이터가 영구적으로 삭제됩니다.</span>
+              <span class="danger-label">{{ t('settings.deleteProject') }}</span>
+              <span class="danger-hint">{{ t('settings.deleteProjectDesc') }}</span>
             </div>
-            <button class="btn-danger" @click="showDeleteConfirm = true">프로젝트 삭제</button>
+            <button class="btn-danger" @click="showDeleteConfirm = true">{{ t('settings.deleteProject') }}</button>
           </div>
         </section>
 
@@ -156,23 +156,20 @@
             </svg>
           </div>
           <div class="delete-dialog-body">
-            <div class="delete-dialog-title">프로젝트 삭제</div>
-            <div class="delete-dialog-desc">
-              삭제하려면 프로젝트 이름 <strong style="color:var(--text-primary)">{{ projectStore.currentProject?.name }}</strong>을 입력하세요.<br/>
-              모든 그래프 데이터가 영구적으로 삭제됩니다.
-            </div>
+            <div class="delete-dialog-title">{{ t('settings.deleteModal.title') }}</div>
+            <div class="delete-dialog-desc" v-html="t('settings.deleteModal.desc', { name: projectStore.currentProject?.name })"></div>
           </div>
           <input
             v-model="deleteConfirmInput"
             class="delete-name-input"
-            placeholder="프로젝트 이름 입력"
+            :placeholder="t('settings.deleteModal.placeholder')"
             @keydown.enter="deleteConfirmInput === projectStore.currentProject?.name && !deleting && onDeleteProject()"
           />
           <div class="delete-dialog-actions">
-            <button class="btn-ghost delete-dialog-btn" @click="showDeleteConfirm = false; deleteConfirmInput = ''">취소</button>
+            <button class="btn-ghost delete-dialog-btn" @click="showDeleteConfirm = false; deleteConfirmInput = ''">{{ t('common.cancel') }}</button>
             <button class="btn-danger delete-dialog-btn" @click="onDeleteProject"
               :disabled="deleting || deleteConfirmInput !== projectStore.currentProject?.name">
-              {{ deleting ? '삭제 중...' : '삭제' }}
+              {{ deleting ? t('common.deleting') : t('common.delete') }}
             </button>
           </div>
         </div>
@@ -190,39 +187,36 @@
             </svg>
           </div>
           <div class="delete-dialog-body">
-            <div class="delete-dialog-title">마스터 권한 위임</div>
-            <div class="delete-dialog-desc">
-              선택한 멤버에게 마스터 권한이 이전됩니다.<br/>
-              현재 권한은 Admin으로 변경됩니다.
-            </div>
+            <div class="delete-dialog-title">{{ t('settings.transferModal.title') }}</div>
+            <div class="delete-dialog-desc">{{ t('settings.transferModal.desc') }}</div>
           </div>
           <div class="transfer-field">
-            <label class="transfer-field-label">위임 대상</label>
+            <label class="transfer-field-label">{{ t('settings.transferModal.target') }}</label>
             <CustomSelect
               v-model="transferTargetUserId"
               class="transfer-select"
-              placeholder="멤버 선택"
+              :placeholder="t('settings.transferModal.selectMember')"
               :options="transferableMembers.map(m => ({ value: m.userId, label: `${m.user.username} (${m.user.email})` }))"
             />
           </div>
           <div class="transfer-field">
-            <label class="transfer-field-label">비밀번호 확인</label>
+            <label class="transfer-field-label">{{ t('settings.transferModal.password') }}</label>
             <input
               v-model="transferPassword"
               type="password"
               class="form-input"
-              placeholder="비밀번호 입력"
+              :placeholder="t('settings.transferModal.passwordPlaceholder')"
               @keydown.enter="onTransferOwnership"
             />
           </div>
           <div v-if="transferError" class="transfer-error">{{ transferError }}</div>
           <div class="delete-dialog-actions">
-            <button class="btn-ghost delete-dialog-btn" @click="closeTransferModal">취소</button>
+            <button class="btn-ghost delete-dialog-btn" @click="closeTransferModal">{{ t('common.cancel') }}</button>
             <button
               class="btn-outline delete-dialog-btn"
               @click="onTransferOwnership"
               :disabled="transferring || !transferTargetUserId || !transferPassword"
-            >{{ transferring ? '위임 중...' : '위임 확인' }}</button>
+            >{{ transferring ? t('settings.transferModal.submitting') : t('settings.transferModal.submit') }}</button>
           </div>
         </div>
       </div>
@@ -237,11 +231,11 @@
     <transition name="fade">
       <div v-if="showLogoutConfirm" class="modal-overlay" @click.self="showLogoutConfirm = false">
         <div class="modal-card" style="max-width:340px">
-          <h2 class="modal-title">로그아웃</h2>
-          <p style="font-size: var(--text-sm);color:var(--text-tertiary);margin:0 0 20px">로그아웃 하시겠습니까?</p>
+          <h2 class="modal-title">{{ t('common.logout') }}</h2>
+          <p style="font-size: var(--text-sm);color:var(--text-tertiary);margin:0 0 20px">{{ t('common.logoutConfirm') }}</p>
           <div class="modal-actions">
-            <button type="button" class="btn-ghost" @click="showLogoutConfirm = false">취소</button>
-            <button type="button" class="btn-danger" @click="onLogout">로그아웃</button>
+            <button type="button" class="btn-ghost" @click="showLogoutConfirm = false">{{ t('common.cancel') }}</button>
+            <button type="button" class="btn-danger" @click="onLogout">{{ t('common.logout') }}</button>
           </div>
         </div>
       </div>
@@ -251,6 +245,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '../stores/project'
 import { useAuthStore } from '../stores/auth'
@@ -259,6 +254,7 @@ import UserProfileDropdown from '../components/UserProfileDropdown.vue'
 import Icon from '../components/Icon.vue'
 import CustomSelect from '../components/CustomSelect.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const projectStore = useProjectStore()
@@ -295,9 +291,9 @@ async function onSaveInfo() {
       name: editName.value.trim(),
       description: editDescription.value.trim() || undefined,
     })
-    showToast('저장되었습니다.', 'success')
+    showToast(t('settings.toast.saved'), 'success')
   } catch {
-    showToast('저장에 실패했습니다.')
+    showToast(t('settings.toast.saveFailed'))
   } finally {
     savingInfo.value = false
   }
@@ -308,11 +304,12 @@ const addMemberIdentifier = ref('')
 const addMemberRole = ref<ProjectMemberRole>('READONLY')
 const memberError = ref('')
 
-const ROLE_LABELS: Record<ProjectMemberRole, string> = {
-  MASTER: 'Master', ADMIN: 'Admin', WRITER: 'Writer', READONLY: 'ReadOnly',
+const ROLE_LABEL_KEYS: Record<ProjectMemberRole, string> = {
+  MASTER: 'roles.master', ADMIN: 'roles.admin', WRITER: 'roles.writer', READONLY: 'roles.readonly',
 }
 function roleLabel(role: string): string {
-  return ROLE_LABELS[role as ProjectMemberRole] ?? role
+  const key = ROLE_LABEL_KEYS[role as ProjectMemberRole]
+  return key ? t(key) : role
 }
 
 const ALL_ROLES: ProjectMemberRole[] = ['ADMIN', 'WRITER', 'READONLY']
@@ -346,10 +343,10 @@ async function onSendInvitation() {
     await projectStore.sendInvitation(projectId, addMemberIdentifier.value.trim(), addMemberRole.value)
     await projectStore.loadProjectInvitations(projectId)
     addMemberIdentifier.value = ''
-    showToast('초대가 전송되었습니다.', 'success')
+    showToast(t('settings.toast.inviteSent'), 'success')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string } } }
-    memberError.value = e.response?.data?.error ?? '초대 전송에 실패했습니다.'
+    memberError.value = e.response?.data?.error ?? t('settings.toast.inviteFailed')
   }
 }
 
@@ -357,10 +354,10 @@ async function onCancelInvitation(invId: string) {
   memberError.value = ''
   try {
     await projectStore.cancelInvitation(projectId, invId)
-    showToast('초대가 취소되었습니다.', 'success')
+    showToast(t('settings.toast.inviteCancelled'), 'success')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string } } }
-    memberError.value = e.response?.data?.error ?? '초대 취소에 실패했습니다.'
+    memberError.value = e.response?.data?.error ?? t('settings.toast.inviteCancelFailed')
   }
 }
 
@@ -368,10 +365,10 @@ async function onRemoveMember(targetUserId: string) {
   memberError.value = ''
   try {
     await projectStore.removeMember(projectId, targetUserId)
-    showToast('멤버가 제거되었습니다.', 'success')
+    showToast(t('settings.toast.memberRemoved'), 'success')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string } } }
-    memberError.value = e.response?.data?.error ?? '멤버 제거에 실패했습니다.'
+    memberError.value = e.response?.data?.error ?? t('settings.toast.memberRemoveFailed')
   }
 }
 
@@ -379,10 +376,10 @@ async function onChangeRole(targetUserId: string, newRole: string) {
   memberError.value = ''
   try {
     await projectStore.updateMemberRole(projectId, targetUserId, newRole as ProjectMemberRole)
-    showToast('역할이 변경되었습니다.', 'success')
+    showToast(t('settings.toast.roleChanged'), 'success')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string } } }
-    memberError.value = e.response?.data?.error ?? '역할 변경에 실패했습니다.'
+    memberError.value = e.response?.data?.error ?? t('settings.toast.roleChangeFailed')
   }
 }
 
@@ -412,14 +409,14 @@ async function onTransferOwnership() {
   try {
     await projectStore.transferOwnership(projectId, transferTargetUserId.value, transferPassword.value)
     closeTransferModal()
-    showToast('마스터 권한이 위임되었습니다.', 'success')
+    showToast(t('settings.toast.transferred'), 'success')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string; code?: string } } }
     if (e.response?.data?.code === 'INVALID_CREDENTIALS') {
-      transferError.value = '비밀번호가 올바르지 않습니다.'
+      transferError.value = t('settings.toast.transferPasswordError')
     } else {
       closeTransferModal()
-      showToast(e.response?.data?.error ?? '권한 위임에 실패했습니다.')
+      showToast(e.response?.data?.error ?? t('settings.toast.transferFailed'))
     }
   } finally {
     transferring.value = false
@@ -438,7 +435,7 @@ async function onDeleteProject() {
     await projectStore.deleteProject(projectId)
     router.push({ name: 'projects' })
   } catch {
-    showToast('프로젝트 삭제에 실패했습니다.')
+    showToast(t('settings.toast.deleteFailed'))
     deleting.value = false
   }
 }

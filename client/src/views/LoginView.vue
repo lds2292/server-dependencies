@@ -35,29 +35,29 @@
     <!-- 폼 카드 -->
     <div class="auth-card">
       <router-link to="/" class="auth-logo">Server Dependencies</router-link>
-      <h1 class="auth-title">로그인</h1>
+      <h1 class="auth-title">{{ $t('auth.login.title') }}</h1>
 
       <form class="auth-form" @submit.prevent="onSubmit">
         <div class="form-group">
-          <label class="form-label">이메일</label>
+          <label class="form-label">{{ $t('auth.login.email') }}</label>
           <input v-model="form.email" type="email" class="form-input" placeholder="you@example.com" autocomplete="email" required />
         </div>
         <div class="form-group">
-          <label class="form-label">비밀번호</label>
-          <input v-model="form.password" type="password" class="form-input" placeholder="비밀번호 입력" autocomplete="current-password" required />
+          <label class="form-label">{{ $t('auth.login.password') }}</label>
+          <input v-model="form.password" type="password" class="form-input" :placeholder="$t('auth.login.passwordPlaceholder')" autocomplete="current-password" required />
         </div>
         <div v-if="errorMsg" class="form-error">{{ errorMsg }}</div>
         <button type="submit" class="btn-primary btn-lg btn-auth-submit" :disabled="loading">
-          {{ loading ? '로그인 중...' : '로그인' }}
+          {{ loading ? $t('auth.login.submitting') : $t('auth.login.submit') }}
         </button>
       </form>
 
-      <!-- 소셜 로그인 구분선 + Google 버튼 -->
-      <div class="auth-divider"><span>또는</span></div>
+      <!-- Social login divider + Google button -->
+      <div class="auth-divider"><span>{{ $t('auth.login.or') }}</span></div>
       <div ref="googleBtnRef" class="google-btn-container"></div>
       <div v-if="googleError" class="form-error">{{ googleError }}</div>
 
-      <p class="auth-link">계정이 없으신가요? <router-link to="/register">회원가입</router-link></p>
+      <p class="auth-link">{{ $t('auth.login.noAccount') }} <router-link to="/register">{{ $t('auth.login.register') }}</router-link></p>
     </div>
   </div>
 </template>
@@ -65,9 +65,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { renderGoogleButton, isGoogleAuthAvailable } from '../utils/googleAuth'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
@@ -88,9 +90,9 @@ async function onSubmit() {
   } catch (err: unknown) {
     const e = err as { response?: { data?: { code?: string } } }
     if (e.response?.data?.code === 'INVALID_CREDENTIALS') {
-      errorMsg.value = '이메일 또는 비밀번호가 올바르지 않습니다.'
+      errorMsg.value = t('auth.login.invalidCredentials')
     } else {
-      errorMsg.value = '로그인 중 오류가 발생했습니다.'
+      errorMsg.value = t('auth.login.error')
     }
   } finally {
     loading.value = false
@@ -107,9 +109,9 @@ async function onGoogleToken(idToken: string) {
     const e = err as { response?: { data?: { code?: string } } }
     const code = e.response?.data?.code
     if (code === 'EMAIL_NOT_VERIFIED') {
-      googleError.value = '이메일이 인증되지 않은 Google 계정입니다.'
+      googleError.value = t('auth.google.emailNotVerified')
     } else {
-      googleError.value = 'Google 인증에 실패했습니다. 다시 시도해 주세요.'
+      googleError.value = t('auth.google.error')
     }
   }
 }

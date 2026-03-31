@@ -1,44 +1,44 @@
 <template>
   <div class="modal-backdrop" @mousedown.self="backdropDown = true" @mouseup.self="backdropDown && $emit('close')" @mouseup="backdropDown = false">
     <div class="modal">
-      <h3>{{ isEdit ? '서버 수정' : '서버 추가' }}</h3>
+      <h3>{{ isEdit ? $t('modals.server.editTitle') : $t('modals.server.addTitle') }}</h3>
       <form @submit.prevent="onSubmit">
         <label>
-          이름 *
+          {{ $t('modals.server.name') }}
           <input v-model="form.name" required placeholder="예: auth-service" :class="{ 'input-error': isDuplicate }" />
-          <span v-if="isDuplicate" class="error-msg">이미 사용 중인 이름입니다</span>
+          <span v-if="isDuplicate" class="error-msg">{{ $t('modals.server.duplicateName') }}</span>
         </label>
         <label>
-          팀
+          {{ $t('modals.server.team') }}
           <CustomCombobox
             v-model="form.team"
             :suggestions="teams"
-            placeholder="팀 이름 입력 또는 선택"
+            :placeholder="$t('modals.server.teamPlaceholder')"
           />
         </label>
         <div class="ip-section">
-          <span class="ip-section-label">내부 IP</span>
+          <span class="ip-section-label">{{ $t('modals.server.internalIp') }}</span>
           <div v-for="(_, i) in form.internalIps" :key="i" class="ip-row">
             <IpInput v-model="form.internalIps[i]" />
             <button type="button" class="btn-ip-remove" @click="form.internalIps.splice(i, 1)">✕</button>
           </div>
-          <button type="button" class="btn-ip-add" @click="form.internalIps.push('')">+ 추가</button>
+          <button type="button" class="btn-ip-add" @click="form.internalIps.push('')">+ {{ $t('common.add') }}</button>
         </div>
         <div class="ip-section">
-          <span class="ip-section-label">NAT IP</span>
+          <span class="ip-section-label">{{ $t('modals.server.natIp') }}</span>
           <div v-for="(_, i) in form.natIps" :key="i" class="ip-row">
             <IpInput v-model="form.natIps[i]" />
             <button type="button" class="btn-ip-remove" @click="form.natIps.splice(i, 1)">✕</button>
           </div>
-          <button type="button" class="btn-ip-add" @click="form.natIps.push('')">+ 추가</button>
+          <button type="button" class="btn-ip-add" @click="form.natIps.push('')">+ {{ $t('common.add') }}</button>
         </div>
         <label>
-          설명
-          <textarea v-model="form.description" rows="3" placeholder="서버 설명..." />
+          {{ $t('modals.server.description') }}
+          <textarea v-model="form.description" rows="3" :placeholder="$t('modals.server.descPlaceholder')" />
         </label>
         <div class="actions">
-          <button type="button" class="btn-ghost" @click="$emit('close')">취소</button>
-          <button type="submit" class="btn-primary" :disabled="isDuplicate">{{ isEdit ? '저장' : '추가' }}</button>
+          <button type="button" class="btn-ghost" @click="$emit('close')">{{ $t('common.cancel') }}</button>
+          <button type="submit" class="btn-primary" :disabled="isDuplicate">{{ isEdit ? $t('common.save') : $t('common.add') }}</button>
         </div>
       </form>
     </div>

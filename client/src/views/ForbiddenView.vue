@@ -6,9 +6,9 @@
         <line x1="14" y1="14" x2="34" y2="34" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
         <line x1="34" y1="14" x2="14" y2="34" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
       </svg>
-      <div class="forbidden-title">접근 권한이 없습니다</div>
-      <div class="forbidden-desc">이 프로젝트에 접근할 권한이 없습니다.<br/>프로젝트 소유자에게 초대를 요청하세요.</div>
-      <button class="btn-ghost btn-lg forbidden-btn" @click="router.push({ name: 'projects' })">프로젝트 목록으로</button>
+      <div class="forbidden-title">{{ $t('forbidden.title') }}</div>
+      <div class="forbidden-desc">{{ $t('forbidden.desc') }}</div>
+      <button class="btn-ghost btn-lg forbidden-btn" @click="router.push({ name: 'projects' })">{{ $t('forbidden.backToList') }}</button>
     </div>
   </div>
 </template>

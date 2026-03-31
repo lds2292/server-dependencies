@@ -9,22 +9,22 @@
 
         <!-- 서버 전용 -->
         <template v-if="!selectedNode.nodeKind || selectedNode.nodeKind === 'server'">
-          <p class="detail-row">팀: {{ (selectedNode as any).team || '-' }}</p>
+          <p class="detail-row">{{ t('impactPanel.team') }}: {{ (selectedNode as any).team || '-' }}</p>
           <div class="ip-group">
-            <span class="ip-label">내부 IP</span>
+            <span class="ip-label">{{ t('impactPanel.internalIp') }}</span>
             <div v-for="ip in (selectedNode as any).internalIps" :key="ip" class="ip-row">
               <span class="detail-row mono ip-chip">{{ ip }}</span>
-              <button class="btn-copy" @click="copyText(ip)" :title="'복사'" type="button">
+              <button class="btn-copy" @click="copyText(ip)" :title="t('common.copied')" type="button">
                 <Icon name="copy" :size="11" />
               </button>
             </div>
             <span v-if="!(selectedNode as any).internalIps?.length" class="detail-row mono">-</span>
           </div>
           <div class="ip-group">
-            <span class="ip-label">NAT IP</span>
+            <span class="ip-label">{{ t('impactPanel.natIp') }}</span>
             <div v-for="ip in (selectedNode as any).natIps" :key="ip" class="ip-row">
               <span class="detail-row mono ip-chip">{{ ip }}</span>
-              <button class="btn-copy" @click="copyText(ip)" :title="'복사'" type="button">
+              <button class="btn-copy" @click="copyText(ip)" :title="t('common.copied')" type="button">
                 <Icon name="copy" :size="11" />
               </button>
             </div>
@@ -36,13 +36,13 @@
         <template v-else-if="selectedNode.nodeKind === 'l7'">
           <div v-if="(selectedNode as any).ip" class="ip-row">
             <span class="detail-row mono">IP: {{ (selectedNode as any).ip }}</span>
-            <button class="btn-copy" @click="copyText((selectedNode as any).ip)" title="복사" type="button">
+            <button class="btn-copy" @click="copyText((selectedNode as any).ip)" :title="t('common.copied')" type="button">
               <Icon name="copy" :size="11" />
             </button>
           </div>
           <div v-if="(selectedNode as any).natIp" class="ip-row">
             <span class="detail-row mono">NAT IP: {{ (selectedNode as any).natIp }}</span>
-            <button class="btn-copy" @click="copyText((selectedNode as any).natIp)" title="복사" type="button">
+            <button class="btn-copy" @click="copyText((selectedNode as any).natIp)" :title="t('common.copied')" type="button">
               <Icon name="copy" :size="11" />
             </button>
           </div>
@@ -50,10 +50,10 @@
 
         <!-- DB 전용 -->
         <template v-else-if="selectedNode.nodeKind === 'infra'">
-          <p class="detail-row">유형: {{ (selectedNode as any).infraType || '-' }}</p>
+          <p class="detail-row">{{ t('impactPanel.infraType') }}: {{ (selectedNode as any).infraType || '-' }}</p>
           <div v-if="(selectedNode as any).host" class="ip-row">
             <span class="detail-row mono">{{ (selectedNode as any).host }}{{ (selectedNode as any).port ? ':' + (selectedNode as any).port : '' }}</span>
-            <button class="btn-copy" @click="copyText((selectedNode as any).host + ((selectedNode as any).port ? ':' + (selectedNode as any).port : ''))" title="복사" type="button">
+            <button class="btn-copy" @click="copyText((selectedNode as any).host + ((selectedNode as any).port ? ':' + (selectedNode as any).port : ''))" :title="t('common.copied')" type="button">
               <Icon name="copy" :size="11" />
             </button>
           </div>
@@ -62,59 +62,59 @@
         <!-- 외부서비스 전용 -->
         <template v-else-if="selectedNode.nodeKind === 'external'">
           <p v-if="(selectedNode as any).hasFirewall" class="detail-firewall">
-            🔒 방화벽 오픈 필요
-            <a v-if="(selectedNode as any).firewallUrl" :href="(selectedNode as any).firewallUrl" target="_blank" class="fw-link">요청 링크</a>
+            {{ t('impactPanel.firewallRequired') }}
+            <a v-if="(selectedNode as any).firewallUrl" :href="(selectedNode as any).firewallUrl" target="_blank" class="fw-link">{{ t('impactPanel.firewallLink') }}</a>
           </p>
-          <p v-if="(selectedNode as any).hasWhitelist" class="detail-firewall">📋 화이트리스트 요청 필요</p>
+          <p v-if="(selectedNode as any).hasWhitelist" class="detail-firewall">{{ t('impactPanel.whitelistRequired') }}</p>
         </template>
 
         <!-- DNS 전용 -->
         <template v-else-if="selectedNode.nodeKind === 'dns'">
-          <p class="detail-row">레코드 타입: {{ (selectedNode as any).dnsType || '-' }}</p>
-          <p class="detail-row">레코드 값: {{ (selectedNode as any).recordValue || '-' }}</p>
+          <p class="detail-row">{{ t('impactPanel.dnsRecordType') }}: {{ (selectedNode as any).dnsType || '-' }}</p>
+          <p class="detail-row">{{ t('impactPanel.dnsRecordValue') }}: {{ (selectedNode as any).recordValue || '-' }}</p>
           <p class="detail-row">TTL: {{ (selectedNode as any).ttl ? (selectedNode as any).ttl + 's' : '-' }}</p>
-          <p class="detail-row">관리: {{ (selectedNode as any).provider || '-' }}</p>
+          <p class="detail-row">{{ t('impactPanel.dnsProvider') }}: {{ (selectedNode as any).provider || '-' }}</p>
         </template>
 
       </div>
 
       <!-- 설명 -->
       <div v-if="selectedNode.description" class="section">
-        <h4>설명</h4>
+        <h4>{{ t('impactPanel.description') }}</h4>
         <p class="desc-text">{{ selectedNode.description }}</p>
       </div>
 
       <!-- L7 구성 서버 -->
       <div v-if="selectedNode.nodeKind === 'l7'" class="section">
-        <h4>구성 서버 <span class="count">{{ memberServers.length }}</span></h4>
+        <h4>{{ t('impactPanel.memberServers') }} <span class="count">{{ memberServers.length }}</span></h4>
         <ul>
           <li v-for="s in memberServers" :key="s.id" class="nav-item" @click="$emit('navigateTo', s.id)">
             {{ s.name }}
             <span class="sub-text">{{ s.team }}</span>
           </li>
-          <li v-if="memberServers.length === 0" class="empty">없음</li>
+          <li v-if="memberServers.length === 0" class="empty">{{ t('common.none') }}</li>
         </ul>
       </div>
 
       <!-- 외부서비스 담당자 -->
       <div v-if="selectedNode.nodeKind === 'external' && (selectedNode as any).contacts?.length" class="section">
         <div class="section-header">
-          <h4>담당자 <span class="count">{{ (selectedNode as any).contacts.length }}</span></h4>
-          <button v-if="!unmaskedContacts" class="btn-unmask" @click="showPasswordModal = true">마스킹 해제</button>
-          <span v-else class="unmask-badge">해제됨</span>
+          <h4>{{ t('impactPanel.contacts') }} <span class="count">{{ (selectedNode as any).contacts.length }}</span></h4>
+          <button v-if="!unmaskedContacts" class="btn-unmask" @click="showPasswordModal = true">{{ t('impactPanel.unmask') }}</button>
+          <span v-else class="unmask-badge">{{ t('impactPanel.unmasked') }}</span>
         </div>
         <ul>
           <li v-for="(c, i) in (unmaskedContacts ?? (selectedNode as any).contacts)" :key="i" class="contact-li">
             <span class="contact-name">{{ c.name }}</span>
             <div v-if="c.phone" class="contact-copy-row">
               <span class="contact-info">{{ unmaskedContacts ? formatPhone(c.phone) : c.phone }}</span>
-              <button v-if="unmaskedContacts" class="btn-copy" @click="copyText(c.phone)" title="복사" type="button">
+              <button v-if="unmaskedContacts" class="btn-copy" @click="copyText(c.phone)" :title="t('common.copied')" type="button">
                 <Icon name="copy" :size="11" />
               </button>
             </div>
             <div v-if="c.email" class="contact-copy-row">
               <span class="contact-info">{{ c.email }}</span>
-              <button v-if="unmaskedContacts" class="btn-copy" @click="copyText(c.email!)" title="복사" type="button">
+              <button v-if="unmaskedContacts" class="btn-copy" @click="copyText(c.email!)" :title="t('common.copied')" type="button">
                 <Icon name="copy" :size="11" />
               </button>
             </div>
@@ -126,15 +126,15 @@
       <Teleport to="body">
         <div v-if="showPasswordModal" class="mask-modal-backdrop" @click.self="closePasswordModal">
           <div class="mask-modal">
-            <h4>비밀번호 확인</h4>
-            <p class="mask-modal-desc">개인정보 확인을 위해 비밀번호를 입력해주세요.</p>
+            <h4>{{ t('impactPanel.passwordConfirm') }}</h4>
+            <p class="mask-modal-desc">{{ t('impactPanel.passwordConfirmDesc') }}</p>
             <input type="password" v-model="passwordInput" class="mask-modal-input"
-              placeholder="비밀번호" @keyup.enter="onUnmask" autofocus />
+              :placeholder="t('auth.login.password')" @keyup.enter="onUnmask" autofocus />
             <span v-if="verifyError" class="verify-error">{{ verifyError }}</span>
             <div class="mask-modal-actions">
-              <button class="btn-ghost" @click="closePasswordModal">취소</button>
+              <button class="btn-ghost" @click="closePasswordModal">{{ t('common.cancel') }}</button>
               <button class="btn-primary" @click="onUnmask" :disabled="verifyLoading || !passwordInput">
-                {{ verifyLoading ? '확인 중...' : '확인' }}
+                {{ verifyLoading ? t('impactPanel.verifying') : t('common.confirm') }}
               </button>
             </div>
           </div>
@@ -143,55 +143,55 @@
 
       <!-- 의존 관계 -->
       <div class="section">
-        <h4>의존하는 노드 <span class="count">{{ outgoing.length }}</span></h4>
+        <h4>{{ t('impactPanel.outgoing') }} <span class="count">{{ outgoing.length }}</span></h4>
         <ul>
           <li v-for="d in outgoing" :key="d.id" class="nav-item" @click="$emit('navigateTo', d.target)">
             <span :class="['dep-type', d.type]">{{ d.type }}</span>
             {{ getNodeName(d.target) }}
-            <a v-if="d.hasFirewall && d.firewallUrl" :href="d.firewallUrl" target="_blank" class="fw-badge" @click.stop title="방화벽 오픈 필요">FW</a>
-            <span v-else-if="d.hasFirewall" class="fw-badge no-link" title="방화벽 오픈 필요">FW</span>
-            <button v-if="!readOnly" class="edit-dep" @click.stop="$emit('editDependency', d)" title="수정">✎</button>
+            <a v-if="d.hasFirewall && d.firewallUrl" :href="d.firewallUrl" target="_blank" class="fw-badge" @click.stop :title="t('impactPanel.firewallRequired')">FW</a>
+            <span v-else-if="d.hasFirewall" class="fw-badge no-link" :title="t('impactPanel.firewallRequired')">FW</span>
+            <button v-if="!readOnly" class="edit-dep" @click.stop="$emit('editDependency', d)" :title="t('common.edit')">✎</button>
             <button v-if="!readOnly" class="del-dep" @click.stop="$emit('removeDependency', d.id)">✕</button>
           </li>
-          <li v-if="outgoing.length === 0" class="empty">없음</li>
+          <li v-if="outgoing.length === 0" class="empty">{{ t('common.none') }}</li>
         </ul>
       </div>
 
       <div class="section">
-        <h4>의존받는 노드 <span class="count">{{ incoming.length }}</span></h4>
+        <h4>{{ t('impactPanel.incoming') }} <span class="count">{{ incoming.length }}</span></h4>
         <ul>
           <li v-for="d in incoming" :key="d.id" class="nav-item" @click="$emit('navigateTo', d.source)">
             <span :class="['dep-type', d.type]">{{ d.type }}</span>
             {{ getNodeName(d.source) }}
-            <a v-if="d.hasFirewall && d.firewallUrl" :href="d.firewallUrl" target="_blank" class="fw-badge" @click.stop title="방화벽 오픈 필요">FW</a>
-            <span v-else-if="d.hasFirewall" class="fw-badge no-link" title="방화벽 오픈 필요">FW</span>
-            <button v-if="!readOnly" class="edit-dep" @click.stop="$emit('editDependency', d)" title="수정">✎</button>
+            <a v-if="d.hasFirewall && d.firewallUrl" :href="d.firewallUrl" target="_blank" class="fw-badge" @click.stop :title="t('impactPanel.firewallRequired')">FW</a>
+            <span v-else-if="d.hasFirewall" class="fw-badge no-link" :title="t('impactPanel.firewallRequired')">FW</span>
+            <button v-if="!readOnly" class="edit-dep" @click.stop="$emit('editDependency', d)" :title="t('common.edit')">✎</button>
             <button v-if="!readOnly" class="del-dep" @click.stop="$emit('removeDependency', d.id)">✕</button>
           </li>
-          <li v-if="incoming.length === 0" class="empty">없음</li>
+          <li v-if="incoming.length === 0" class="empty">{{ t('common.none') }}</li>
         </ul>
       </div>
 
       <div class="section">
-        <h4>장애 영향 범위 <span class="count impact">{{ impactedList.length }}</span></h4>
-        <p class="impact-desc">이 노드 장애 시 영향받는 노드</p>
+        <h4>{{ t('impactPanel.impactScope') }} <span class="count impact">{{ impactedList.length }}</span></h4>
+        <p class="impact-desc">{{ t('impactPanel.impactDesc') }}</p>
         <ul>
           <li v-for="n in impactedList" :key="n.id" class="impact-item nav-item" @click="$emit('navigateTo', n.id)">
             <span :class="['type-badge', n.nodeKind ?? 'server']">{{ typeLabel(n) }}</span>
             {{ n.name }}
           </li>
-          <li v-if="impactedList.length === 0" class="empty">영향 없음</li>
+          <li v-if="impactedList.length === 0" class="empty">{{ t('impactPanel.noImpact') }}</li>
         </ul>
       </div>
 
       <div class="panel-actions">
-        <button v-if="!readOnly" class="btn-dep" @click="$emit('addDependency', selectedNode)">+ 의존성 추가</button>
-        <button class="btn-clear" @click="$emit('clearSelection')">선택 해제</button>
+        <button v-if="!readOnly" class="btn-dep" @click="$emit('addDependency', selectedNode)">{{ t('impactPanel.addDependency') }}</button>
+        <button class="btn-clear" @click="$emit('clearSelection')">{{ t('impactPanel.clearSelection') }}</button>
       </div>
     </template>
 
     <div v-else class="no-selection">
-      <p>노드를 클릭하면<br />상세 정보가 표시됩니다</p>
+      <p>{{ t('impactPanel.noSelection') }}</p>
     </div>
 
     <transition name="copy-fade">
@@ -202,10 +202,13 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Server, AnyNode, Dependency, ExternalContact } from '../types'
 import { projectApi } from '../api/projectApi'
 import { formatPhone } from '../composables/useContactValidation'
 import Icon from './Icon.vue'
+
+const { t } = useI18n()
 
 function typeLabel(node: AnyNode): string {
   if (node.nodeKind === 'l7') return 'L7'
@@ -234,7 +237,7 @@ let copyToastTimer: ReturnType<typeof setTimeout> | null = null
 
 function copyText(value: string) {
   navigator.clipboard.writeText(value).then(() => {
-    copyToast.value = '복사됨'
+    copyToast.value = t('common.copied')
     if (copyToastTimer) clearTimeout(copyToastTimer)
     copyToastTimer = setTimeout(() => { copyToast.value = '' }, 1500)
   })
@@ -264,7 +267,7 @@ async function onUnmask() {
     passwordInput.value = ''
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string } } }
-    verifyError.value = e.response?.data?.error ?? '비밀번호가 올바르지 않습니다.'
+    verifyError.value = e.response?.data?.error ?? t('account.toast.passwordInvalid')
   } finally {
     verifyLoading.value = false
   }
@@ -290,7 +293,8 @@ const memberServers = computed<Server[]>(() => {
 function getNodeName(id: string) {
   const n = props.allNodes.find(n => n.id === id)
   if (!n) return id
-  const prefix = n.nodeKind === 'l7' ? '[L7] ' : n.nodeKind === 'infra' ? '[INFRA] ' : n.nodeKind === 'external' ? '[EXT] ' : n.nodeKind === 'dns' ? '[DNS] ' : ''
+  const prefixKey = n.nodeKind && n.nodeKind !== 'server' ? `impactPanel.nodePrefix.${n.nodeKind}` : ''
+  const prefix = prefixKey ? t(prefixKey) : ''
   return prefix + n.name
 }
 </script>

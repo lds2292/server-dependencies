@@ -35,7 +35,7 @@
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M7 1L8.5 5H13L9.5 7.5L11 11.5L7 9L3 11.5L4.5 7.5L1 5H5.5L7 1Z" stroke="#f97316" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
           </svg>
-          대기 중인 초대 {{ projectStore.myInvitations.length }}건
+          {{ $t('projects.invitations.title', { count: projectStore.myInvitations.length }) }}
         </div>
         <div class="invitations-list">
           <div
@@ -45,11 +45,11 @@
           >
             <div class="invitation-info">
               <span class="invitation-project">{{ inv.project.name }}</span>
-              <span class="invitation-meta">{{ inv.inviter.username }} 님이 초대 · {{ roleLabel(inv.role) }}</span>
+              <span class="invitation-meta">{{ $t('projects.invitations.invitedBy', { username: inv.inviter.username }) }} · {{ roleLabel(inv.role) }}</span>
             </div>
             <div class="invitation-actions">
-              <button class="btn-primary btn-sm" @click="onAcceptInvitation(inv.id)">수락</button>
-              <button class="btn-ghost btn-sm btn-reject" @click="onRejectInvitation(inv.id)">거절</button>
+              <button class="btn-primary btn-sm" @click="onAcceptInvitation(inv.id)">{{ $t('projects.invitations.accept') }}</button>
+              <button class="btn-ghost btn-sm btn-reject" @click="onRejectInvitation(inv.id)">{{ $t('projects.invitations.reject') }}</button>
             </div>
           </div>
         </div>
@@ -58,8 +58,8 @@
 
     <div class="projects-body">
       <div class="projects-top">
-        <h1 class="projects-title">프로젝트</h1>
-        <button class="btn-outline btn-sm" @click="showCreate = true">+ 새 프로젝트</button>
+        <h1 class="projects-title">{{ $t('projects.title') }}</h1>
+        <button class="btn-outline btn-sm" @click="showCreate = true">{{ $t('projects.newProject') }}</button>
       </div>
 
       <div v-if="loading" class="projects-grid">
@@ -89,14 +89,14 @@
           <line x1="54" y1="50" x2="44" y2="43" stroke="#2a2a30" stroke-width="1.2"/>
           <circle cx="36" cy="36" r="3" fill="#3a3a42"/>
         </svg>
-        <p class="empty-title">아직 프로젝트가 없습니다</p>
-        <p class="empty-desc">팀과 함께 서버 의존성을 시각화해보세요</p>
-        <button class="btn-outline btn-sm" @click="showCreate = true">첫 번째 프로젝트 만들기</button>
+        <p class="empty-title">{{ $t('projects.empty.title') }}</p>
+        <p class="empty-desc">{{ $t('projects.empty.desc') }}</p>
+        <button class="btn-outline btn-sm" @click="showCreate = true">{{ $t('projects.empty.create') }}</button>
       </div>
 
       <template v-else>
         <div class="section-group">
-          <h2 class="section-header">내 프로젝트 ({{ myProjects.length }})</h2>
+          <h2 class="section-header">{{ $t('projects.myProjects', { count: myProjects.length }) }}</h2>
           <div v-if="myProjects.length > 0" class="projects-grid">
             <div
               v-for="project in myProjects"
@@ -132,7 +132,7 @@
                     v-if="isAdminOf(project)"
                     class="btn-card-settings"
                     @click.stop="router.push({ name: 'projectSettings', params: { id: project.id } })"
-                    title="프로젝트 설정"
+                    :title="$t('projects.projectSettings')"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                       <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
@@ -143,20 +143,20 @@
                 <p v-if="project.description" class="project-desc">{{ project.description }}</p>
                 <div class="project-meta">
                   <span :class="['role-badge', myRoleIn(project).toLowerCase()]">{{ roleLabel(myRoleIn(project)) }}</span>
-                  <span class="project-members">멤버 {{ project.members.length }}명</span>
+                  <span class="project-members">{{ $t('projects.members', { count: project.members.length }) }}</span>
                   <span class="project-date">{{ formatDate(project.updatedAt) }}</span>
                 </div>
               </div>
             </div>
           </div>
           <div v-else class="section-empty">
-            <p class="section-empty-text">아직 직접 만든 프로젝트가 없습니다</p>
-            <button class="btn-outline btn-sm" @click="showCreate = true">첫 번째 프로젝트 만들기</button>
+            <p class="section-empty-text">{{ $t('projects.myProjectsEmpty') }}</p>
+            <button class="btn-outline btn-sm" @click="showCreate = true">{{ $t('projects.empty.create') }}</button>
           </div>
         </div>
 
         <div v-if="sharedProjects.length > 0" class="section-group">
-          <h2 class="section-header">공유받은 프로젝트 ({{ sharedProjects.length }})</h2>
+          <h2 class="section-header">{{ $t('projects.sharedProjects', { count: sharedProjects.length }) }}</h2>
           <div class="projects-grid">
             <div
               v-for="project in sharedProjects"
@@ -192,7 +192,7 @@
                     v-if="isAdminOf(project)"
                     class="btn-card-settings"
                     @click.stop="router.push({ name: 'projectSettings', params: { id: project.id } })"
-                    title="프로젝트 설정"
+                    :title="$t('projects.projectSettings')"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                       <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
@@ -204,7 +204,7 @@
                 <div class="project-meta">
                   <span :class="['role-badge', myRoleIn(project).toLowerCase()]">{{ roleLabel(myRoleIn(project)) }}</span>
                   <span class="project-owner">{{ ownerName(project) }}</span>
-                  <span class="project-members">멤버 {{ project.members.length }}명</span>
+                  <span class="project-members">{{ $t('projects.members', { count: project.members.length }) }}</span>
                   <span class="project-date">{{ formatDate(project.updatedAt) }}</span>
                 </div>
               </div>
@@ -218,11 +218,11 @@
     <transition name="fade">
       <div v-if="showLogoutConfirm" class="modal-overlay" @click.self="showLogoutConfirm = false">
         <div class="modal-card" style="max-width:340px">
-          <h2 class="modal-title">로그아웃</h2>
-          <p style="font-size: var(--text-sm);color:var(--text-tertiary);margin:0 0 20px">로그아웃 하시겠습니까?</p>
+          <h2 class="modal-title">{{ $t('common.logout') }}</h2>
+          <p style="font-size: var(--text-sm);color:var(--text-tertiary);margin:0 0 20px">{{ $t('common.logoutConfirm') }}</p>
           <div class="modal-actions">
-            <button type="button" class="btn-ghost" @click="showLogoutConfirm = false">취소</button>
-            <button type="button" class="btn-danger" @click="onLogout">로그아웃</button>
+            <button type="button" class="btn-ghost" @click="showLogoutConfirm = false">{{ $t('common.cancel') }}</button>
+            <button type="button" class="btn-danger" @click="onLogout">{{ $t('common.logout') }}</button>
           </div>
         </div>
       </div>
@@ -232,21 +232,21 @@
     <transition name="fade">
       <div v-if="showCreate" class="modal-overlay" @click.self="showCreate = false">
         <div class="modal-card">
-          <h2 class="modal-title">새 프로젝트</h2>
+          <h2 class="modal-title">{{ $t('projects.createModal.title') }}</h2>
           <form @submit.prevent="onCreateProject">
             <div class="form-group">
-              <label class="form-label">이름</label>
-              <input v-model="createForm.name" class="form-input" placeholder="프로젝트 이름" required autofocus />
+              <label class="form-label">{{ $t('projects.createModal.name') }}</label>
+              <input v-model="createForm.name" class="form-input" :placeholder="$t('projects.createModal.namePlaceholder')" required autofocus />
             </div>
             <div class="form-group">
-              <label class="form-label">설명 (선택)</label>
-              <input v-model="createForm.description" class="form-input" placeholder="간단한 설명" />
+              <label class="form-label">{{ $t('projects.createModal.description') }}</label>
+              <input v-model="createForm.description" class="form-input" :placeholder="$t('projects.createModal.descPlaceholder')" />
             </div>
             <div v-if="createError" class="form-error">{{ createError }}</div>
             <div class="modal-actions">
-              <button type="button" class="btn-ghost" @click="showCreate = false">취소</button>
+              <button type="button" class="btn-ghost" @click="showCreate = false">{{ $t('common.cancel') }}</button>
               <button type="submit" class="btn-primary" :disabled="creating">
-                {{ creating ? '생성 중...' : '생성' }}
+                {{ creating ? $t('projects.createModal.submitting') : $t('projects.createModal.submit') }}
               </button>
             </div>
           </form>
@@ -259,11 +259,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { useProjectStore } from '../stores/project'
+import { getLocale } from '../i18n'
 import type { ProjectMemberRole } from '../api/projectApi'
 import UserProfileDropdown from '../components/UserProfileDropdown.vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const auth = useAuthStore()
 const projectStore = useProjectStore()
@@ -289,7 +292,7 @@ onMounted(async () => {
 
 function roleLabel(role: ProjectMemberRole): string {
   const map: Record<ProjectMemberRole, string> = {
-    MASTER: '마스터', ADMIN: '관리자', WRITER: '편집자', READONLY: '읽기전용',
+    MASTER: t('roles.master'), ADMIN: t('roles.admin'), WRITER: t('roles.writer'), READONLY: t('roles.readonly'),
   }
   return map[role] ?? role
 }
@@ -320,7 +323,7 @@ async function onCreateProject() {
     createForm.value = { name: '', description: '' }
     router.push({ name: 'project', params: { id: project.id } })
   } catch {
-    createError.value = '프로젝트 생성 중 오류가 발생했습니다.'
+    createError.value = t('projects.createModal.error')
   } finally {
     creating.value = false
   }
@@ -335,7 +338,7 @@ function myRoleIn(project: { members: { userId: string; role: string }[] }): Pro
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' })
+  return new Date(iso).toLocaleDateString(getLocale() === 'ko' ? 'ko-KR' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 const myProjects = computed(() =>

@@ -7,31 +7,31 @@
           <line x1="2" y1="12" x2="22" y2="12" />
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z" />
         </svg>
-        {{ isEdit ? 'DNS 수정' : 'DNS 추가' }}
+        {{ isEdit ? $t('modals.dns.editTitle') : $t('modals.dns.addTitle') }}
       </h3>
       <form @submit.prevent="onSubmit">
         <label>
-          이름 *
+          {{ $t('modals.dns.name') }}
           <input v-model="form.name" required placeholder="api.example.com" :class="{ 'input-error': isDuplicate || hasSpaces }" />
-          <span v-if="isDuplicate" class="error-msg">이미 사용 중인 이름입니다</span>
-          <span v-if="hasSpaces" class="warning-msg">이름에 공백이 포함되어 있습니다</span>
+          <span v-if="isDuplicate" class="error-msg">{{ $t('modals.server.duplicateName') }}</span>
+          <span v-if="hasSpaces" class="warning-msg">{{ $t('modals.dns.spacesWarning') }}</span>
         </label>
-        <label>DNS 유형
+        <label>{{ $t('modals.dns.type') }}
           <CustomSelect v-model="form.dnsType" :options="dnsTypeOptions" />
         </label>
-        <label>레코드 값
+        <label>{{ $t('modals.dns.recordValue') }}
           <input v-model="form.recordValue" :placeholder="recordValuePlaceholder" />
         </label>
         <label>TTL
           <input v-model.number="form.ttl" type="number" placeholder="300" />
         </label>
-        <label>Provider
+        <label>{{ $t('modals.dns.provider') }}
           <CustomSelect v-model="form.provider" :options="providerOptions" />
         </label>
-        <label>설명<textarea v-model="form.description" rows="2" placeholder="DNS 레코드 설명..." /></label>
+        <label>{{ $t('modals.dns.description') }}<textarea v-model="form.description" rows="2" :placeholder="$t('modals.dns.descPlaceholder')" /></label>
         <div class="actions">
-          <button type="button" class="btn-ghost" @click="$emit('close')">취소</button>
-          <button type="submit" class="btn-primary" :disabled="!form.name.trim() || isDuplicate">{{ isEdit ? '저장' : '추가' }}</button>
+          <button type="button" class="btn-ghost" @click="$emit('close')">{{ $t('common.cancel') }}</button>
+          <button type="submit" class="btn-primary" :disabled="!form.name.trim() || isDuplicate">{{ isEdit ? $t('common.save') : $t('common.add') }}</button>
         </div>
       </form>
     </div>
@@ -40,6 +40,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { DnsNode } from '../types'
 import CustomSelect from './CustomSelect.vue'
 
@@ -52,14 +53,15 @@ const dnsTypeOptions = [
   { value: 'TXT', label: 'TXT' },
 ]
 
-const providerOptions = [
-  { value: '', label: '(없음)' },
+const { t } = useI18n()
+const providerOptions = computed(() => [
+  { value: '', label: t('modals.dns.providerNone') },
   { value: 'Route53', label: 'Route53' },
   { value: 'CloudFlare', label: 'CloudFlare' },
   { value: 'Google Cloud DNS', label: 'Google Cloud DNS' },
   { value: 'Gabia', label: 'Gabia' },
   { value: 'Other', label: 'Other' },
-]
+])
 
 const RECORD_VALUE_PLACEHOLDERS: Record<string, string> = {
   A: '192.168.1.1',

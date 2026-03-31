@@ -3,9 +3,9 @@
     <div class="audit-topbar">
       <button class="back-btn" @click="router.push({ name: 'project', params: { id: projectId } })">
         <Icon name="chevron-left" :size="16" />
-        돌아가기
+        {{ t('common.back') }}
       </button>
-      <span class="topbar-title">감사 로그</span>
+      <span class="topbar-title">{{ t('audit.topbarTitle') }}</span>
       <span class="topbar-sep">&gt;</span>
       <span class="topbar-project">{{ projectName }}</span>
       <span class="topbar-spacer"></span>
@@ -30,8 +30,8 @@
         <div class="audit-date-filter">
           <div class="date-quick-btns">
             <button
-              v-for="q in QUICK_DATES" :key="q.label"
-              :class="['quick-btn', { active: quickActive === q.label }]"
+              v-for="q in QUICK_DATES" :key="q.key"
+              :class="['quick-btn', { active: quickActive === q.key }]"
               @click="applyQuick(q)"
             >{{ q.label }}</button>
           </div>
@@ -39,7 +39,7 @@
             <input type="date" v-model="dateFrom" class="date-input" :max="dateTo || undefined" @change="quickActive = ''" />
             <span class="date-sep">~</span>
             <input type="date" v-model="dateTo" class="date-input" :min="dateFrom || undefined" @change="quickActive = ''" />
-            <button v-if="dateFrom || dateTo" class="date-reset" @click="clearDate">초기화</button>
+            <button v-if="dateFrom || dateTo" class="date-reset" @click="clearDate">{{ t('common.reset') }}</button>
           </div>
         </div>
       </template>
@@ -61,11 +61,11 @@
           <line x1="26" y1="26" x2="33" y2="31" stroke="#3a3a42" stroke-width="1.6" stroke-linecap="round"/>
           <circle cx="26" cy="26" r="1.8" fill="#3a3a42"/>
         </svg>
-        <p class="audit-empty-title">감사 로그가 없습니다</p>
-        <p class="audit-empty-desc">프로젝트 변경 내역이 여기에 기록됩니다</p>
+        <p class="audit-empty-title">{{ t('audit.empty.title') }}</p>
+        <p class="audit-empty-desc">{{ t('audit.empty.desc') }}</p>
       </div>
       <template v-else>
-        <div v-if="filteredLogs.length === 0" class="audit-state">필터 조건에 맞는 로그가 없습니다</div>
+        <div v-if="filteredLogs.length === 0" class="audit-state">{{ t('audit.noFilterResults') }}</div>
         <div v-else class="audit-timeline">
           <template v-for="(item, i) in filteredLogs" :key="item.id">
             <!-- 날짜 구분선 — 타임라인을 끊는 형태 -->
@@ -88,7 +88,7 @@
                 <span :class="['audit-action-badge', actionCategory(item.action)]">{{ actionLabel(item.action) }}</span>
                 <span class="audit-user">{{ displayUser(item) }}</span>
                 <span :class="['audit-status', item.status === 'SUCCESS' ? 'success' : 'failed']">
-                  {{ item.status === 'SUCCESS' ? '성공' : '실패' }}
+                  {{ item.status === 'SUCCESS' ? t('audit.status.success') : t('audit.status.failed') }}
                 </span>
                 <!-- 상세 정보가 있으면 펼치기 화살표 -->
                 <Icon
@@ -109,18 +109,18 @@
             </div>
           </template>
         </div>
-        <div class="audit-footer">{{ filteredLogs.length }}건</div>
+        <div class="audit-footer">{{ t('audit.footer', { count: filteredLogs.length }) }}</div>
       </template>
     </div>
 
     <transition name="fade">
       <div v-if="showLogoutConfirm" class="modal-overlay" @click.self="showLogoutConfirm = false">
         <div class="modal-card" style="max-width:340px">
-          <h2 class="modal-title">로그아웃</h2>
-          <p style="font-size: var(--text-sm);color:var(--text-tertiary);margin:0 0 20px">로그아웃 하시겠습니까?</p>
+          <h2 class="modal-title">{{ t('common.logout') }}</h2>
+          <p style="font-size: var(--text-sm);color:var(--text-tertiary);margin:0 0 20px">{{ t('common.logoutConfirm') }}</p>
           <div class="modal-actions">
-            <button type="button" class="btn-ghost" @click="showLogoutConfirm = false">취소</button>
-            <button type="button" class="btn-danger" @click="onLogout">로그아웃</button>
+            <button type="button" class="btn-ghost" @click="showLogoutConfirm = false">{{ t('common.cancel') }}</button>
+            <button type="button" class="btn-danger" @click="onLogout">{{ t('common.logout') }}</button>
           </div>
         </div>
       </div>
@@ -131,12 +131,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { projectApi, type AuditLog } from '../api/projectApi'
 import { useProjectStore } from '../stores/project'
 import { useAuthStore } from '../stores/auth'
 import UserProfileDropdown from '../components/UserProfileDropdown.vue'
 import Icon from '../components/Icon.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const projectStore = useProjectStore()
@@ -168,19 +170,19 @@ function toDateStr(d: Date): string {
 function todayStr(): string { return toDateStr(new Date()) }
 
 // ─── 빠른 날짜 버튼 ──────────────────────────────────────
-const QUICK_DATES = [
-  { label: '오늘',   days: 0 },
-  { label: '일주일', days: 6 },
-  { label: '한달',   days: 29 },
-]
+const QUICK_DATES = computed(() => [
+  { key: 'today', label: t('audit.quickDates.today'),   days: 0 },
+  { key: 'week',  label: t('audit.quickDates.week'), days: 6 },
+  { key: 'month', label: t('audit.quickDates.month'),   days: 29 },
+])
 
-function applyQuick(q: { label: string; days: number }) {
+function applyQuick(q: { key: string; days: number }) {
   const today = new Date()
   dateTo.value = todayStr()
   const from = new Date(today)
   from.setDate(today.getDate() - q.days)
   dateFrom.value = toDateStr(from)
-  quickActive.value = q.label
+  quickActive.value = q.key
 }
 
 function clearDate() {
@@ -192,12 +194,12 @@ function clearDate() {
 // ─── 탭 정의 ─────────────────────────────────────────────
 type TabKey = 'all' | 'security' | 'member' | 'failed'
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'all',      label: '전체' },
-  { key: 'security', label: '보안' },
-  { key: 'member',   label: '멤버 관리' },
-  { key: 'failed',   label: '실패' },
-]
+const TABS = computed<{ key: TabKey; label: string }[]>(() => [
+  { key: 'all',      label: t('audit.tabs.all') },
+  { key: 'security', label: t('audit.tabs.security') },
+  { key: 'member',   label: t('audit.tabs.member') },
+  { key: 'failed',   label: t('audit.tabs.failed') },
+])
 
 const SECURITY_ACTIONS = new Set([
   'UNMASK_CONTACTS',
@@ -214,23 +216,24 @@ function actionCategory(action: string): string {
 }
 
 // ─── 액션 레이블 ──────────────────────────────────────────
-const ACTION_LABELS: Record<string, string> = {
-  UNMASK_CONTACTS:       '연락처 마스킹 해제',
-  LOGIN_SUCCESS:         '로그인',
-  LOGIN_FAILED:          '로그인 실패',
-  LOGOUT:                '로그아웃',
-  MEMBER_ADDED:          '멤버 추가',
-  MEMBER_REMOVED:        '멤버 제거',
-  MEMBER_ROLE_CHANGED:   '역할 변경',
-  OWNERSHIP_TRANSFERRED: '소유권 이전',
-  INVITATION_SENT:       '멤버 초대',
-  INVITATION_CANCELLED:  '초대 취소',
-  INVITATION_ACCEPTED:   '초대 수락',
-  INVITATION_REJECTED:   '초대 거절',
+const ACTION_LABEL_KEYS: Record<string, string> = {
+  UNMASK_CONTACTS:       'audit.actions.unmaskContacts',
+  LOGIN_SUCCESS:         'audit.actions.loginSuccess',
+  LOGIN_FAILED:          'audit.actions.loginFailed',
+  LOGOUT:                'audit.actions.logout',
+  MEMBER_ADDED:          'audit.actions.memberAdded',
+  MEMBER_REMOVED:        'audit.actions.memberRemoved',
+  MEMBER_ROLE_CHANGED:   'audit.actions.roleChanged',
+  OWNERSHIP_TRANSFERRED: 'audit.actions.ownershipTransferred',
+  INVITATION_SENT:       'audit.actions.invitationSent',
+  INVITATION_CANCELLED:  'audit.actions.invitationCancelled',
+  INVITATION_ACCEPTED:   'audit.actions.invitationAccepted',
+  INVITATION_REJECTED:   'audit.actions.invitationRejected',
 }
 
 function actionLabel(action: string): string {
-  return ACTION_LABELS[action] ?? action
+  const key = ACTION_LABEL_KEYS[action]
+  return key ? t(key) : action
 }
 
 function displayUser(log: AuditLog): string {
@@ -238,7 +241,7 @@ function displayUser(log: AuditLog): string {
     const id = log.user.email || log.email
     return id ? `${log.user.username}(${id})` : log.user.username
   }
-  return log.email || '알 수 없음'
+  return log.email || t('common.unknown')
 }
 
 function dateLabel(iso: string): string {
@@ -262,18 +265,18 @@ interface ParsedDetail { rows: DetailRow[] }
 function parseDetail(log: AuditLog): ParsedDetail | null {
   const rows: DetailRow[] = []
 
-  if (log.user?.email) rows.push({ label: '이메일', value: log.user.email })
-  if (log.ipAddress)   rows.push({ label: 'IP', value: log.ipAddress })
-  if (log.failReason)  rows.push({ label: '실패 사유', value: log.failReason })
+  if (log.user?.email) rows.push({ label: t('audit.detail.email'), value: log.user.email })
+  if (log.ipAddress)   rows.push({ label: t('audit.detailIp'), value: log.ipAddress })
+  if (log.failReason)  rows.push({ label: t('audit.detail.failReason'), value: log.failReason })
 
   if (log.detail) {
     try {
       const d = JSON.parse(log.detail)
       if (log.action === 'INVITATION_SENT' && d.identifier)
-        rows.push({ label: '초대 대상', value: d.identifier })
+        rows.push({ label: t('audit.detail.inviteTarget'), value: d.identifier })
       if (log.action === 'UNMASK_CONTACTS') {
-        if (d.nodeName)        rows.push({ label: '노드', value: d.nodeName })
-        if (d.contacts?.length) rows.push({ label: '담당자', value: d.contacts.join(', ') })
+        if (d.nodeName)        rows.push({ label: t('audit.detail.node'), value: d.nodeName })
+        if (d.contacts?.length) rows.push({ label: t('audit.detail.contacts'), value: d.contacts.join(', ') })
       }
     } catch { /* ignore */ }
   }
@@ -319,19 +322,19 @@ onMounted(async () => {
   }
 
   if (!projectStore.canAdmin) {
-    error.value = '접근 권한이 없습니다'
+    error.value = t('audit.accessDenied')
     loading.value = false
     return
   }
 
-  applyQuick(QUICK_DATES[0])
+  applyQuick(QUICK_DATES.value[0])
 
   try {
     const res = await projectApi.getAuditLogs(projectId)
     logs.value = res.data.logs
   } catch (err: unknown) {
     const e = err as { response?: { status?: number } }
-    error.value = e.response?.status === 403 ? '접근 권한이 없습니다' : '로그를 불러오지 못했습니다'
+    error.value = e.response?.status === 403 ? t('audit.accessDenied') : t('audit.loadError')
   } finally {
     loading.value = false
   }

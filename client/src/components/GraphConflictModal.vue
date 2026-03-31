@@ -2,8 +2,8 @@
   <div class="conflict-overlay" @click.self="onDismiss">
     <div class="conflict-modal">
       <div class="conflict-header">
-        <span class="conflict-title">변경사항 충돌 ({{ conflicts.length }}건)</span>
-        <span class="conflict-subtitle">다른 사용자가 동일한 항목을 수정했습니다. 각 항목에 대해 유지할 버전을 선택하세요.</span>
+        <span class="conflict-title">{{ t('conflict.title', { count: conflicts.length }) }}</span>
+        <span class="conflict-subtitle">{{ t('conflict.subtitle') }}</span>
       </div>
 
       <div class="conflict-list">
@@ -16,10 +16,10 @@
           <!-- 삭제 충돌 -->
           <div v-if="conflict.mine === null || conflict.server === null" class="deletion-info">
             <span v-if="conflict.mine === null" class="deletion-msg">
-              내가 수정한 항목을 상대방이 삭제했습니다.
+              {{ t('conflict.deletedByOther') }}
             </span>
             <span v-else class="deletion-msg">
-              상대방이 수정한 항목을 내가 삭제했습니다.
+              {{ t('conflict.deletedByMe') }}
             </span>
             <table class="diff-table">
               <tbody>
@@ -35,9 +35,9 @@
           <table v-else class="diff-table">
             <thead>
               <tr>
-                <th class="th-field">필드</th>
-                <th class="th-mine">내 버전</th>
-                <th class="th-server">서버 버전</th>
+                <th class="th-field">{{ t('conflict.fieldColumn') }}</th>
+                <th class="th-mine">{{ t('conflict.mineColumn') }}</th>
+                <th class="th-server">{{ t('conflict.serverColumn') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -58,28 +58,28 @@
               :class="['choice-btn', { active: resolutions[conflict.id] !== 'server' }]"
               @click="resolutions[conflict.id] = 'mine'"
             >
-              <span class="choice-badge mine">내 버전 유지</span>
-              <span v-if="conflict.mine === null" class="choice-sub">삭제 유지</span>
+              <span class="choice-badge mine">{{ t('conflict.keepMine') }}</span>
+              <span v-if="conflict.mine === null" class="choice-sub">{{ t('conflict.keepMineDelete') }}</span>
             </button>
             <button
               :class="['choice-btn', { active: resolutions[conflict.id] === 'server' }]"
               @click="resolutions[conflict.id] = 'server'"
             >
-              <span class="choice-badge server">서버 버전 수용</span>
-              <span v-if="conflict.server === null" class="choice-sub">삭제 수용</span>
+              <span class="choice-badge server">{{ t('conflict.acceptServer') }}</span>
+              <span v-if="conflict.server === null" class="choice-sub">{{ t('conflict.acceptServerDelete') }}</span>
             </button>
           </div>
         </div>
       </div>
 
       <div class="conflict-bulk">
-        <button class="btn-bulk" @click="selectAll('mine')">전체 내 버전 선택</button>
-        <button class="btn-bulk" @click="selectAll('server')">전체 서버 버전 선택</button>
+        <button class="btn-bulk" @click="selectAll('mine')">{{ t('conflict.selectAllMine') }}</button>
+        <button class="btn-bulk" @click="selectAll('server')">{{ t('conflict.selectAllServer') }}</button>
       </div>
 
       <div class="conflict-actions">
-        <button class="btn-ghost" @click="onDismiss">나중에 결정</button>
-        <button class="btn-primary" @click="onConfirm">적용</button>
+        <button class="btn-ghost" @click="onDismiss">{{ t('conflict.decideLater') }}</button>
+        <button class="btn-primary" @click="onConfirm">{{ t('conflict.apply') }}</button>
       </div>
     </div>
   </div>
@@ -87,7 +87,10 @@
 
 <script setup lang="ts">
 import { reactive } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { ConflictItem } from '../stores/graph'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   conflicts: ConflictItem[]
@@ -101,36 +104,43 @@ const emit = defineEmits<{
 const resolutions = reactive<Record<string, 'mine' | 'server'>>({})
 props.conflicts.forEach(c => { resolutions[c.id] = 'mine' })
 
-const FIELD_LABELS: Record<string, string> = {
-  name: '이름',
-  team: '팀',
-  internalIps: '내부 IP',
-  natIps: 'NAT IP',
-  ip: 'IP',
-  natIp: 'NAT IP',
-  memberServerIds: '멤버 서버 ID',
-  infraType: '인프라 타입',
-  host: '호스트',
-  port: '포트',
-  dnsType: 'DNS 레코드 타입',
-  recordValue: '레코드 값',
+const FIELD_LABEL_KEYS: Record<string, string> = {
+  name: 'conflict.fields.name',
+  team: 'conflict.fields.team',
+  internalIps: 'conflict.fields.internalIps',
+  natIps: 'conflict.fields.internalIps',
+  ip: 'conflict.fields.ip',
+  natIp: 'conflict.fields.ip',
+  memberServerIds: 'conflict.fields.memberServerIds',
+  infraType: 'conflict.fields.infraType',
+  host: 'conflict.fields.host',
+  port: 'conflict.fields.port',
+  dnsType: 'conflict.fields.dnsType',
+  recordValue: 'conflict.fields.recordValue',
   ttl: 'TTL',
-  provider: 'DNS 관리',
-  description: '설명',
-  hasFirewall: '방화벽 여부',
-  firewallUrl: '방화벽 URL',
-  hasWhitelist: '화이트리스트',
-  type: '연결 유형',
-  source: '출발 노드',
-  target: '대상 노드',
+  provider: 'conflict.fields.provider',
+  description: 'conflict.fields.description',
+  hasFirewall: 'conflict.fields.hasFirewall',
+  firewallUrl: 'conflict.fields.firewallUrl',
+  hasWhitelist: 'conflict.fields.hasWhitelist',
+  type: 'conflict.fields.type',
+  source: 'conflict.fields.source',
+  target: 'conflict.fields.target',
+}
+
+function fieldLabel(field: string): string {
+  const key = FIELD_LABEL_KEYS[field]
+  if (!key) return field
+  if (key === 'TTL') return 'TTL'
+  return t(key)
 }
 
 const EXCLUDED_FIELDS = new Set(['id', 'nodeKind', 'contacts'])
 
 function formatValue(value: unknown): string {
-  if (value === undefined || value === null || value === '') return '(없음)'
-  if (Array.isArray(value)) return value.length > 0 ? value.join(', ') : '(없음)'
-  if (typeof value === 'boolean') return value ? '예' : '아니오'
+  if (value === undefined || value === null || value === '') return t('conflict.empty')
+  if (Array.isArray(value)) return value.length > 0 ? value.join(', ') : t('conflict.empty')
+  if (typeof value === 'boolean') return value ? t('conflict.yes') : t('conflict.no')
   return String(value)
 }
 
@@ -139,10 +149,7 @@ function deepEqual(a: unknown, b: unknown): boolean {
 }
 
 function nodeTypeLabel(type: ConflictItem['nodeType']): string {
-  const map: Record<ConflictItem['nodeType'], string> = {
-    server: 'Server', l7: 'L7', infra: 'Infra', external: 'External', dns: 'DNS', dependency: 'Dependency',
-  }
-  return map[type]
+  return t(`conflict.nodeTypes.${type}`)
 }
 
 function getDiff(mine: unknown, server: unknown): Array<{ field: string; label: string; myValue: string; serverValue: string }> {
@@ -155,7 +162,7 @@ function getDiff(mine: unknown, server: unknown): Array<{ field: string; label: 
     if (!deepEqual(m[field], s[field])) {
       result.push({
         field,
-        label: FIELD_LABELS[field] ?? field,
+        label: fieldLabel(field),
         myValue: formatValue(m[field]),
         serverValue: formatValue(s[field]),
       })
@@ -168,7 +175,7 @@ function getNodeFields(node: unknown): Array<{ field: string; label: string; val
   const n = node as Record<string, unknown>
   return Object.keys(n)
     .filter(f => !EXCLUDED_FIELDS.has(f))
-    .map(f => ({ field: f, label: FIELD_LABELS[f] ?? f, value: formatValue(n[f]) }))
+    .map(f => ({ field: f, label: fieldLabel(f), value: formatValue(n[f]) }))
 }
 
 function selectAll(choice: 'mine' | 'server') {

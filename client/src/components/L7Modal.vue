@@ -1,23 +1,23 @@
 <template>
   <div class="modal-backdrop" @mousedown.self="backdropDown = true" @mouseup.self="backdropDown && $emit('close')" @mouseup="backdropDown = false">
     <div class="modal">
-      <h3>{{ isEdit ? 'L7 노드 수정' : 'L7 노드 추가' }}</h3>
+      <h3>{{ isEdit ? $t('modals.l7.editTitle') : $t('modals.l7.addTitle') }}</h3>
       <form @submit.prevent="onSubmit">
         <label>
-          이름 *
+          {{ $t('modals.l7.name') }}
           <input v-model="form.name" required placeholder="예: api-lb-prod" :class="{ 'input-error': isDuplicate }" />
-          <span v-if="isDuplicate" class="error-msg">이미 사용 중인 이름입니다</span>
+          <span v-if="isDuplicate" class="error-msg">{{ $t('modals.server.duplicateName') }}</span>
         </label>
         <label>
-          IP 주소
+          {{ $t('modals.l7.ip') }}
           <input v-model="form.ip" placeholder="예: 10.0.0.10" />
         </label>
         <label>
-          NAT IP
+          {{ $t('modals.l7.natIp') }}
           <input v-model="form.natIp" placeholder="예: 203.0.113.10" />
         </label>
 
-        <div class="section-label">구성 서버 선택</div>
+        <div class="section-label">{{ $t('modals.l7.memberServers') }}</div>
         <div class="server-filter-wrap">
           <svg class="filter-icon" width="13" height="13" viewBox="0 0 13 13" fill="none">
             <circle cx="5.5" cy="5.5" r="4" stroke="#3a3a42" stroke-width="1.3"/>
@@ -26,7 +26,7 @@
           <input
             v-model="serverFilter"
             class="server-filter-input"
-            placeholder="서버 이름 또는 팀으로 검색..."
+            :placeholder="$t('modals.l7.searchServers')"
           />
           <button v-if="serverFilter" class="filter-clear" type="button" @click="serverFilter = ''">
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -49,20 +49,20 @@
             <span class="check-name">{{ server.name }}</span>
             <span v-if="server.team" class="check-team">{{ server.team }}</span>
           </label>
-          <p v-if="servers.length === 0" class="empty-list">추가된 서버가 없습니다</p>
-          <p v-else-if="filteredServers.length === 0" class="empty-list">검색 결과가 없습니다</p>
+          <p v-if="servers.length === 0" class="empty-list">{{ $t('modals.l7.noServers') }}</p>
+          <p v-else-if="filteredServers.length === 0" class="empty-list">{{ $t('modals.l7.noResults') }}</p>
         </div>
-        <p class="selected-count">{{ form.memberServerIds.length }}개 서버 선택됨</p>
+        <p class="selected-count">{{ $t('modals.l7.selectedCount', { count: form.memberServerIds.length }) }}</p>
 
         <label>
-          설명
-          <textarea v-model="form.description" rows="2" placeholder="L7 로드밸런서 설명..." />
+          {{ $t('modals.l7.description') }}
+          <textarea v-model="form.description" rows="2" :placeholder="$t('modals.l7.descPlaceholder')" />
         </label>
 
         <div class="actions">
-          <button type="button" class="btn-ghost" @click="$emit('close')">취소</button>
+          <button type="button" class="btn-ghost" @click="$emit('close')">{{ $t('common.cancel') }}</button>
           <button type="submit" class="btn-primary btn-node-l7" :disabled="!form.name.trim() || isDuplicate">
-            {{ isEdit ? '저장' : '추가' }}
+            {{ isEdit ? $t('common.save') : $t('common.add') }}
           </button>
         </div>
       </form>

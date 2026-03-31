@@ -3,9 +3,9 @@
     <div class="settings-topbar">
       <button class="back-btn" @click="goBack">
         <Icon name="chevron-left" :size="16" />
-        돌아가기
+        {{ t('common.back') }}
       </button>
-      <span class="topbar-title">내 정보 수정</span>
+      <span class="topbar-title">{{ t('account.topbarTitle') }}</span>
       <span class="topbar-spacer"></span>
       <UserProfileDropdown @logout="showLogoutConfirm = true" />
     </div>
@@ -15,27 +15,27 @@
       <section class="settings-section">
         <h2 class="section-title">
           <Icon name="user-profile" :size="13" class="section-icon" />
-          프로필 정보
+          {{ t('account.profileInfo') }}
         </h2>
 
         <div class="form-group">
-          <label class="form-label">사용자명</label>
+          <label class="form-label">{{ t('account.username') }}</label>
           <input v-model="editUsername" class="form-input" maxlength="30" />
         </div>
 
         <div class="form-group">
-          <label class="form-label">이메일</label>
+          <label class="form-label">{{ t('account.email') }}</label>
           <input :value="editEmail" class="form-input form-input-disabled" type="email" disabled />
-          <span class="field-hint">이메일은 로그인에 사용되므로 변경할 수 없습니다.</span>
+          <span class="field-hint">{{ t('account.emailHint') }}</span>
         </div>
 
         <div class="form-group">
-          <label class="form-label">가입일</label>
+          <label class="form-label">{{ t('account.createdAt') }}</label>
           <span class="readonly-value">{{ formattedCreatedAt }}</span>
         </div>
 
         <button class="btn-outline btn-sm" @click="onSaveProfile" :disabled="savingProfile || !canSaveProfile">
-          {{ savingProfile ? '저장 중...' : '저장' }}
+          {{ savingProfile ? t('common.saving') : t('common.save') }}
         </button>
       </section>
 
@@ -43,7 +43,7 @@
       <section class="settings-section">
         <h2 class="section-title">
           <Icon name="lock" :size="13" class="section-icon" />
-          로그인 방법
+          {{ t('account.loginMethods') }}
         </h2>
 
         <div class="login-methods">
@@ -54,11 +54,11 @@
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            <span class="login-method-label">Google 연동됨</span>
+            <span class="login-method-label">{{ t('account.googleLinked') }}</span>
           </div>
           <div class="login-method-item">
             <Icon name="lock" :size="14" class="login-method-icon" />
-            <span class="login-method-label">{{ authStore.user?.hasPassword ? '비밀번호 설정됨' : '비밀번호 미설정' }}</span>
+            <span class="login-method-label">{{ authStore.user?.hasPassword ? t('account.passwordSet') : t('account.passwordNotSet') }}</span>
           </div>
         </div>
       </section>
@@ -67,61 +67,56 @@
       <section v-if="!authStore.isOAuthOnly" class="settings-section">
         <h2 class="section-title">
           <Icon name="lock" :size="13" class="section-icon" />
-          비밀번호 변경
+          {{ t('account.changePassword') }}
         </h2>
 
         <template v-if="!showPasswordForm">
-          <p class="password-desc">비밀번호를 변경하려면 아래 버튼을 클릭하세요.</p>
-          <button class="btn-outline btn-sm" @click="showPasswordForm = true">비밀번호 변경</button>
+          <p class="password-desc">{{ t('account.changePasswordDesc') }}</p>
+          <button class="btn-outline btn-sm" @click="showPasswordForm = true">{{ t('account.changePassword') }}</button>
         </template>
 
         <template v-else>
           <div class="form-group">
-            <label class="form-label">현재 비밀번호</label>
+            <label class="form-label">{{ t('account.currentPassword') }}</label>
             <input v-model="currentPassword" class="form-input" type="password" />
           </div>
 
           <div class="form-group">
-            <label class="form-label">새 비밀번호</label>
-            <input v-model="newPassword" class="form-input" type="password" placeholder="8자 이상" />
+            <label class="form-label">{{ t('account.newPassword') }}</label>
+            <input v-model="newPassword" class="form-input" type="password" :placeholder="t('account.newPasswordPlaceholder')" />
           </div>
 
           <div class="form-group">
-            <label class="form-label">새 비밀번호 확인</label>
+            <label class="form-label">{{ t('account.confirmNewPassword') }}</label>
             <input v-model="confirmPassword" class="form-input" type="password" />
-            <span v-if="confirmPassword && !passwordMatch" class="field-error">비밀번호가 일치하지 않습니다.</span>
+            <span v-if="confirmPassword && !passwordMatch" class="field-error">{{ t('account.passwordMismatch') }}</span>
           </div>
 
           <div class="password-actions">
-            <button class="btn-ghost btn-sm" @click="onCancelPasswordChange">취소</button>
+            <button class="btn-ghost btn-sm" @click="onCancelPasswordChange">{{ t('common.cancel') }}</button>
             <button class="btn-outline btn-sm" @click="onChangePassword" :disabled="savingPassword || !canChangePassword">
-              {{ savingPassword ? '변경 중...' : '비밀번호 변경' }}
+              {{ savingPassword ? t('account.changingPassword') : t('account.changePassword') }}
             </button>
           </div>
         </template>
       </section>
 
-      <!-- OAuth 전용: 비밀번호 미설정 안내 -->
       <section v-else class="settings-section">
         <h2 class="section-title">
           <Icon name="lock" :size="13" class="section-icon" />
-          비밀번호 변경
+          {{ t('account.changePassword') }}
         </h2>
-        <p class="password-desc">Google 계정으로 로그인하고 있어 비밀번호가 설정되어 있지 않습니다.</p>
+        <p class="password-desc">{{ t('account.oauthOnlyDesc') }}</p>
       </section>
 
       <!-- 회원탈퇴 -->
       <section class="settings-section danger-section">
         <h2 class="section-title section-title-danger">
           <Icon name="warning-triangle" :size="13" class="section-icon" />
-          계정 삭제
+          {{ t('account.deleteAccount') }}
         </h2>
-        <p class="danger-desc">
-          계정을 삭제하면 모든 데이터가 영구적으로 삭제되며 복구할 수 없습니다.
-          소유한 프로젝트 중 다른 관리자가 있는 프로젝트는 소유권이 이전되고,
-          그렇지 않은 프로젝트는 함께 삭제됩니다.
-        </p>
-        <button class="btn-danger-ghost" @click="showDeleteConfirm = true">계정 삭제</button>
+        <p class="danger-desc">{{ t('account.deleteAccountDesc') }}</p>
+        <button class="btn-danger-ghost" @click="showDeleteConfirm = true">{{ t('account.deleteAccount') }}</button>
       </section>
     </div>
 
@@ -134,27 +129,27 @@
     <transition name="fade">
       <div v-if="showDeleteConfirm && !useGoogleDeleteAuth" class="modal-overlay" @click.self="onCancelDelete">
         <div class="modal-card" style="max-width:400px">
-          <h2 class="modal-title">계정 삭제</h2>
-          <p class="modal-desc">이 작업은 되돌릴 수 없습니다. 계속하려면 비밀번호를 입력하세요.</p>
+          <h2 class="modal-title">{{ t('account.deleteModal.title') }}</h2>
+          <p class="modal-desc">{{ t('account.deleteModal.passwordDesc') }}</p>
           <div class="form-group" style="margin-bottom:16px">
-            <label class="form-label">비밀번호 확인</label>
+            <label class="form-label">{{ t('impactPanel.passwordConfirm') }}</label>
             <input
               v-model="deletePassword"
               class="form-input"
               type="password"
-              placeholder="비밀번호를 입력하세요"
+              :placeholder="t('account.deleteModal.passwordPlaceholder')"
               @keyup.enter="onDeleteAccount"
             />
           </div>
           <div class="modal-actions">
-            <button type="button" class="btn-ghost" @click="onCancelDelete">취소</button>
+            <button type="button" class="btn-ghost" @click="onCancelDelete">{{ t('common.cancel') }}</button>
             <button
               type="button"
               class="btn-danger"
               :disabled="deletingAccount || !deletePassword"
               @click="onDeleteAccount"
             >
-              {{ deletingAccount ? '삭제 중...' : '계정 삭제' }}
+              {{ deletingAccount ? t('common.deleting') : t('account.deleteAccount') }}
             </button>
           </div>
         </div>
@@ -165,18 +160,18 @@
     <transition name="fade">
       <div v-if="showDeleteConfirm && useGoogleDeleteAuth" class="modal-overlay" @click.self="onCancelDelete">
         <div class="modal-card" style="max-width:400px">
-          <h2 class="modal-title">계정 삭제</h2>
-          <p class="modal-desc">이 작업은 되돌릴 수 없습니다. 계속하려면 Google 계정으로 본인 확인을 진행하세요.</p>
+          <h2 class="modal-title">{{ t('account.deleteModal.title') }}</h2>
+          <p class="modal-desc">{{ t('account.deleteModal.googleDesc') }}</p>
           <div v-if="deleteError" class="form-error" style="margin-bottom:16px">{{ deleteError }}</div>
           <div class="modal-actions">
-            <button type="button" class="btn-ghost" @click="onCancelDelete">취소</button>
+            <button type="button" class="btn-ghost" @click="onCancelDelete">{{ t('common.cancel') }}</button>
             <button
               type="button"
               class="btn-danger"
               :disabled="deletingAccount"
               @click="onDeleteAccountWithGoogle"
             >
-              {{ deletingAccount ? '삭제 중...' : 'Google로 본인 확인' }}
+              {{ deletingAccount ? t('common.deleting') : t('account.deleteModal.googleButton') }}
             </button>
           </div>
         </div>
@@ -187,11 +182,11 @@
     <transition name="fade">
       <div v-if="showLogoutConfirm" class="modal-overlay" @click.self="showLogoutConfirm = false">
         <div class="modal-card" style="max-width:340px">
-          <h2 class="modal-title">로그아웃</h2>
-          <p style="font-size: var(--text-sm);color:var(--text-tertiary);margin:0 0 20px">로그아웃 하시겠습니까?</p>
+          <h2 class="modal-title">{{ t('common.logout') }}</h2>
+          <p style="font-size: var(--text-sm);color:var(--text-tertiary);margin:0 0 20px">{{ t('common.logoutConfirm') }}</p>
           <div class="modal-actions">
-            <button type="button" class="btn-ghost" @click="showLogoutConfirm = false">취소</button>
-            <button type="button" class="btn-danger" @click="onLogout">로그아웃</button>
+            <button type="button" class="btn-ghost" @click="showLogoutConfirm = false">{{ t('common.cancel') }}</button>
+            <button type="button" class="btn-danger" @click="onLogout">{{ t('common.logout') }}</button>
           </div>
         </div>
       </div>
@@ -201,12 +196,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { promptGoogleReauth } from '../utils/googleAuth'
 import UserProfileDropdown from '../components/UserProfileDropdown.vue'
 import Icon from '../components/Icon.vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 
@@ -263,14 +260,14 @@ async function onSaveProfile() {
       data.username = editUsername.value.trim()
     }
     await authStore.updateProfile(data)
-    showToast('저장되었습니다.', 'success')
+    showToast(t('account.toast.saved'), 'success')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string; code?: string } } }
     const code = e.response?.data?.code
     if (code === 'USERNAME_TAKEN') {
-      showToast('이미 사용 중인 사용자명입니다.')
+      showToast(t('account.toast.usernameTaken'))
     } else {
-      showToast('저장에 실패했습니다.')
+      showToast(t('account.toast.saveFailed'))
     }
   } finally {
     savingProfile.value = false
@@ -311,14 +308,14 @@ async function onChangePassword() {
     currentPassword.value = ''
     newPassword.value = ''
     confirmPassword.value = ''
-    showToast('비밀번호가 변경되었습니다.', 'success')
+    showToast(t('account.toast.passwordChanged'), 'success')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string; code?: string } } }
     const code = e.response?.data?.code
     if (code === 'INVALID_CREDENTIALS') {
-      showToast('현재 비밀번호가 올바르지 않습니다.')
+      showToast(t('account.toast.passwordInvalid'))
     } else {
-      showToast('비밀번호 변경에 실패했습니다.')
+      showToast(t('account.toast.passwordChangeFailed'))
     }
   } finally {
     savingPassword.value = false
@@ -345,7 +342,7 @@ async function onDeleteAccount() {
     window.location.replace('/login')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string; code?: string } } }
-    const msg = e.response?.data?.error || '계정 삭제에 실패했습니다.'
+    const msg = e.response?.data?.error || t('account.toast.deleteFailed')
     showToast(msg)
   } finally {
     deletingAccount.value = false
@@ -364,7 +361,7 @@ async function onDeleteAccountWithGoogle() {
     if (e.response?.data?.error) {
       deleteError.value = e.response.data.error
     } else {
-      deleteError.value = (err as Error).message || 'Google 인증에 실패했습니다.'
+      deleteError.value = (err as Error).message || t('account.toast.googleAuthFailed')
     }
   } finally {
     deletingAccount.value = false

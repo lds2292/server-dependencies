@@ -277,7 +277,7 @@
           <text x="-52" dy="-9" text-anchor="start" class="node-label" :style="(node.nodeKind === 'infra' || node.nodeKind === 'dns') ? `fill:${cssVar('--bg-base')}` : ''">{{ truncate(node.name) }}</text>
 
           <template v-if="node.nodeKind === 'l7'">
-            <text x="-52" dy="6" text-anchor="start" class="node-sub">{{ (node as L7Node).memberServerIds?.length ?? 0 }}개 서버</text>
+            <text x="-52" dy="6" text-anchor="start" class="node-sub">{{ t('graph.nodeText.memberServers', { count: (node as L7Node).memberServerIds?.length ?? 0 }) }}</text>
             <text x="-52" dy="19" text-anchor="start" class="node-meta">{{ (node as L7Node).ip || (node as L7Node).natIp || '-' }}</text>
           </template>
           <template v-else-if="node.nodeKind === 'infra'">
@@ -459,7 +459,7 @@
         <input
           v-model="searchQuery"
           class="search-input"
-          placeholder="노드 / IP 검색..."
+          :placeholder="t('graph.search.placeholder')"
           autocomplete="off"
           spellcheck="false"
           @focus="onSearchFocus"
@@ -498,26 +498,26 @@
         </li>
       </ul>
       <div v-else-if="searchFocused && searchQuery.trim() && searchResults.length === 0" class="search-no-result">
-        결과 없음
+        {{ t('graph.search.noResults') }}
       </div>
     </div>
 
     <!-- 우측 상단 색상 범주 Legend -->
     <div class="node-legend">
       <div class="legend-item">
-        <span class="legend-dot legend-srv"></span>Server
+        <span class="legend-dot legend-srv"></span>{{ t('graph.legend.server') }}
       </div>
       <div class="legend-item">
-        <span class="legend-dot legend-l7"></span>L7
+        <span class="legend-dot legend-l7"></span>{{ t('graph.legend.l7') }}
       </div>
       <div class="legend-item">
-        <span class="legend-dot legend-infra"></span>INFRA
+        <span class="legend-dot legend-infra"></span>{{ t('graph.legend.infra') }}
       </div>
       <div class="legend-item">
-        <span class="legend-dot legend-ext"></span>External
+        <span class="legend-dot legend-ext"></span>{{ t('graph.legend.external') }}
       </div>
       <div class="legend-item">
-        <span class="legend-dot legend-dns"></span>DNS
+        <span class="legend-dot legend-dns"></span>{{ t('graph.legend.dns') }}
       </div>
     </div>
 
@@ -526,7 +526,7 @@
       class="canvas-btn tracking-btn"
       :class="{ active: nodeTracking }"
       @click="nodeTracking = !nodeTracking"
-      :data-tooltip="`${nodeTracking ? '트래킹 ON' : '트래킹 OFF'} — 선택 노드 자동 이동`"
+      :data-tooltip="nodeTracking ? t('graph.trackingOn') : t('graph.trackingOff')"
       data-shortcut="F"
     >
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -537,7 +537,7 @@
         <line x1="0.5" y1="7" x2="3" y2="7" stroke="currentColor" stroke-width="1.2"/>
         <line x1="11" y1="7" x2="13.5" y2="7" stroke="currentColor" stroke-width="1.2"/>
       </svg>
-      트래킹
+      {{ t('graph.tracking') }}
     </button>
 
     <!-- 전체 흐름 토글 버튼 -->
@@ -546,7 +546,7 @@
         class="canvas-btn"
         :class="{ active: showAllFlow }"
         @click="showAllFlow = !showAllFlow"
-        :data-tooltip="showAllFlow ? '전체 의존 흐름 ON' : '전체 의존 흐름 OFF'"
+        :data-tooltip="showAllFlow ? t('graph.allFlowOn') : t('graph.allFlowOff')"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M1 7h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
@@ -554,19 +554,19 @@
           <path d="M1 3h5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity="0.5"/>
           <path d="M1 11h5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity="0.5"/>
         </svg>
-        의존성
+        {{ t('graph.allFlow') }}
       </button>
     </div>
 
     <!-- 그리드 토글 버튼 -->
     <div class="canvas-btns">
-      <button class="canvas-btn" @click="showGrid = !showGrid" :class="{ active: showGrid }" title="그리드 표시/숨김">
+      <button class="canvas-btn" @click="showGrid = !showGrid" :class="{ active: showGrid }" :title="t('graph.grid.toggle')">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M0 4.67h14M0 9.33h14M4.67 0v14M9.33 0v14" stroke="currentColor" stroke-width="1.2"/>
         </svg>
         Grid
       </button>
-      <button v-if="showGrid" class="canvas-btn" @click="goToCenter" title="중심으로 이동">
+      <button v-if="showGrid" class="canvas-btn" @click="goToCenter" :title="t('graph.grid.goToCenter')">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <circle cx="7" cy="7" r="2.5" stroke="currentColor" stroke-width="1.2"/>
           <line x1="7" y1="0" x2="7" y2="3.5" stroke="currentColor" stroke-width="1.2"/>
@@ -574,7 +574,7 @@
           <line x1="0" y1="7" x2="3.5" y2="7" stroke="currentColor" stroke-width="1.2"/>
           <line x1="10.5" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="1.2"/>
         </svg>
-        중심
+        {{ t('graph.center') }}
       </button>
     </div>
 
@@ -647,34 +647,34 @@
     </div>
 
     <!-- 하단 힌트 -->
-    <div v-if="!readOnly" class="mode-hint">일반 드래그: 노드 이동 &nbsp;|&nbsp; Ctrl + 드래그: 의존성 연결</div>
-    <div v-else class="mode-hint readonly-hint">읽기 전용 모드</div>
+    <div v-if="!readOnly" class="mode-hint">{{ t('graph.hintEdit') }}</div>
+    <div v-else class="mode-hint readonly-hint">{{ t('graph.hintReadOnly') }}</div>
 
     <!-- 순환 의존성 경고 배너 -->
     <div v-if="cycleNodes.size > 0 && !pathMode && pathNodes.size === 0" class="cycle-warning-banner">
-      순환 의존성 감지: {{ cycleNodes.size }}개 노드
+      {{ t('graph.cycleBanner', { count: cycleNodes.size }) }}
     </div>
 
     <!-- 경로 탐색 모드 배너 -->
     <div v-if="pathMode && pathNodes.size === 0" class="path-mode-banner">
-      출발: <span class="path-source-name">{{ pathSourceName }}</span>
-      &mdash; 도착 노드를 클릭하세요
-      <button class="path-cancel-btn" @click="emit('cancelPathMode')">취소 (Esc)</button>
+      {{ t('graph.pathBanner.from') }} <span class="path-source-name">{{ pathSourceName }}</span>
+      &mdash; {{ t('graph.pathBanner.selectTarget') }}
+      <button class="path-cancel-btn" @click="emit('cancelPathMode')">{{ t('graph.pathBanner.cancel') }}</button>
     </div>
 
     <!-- 연결 힌트 -->
     <div v-if="connectTarget && arrowSource" class="drop-hint">
       <span class="hint-source">{{ arrowSource.name }}</span> →
       <span class="hint-target">{{ connectTarget.name }}</span>
-      (놓으면 의존관계 생성)
+      {{ t('graph.dragHint.connect') }}
     </div>
     <div v-else-if="blockedTarget && arrowSource" class="blocked-hint">
       <span class="hint-source">{{ arrowSource.name }}</span> →
       <span class="hint-blocked">{{ blockedTarget.name }}</span>
-      연결 불가
+      {{ t('graph.dragHint.blocked') }}
     </div>
     <div v-else-if="arrowSource && arrowPreview && !connectTarget" class="drag-hint">
-      다른 노드 위에서 놓으면 의존관계를 생성합니다
+      {{ t('graph.dragHint.default') }}
     </div>
     <!-- 연결 차단 토스트 -->
     <transition name="fade">
@@ -684,7 +684,7 @@
     <!-- 노드 추가 메뉴 (더블클릭) -->
     <div v-if="addNodeMenu.visible" class="add-node-menu"
       :style="{ left: addNodeMenu.x + 'px', top: addNodeMenu.y + 'px' }" @click.stop>
-      <div class="add-node-menu-title">노드 추가</div>
+      <div class="add-node-menu-title">{{ t('graph.contextMenu.addNode') }}</div>
       <button @click="onAddNodeMenuSelect('server')">
         <svg class="menu-icon" viewBox="0 0 11 9" fill="none">
           <rect x="0.5" y="0.5" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="0.9"/>
@@ -692,7 +692,7 @@
           <circle cx="8.5" cy="6.2" r="0.9" fill="currentColor"/>
           <circle cx="6.5" cy="6.2" r="0.9" fill="currentColor"/>
         </svg>
-        서버
+        {{ t('nodes.server') }}
       </button>
       <button @click="onAddNodeMenuSelect('l7')">
         <svg class="menu-icon" viewBox="0 0 11 11" fill="none">
@@ -701,7 +701,7 @@
           <line x1="5.5" y1="6.5" x2="9" y2="10" stroke="currentColor" stroke-width="0.9"/>
           <line x1="2.5" y1="3.5" x2="8.5" y2="3.5" stroke="currentColor" stroke-width="0.8"/>
         </svg>
-        L7 로드밸런서
+        {{ t('nodes.l7') }}
       </button>
       <button @click="onAddNodeMenuSelect('infra')">
         <svg class="menu-icon" viewBox="0 0 11 10" fill="none">
@@ -710,7 +710,7 @@
           <line x1="10.5" y1="1.8" x2="10.5" y2="8" stroke="#7dd3fc" stroke-width="0.9"/>
           <ellipse cx="5.5" cy="8" rx="5" ry="1.8" stroke="#7dd3fc" stroke-width="0.9"/>
         </svg>
-        인프라
+        {{ t('nodes.infra') }}
       </button>
       <button @click="onAddNodeMenuSelect('external')">
         <svg class="menu-icon" viewBox="0 0 11 11" fill="none">
@@ -720,7 +720,7 @@
           <line x1="1.5" y1="3" x2="9.5" y2="3" stroke="currentColor" stroke-width="0.5"/>
           <line x1="1.5" y1="8" x2="9.5" y2="8" stroke="currentColor" stroke-width="0.5"/>
         </svg>
-        외부 서비스
+        {{ t('nodes.external') }}
       </button>
       <button @click="onAddNodeMenuSelect('dns')">
         <svg class="menu-icon" viewBox="0 0 11 11" fill="none">
@@ -736,22 +736,22 @@
     <div v-if="contextMenu.visible" class="context-menu"
       :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }" @click.stop>
       <template v-if="multiSelectedIds.size > 1 && contextMenu.node && multiSelectedIds.has(contextMenu.node.id)">
-        <div class="context-multi-label">{{ multiSelectedIds.size }}개 선택됨</div>
+        <div class="context-multi-label">{{ t('graph.contextMenu.selected', { count: multiSelectedIds.size }) }}</div>
         <div class="context-divider"></div>
-        <button v-if="!readOnly" class="danger" @click="onDeleteMultiNodes">삭제</button>
-        <button v-else class="disabled-item" disabled>읽기 전용 모드</button>
+        <button v-if="!readOnly" class="danger" @click="onDeleteMultiNodes">{{ t('common.delete') }}</button>
+        <button v-else class="disabled-item" disabled>{{ t('graph.contextMenu.readOnlyMode') }}</button>
       </template>
       <template v-else>
-        <button class="path-item" :class="{ 'path-item-disabled': contextMenu.node?.nodeKind === 'l7' }" :disabled="contextMenu.node?.nodeKind === 'l7'" @click="onStartPath">경로 탐색</button>
+        <button class="path-item" :class="{ 'path-item-disabled': contextMenu.node?.nodeKind === 'l7' }" :disabled="contextMenu.node?.nodeKind === 'l7'" @click="onStartPath">{{ t('graph.contextMenu.pathFind') }}</button>
         <template v-if="!readOnly">
           <div class="context-divider"></div>
-          <button @click="onEditNode">수정</button>
-          <button @click="onAddDep">의존성 추가</button>
-          <button class="danger" @click="onDeleteNode">삭제</button>
+          <button @click="onEditNode">{{ t('common.edit') }}</button>
+          <button @click="onAddDep">{{ t('graph.contextMenu.addDep') }}</button>
+          <button class="danger" @click="onDeleteNode">{{ t('common.delete') }}</button>
         </template>
         <template v-else>
           <div class="context-divider"></div>
-          <button class="disabled-item" disabled>읽기 전용 모드</button>
+          <button class="disabled-item" disabled>{{ t('graph.contextMenu.readOnlyMode') }}</button>
         </template>
       </template>
     </div>
@@ -761,7 +761,7 @@
       :style="{ left: canvasContextMenu.x + 'px', top: canvasContextMenu.y + 'px' }" @click.stop>
       <template v-if="!readOnly">
         <div class="submenu-item" @mouseenter="canvasContextMenu.activeSubmenu = 'add'" @mouseleave="canvasContextMenu.activeSubmenu = null">
-          <span>노드 추가</span>
+          <span>{{ t('graph.contextMenu.addNode') }}</span>
           <span class="submenu-arrow">▶</span>
           <div v-if="canvasContextMenu.activeSubmenu === 'add'" class="submenu">
             <button @click="onCanvasAddNode('server')">
@@ -771,7 +771,7 @@
                 <circle cx="8.5" cy="6.2" r="0.9" fill="currentColor"/>
                 <circle cx="6.5" cy="6.2" r="0.9" fill="currentColor"/>
               </svg>
-              서버
+              {{ t('nodes.server') }}
             </button>
             <button @click="onCanvasAddNode('l7')">
               <svg class="menu-icon" viewBox="0 0 11 11" fill="none">
@@ -780,7 +780,7 @@
                 <line x1="5.5" y1="6.5" x2="9" y2="10" stroke="currentColor" stroke-width="0.9"/>
                 <line x1="2.5" y1="3.5" x2="8.5" y2="3.5" stroke="currentColor" stroke-width="0.8"/>
               </svg>
-              L7
+              {{ t('nodes.l7Short') }}
             </button>
             <button @click="onCanvasAddNode('infra')">
               <svg class="menu-icon" viewBox="0 0 11 10" fill="none">
@@ -789,7 +789,7 @@
                 <line x1="10.5" y1="1.8" x2="10.5" y2="8" stroke="#7dd3fc" stroke-width="0.9"/>
                 <ellipse cx="5.5" cy="8" rx="5" ry="1.8" stroke="#7dd3fc" stroke-width="0.9"/>
               </svg>
-              인프라
+              {{ t('nodes.infra') }}
             </button>
             <button @click="onCanvasAddNode('external')">
               <svg class="menu-icon" viewBox="0 0 11 11" fill="none">
@@ -799,7 +799,7 @@
                 <line x1="1.5" y1="3" x2="9.5" y2="3" stroke="currentColor" stroke-width="0.5"/>
                 <line x1="1.5" y1="8" x2="9.5" y2="8" stroke="currentColor" stroke-width="0.5"/>
               </svg>
-              외부 서비스
+              {{ t('nodes.external') }}
             </button>
             <button @click="onCanvasAddNode('dns')">
               <svg class="menu-icon" viewBox="0 0 11 11" fill="none">
@@ -812,13 +812,13 @@
           </div>
         </div>
       </template>
-      <button @click="openExportModal">내보내기</button>
+      <button @click="openExportModal">{{ t('graph.export.title') }}</button>
     </div>
 
     <!-- 내보내기 모달 -->
     <div v-if="exportModal.visible" class="modal-backdrop" @click.self="exportModal.visible = false">
       <div class="export-modal">
-        <h3>내보내기</h3>
+        <h3>{{ t('graph.export.title') }}</h3>
         <div class="export-format">
           <label :class="{ active: exportModal.format === 'png' }">
             <input type="radio" value="png" v-model="exportModal.format" />
@@ -831,11 +831,11 @@
         </div>
         <label class="export-option">
           <input type="checkbox" v-model="exportModal.transparent" />
-          배경 제거 (투명)
+          {{ t('graph.export.transparentBg') }}
         </label>
         <div class="export-actions">
-          <button class="btn-ghost" @click="exportModal.visible = false">취소</button>
-          <button class="btn-primary" @click="onExportConfirm">내보내기</button>
+          <button class="btn-ghost" @click="exportModal.visible = false">{{ t('common.cancel') }}</button>
+          <button class="btn-primary" @click="onExportConfirm">{{ t('graph.export.submit') }}</button>
         </div>
       </div>
     </div>
@@ -844,10 +844,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import * as d3 from 'd3'
 import type { AnyNode, DnsNode, D3Node, D3Link, Server, L7Node, InfraNode, ExternalServiceNode, ExternalContact } from '../types'
 import { useGraphStore } from '../stores/graph'
 
+const { t } = useI18n()
 const graphStore = useGraphStore()
 
 const props = defineProps<{
@@ -971,11 +973,11 @@ function isConnectionBlocked(source: D3Node, target: D3Node): boolean {
 }
 
 function getBlockedMessage(source: D3Node, target: D3Node): string {
-  if (source.nodeKind === 'infra') return '인프라 노드는 다른 노드에 대한 의존성을 가질 수 없습니다'
-  if (graphStore.isL7MemberDependency(source.id, target.id)) return 'L7 노드와 그룹 멤버 서버 간에는 의존성을 추가할 수 없습니다'
-  if (target.nodeKind === 'dns') return 'DNS 노드는 의존성의 대상이 될 수 없습니다'
-  if (source.nodeKind === 'dns' && target.nodeKind === 'infra') return 'DNS 노드에서 인프라 노드로 의존성을 추가할 수 없습니다'
-  return '연결할 수 없습니다'
+  if (source.nodeKind === 'infra') return t('graph.blockMsg.infraSource')
+  if (graphStore.isL7MemberDependency(source.id, target.id)) return t('graph.blockMsg.l7Member')
+  if (target.nodeKind === 'dns') return t('graph.blockMsg.dnsTarget')
+  if (source.nodeKind === 'dns' && target.nodeKind === 'infra') return t('graph.blockMsg.dnsToInfra')
+  return t('graph.blockMsg.default')
 }
 
 let blockMsgTimer: ReturnType<typeof setTimeout> | null = null
@@ -1087,13 +1089,13 @@ function externalStatusText(node: ExternalServiceNode): string {
   const parts: string[] = []
   if (node.hasFirewall) parts.push('FW')
   if (node.hasWhitelist) parts.push('Whitelist')
-  return parts.length > 0 ? parts.join(' / ') : '직접 연결'
+  return parts.length > 0 ? parts.join(' / ') : t('graph.tooltip.directConnect')
 }
 
 function contactSummary(contacts?: ExternalContact[]): string {
-  if (!contacts || contacts.length === 0) return '담당자 없음'
+  if (!contacts || contacts.length === 0) return t('graph.tooltip.noContacts')
   if (contacts.length === 1) return contacts[0].name
-  return `${contacts[0].name} 외 ${contacts.length - 1}명`
+  return t('graph.tooltip.contactMore', { name: contacts[0].name, count: contacts.length - 1 })
 }
 
 interface TooltipLine {
@@ -1108,31 +1110,31 @@ function getTooltipData(node: D3Node): TooltipLine[] {
   const lines: TooltipLine[] = []
   if (!node.nodeKind || node.nodeKind === 'server') {
     const s = node as unknown as Server
-    if (s.team) lines.push({ label: '팀', value: s.team })
-    s.internalIps?.forEach(ip => lines.push({ label: '내부', value: ip, isTech: true }))
+    if (s.team) lines.push({ label: t('graph.tooltip.team'), value: s.team })
+    s.internalIps?.forEach(ip => lines.push({ label: t('graph.tooltip.internal'), value: ip, isTech: true }))
     s.natIps?.forEach(ip => lines.push({ label: 'NAT', value: ip, isTech: true }))
     if (s.description) lines.push({ value: truncate(s.description, 30) })
   } else if (node.nodeKind === 'l7') {
     const l = node as unknown as L7Node
     if (l.ip) lines.push({ label: 'IP', value: l.ip, isTech: true })
     if (l.natIp) lines.push({ label: 'NAT', value: l.natIp, isTech: true })
-    lines.push({ label: '멤버', value: `${l.memberServerIds?.length ?? 0}개 서버` })
+    lines.push({ label: t('graph.tooltip.member'), value: t('graph.tooltip.memberCount', { count: l.memberServerIds?.length ?? 0 }) })
     if (l.description) lines.push({ value: truncate(l.description, 30) })
   } else if (node.nodeKind === 'infra') {
     const i = node as unknown as InfraNode
-    if (i.infraType) lines.push({ label: '타입', value: i.infraType })
-    if (i.host) lines.push({ label: '호스트', value: `${i.host}${i.port ? ':' + i.port : ''}`, isTech: true })
+    if (i.infraType) lines.push({ label: t('graph.tooltip.type'), value: i.infraType })
+    if (i.host) lines.push({ label: t('graph.tooltip.host'), value: `${i.host}${i.port ? ':' + i.port : ''}`, isTech: true })
     if (i.description) lines.push({ value: truncate(i.description, 30) })
   } else if (node.nodeKind === 'external') {
     const e = node as unknown as ExternalServiceNode
-    if (e.hasFirewall) lines.push({ value: '방화벽 적용' })
-    if (e.hasWhitelist) lines.push({ value: '화이트리스트 적용' })
-    e.contacts?.forEach(c => lines.push({ label: '담당', value: c.name }))
+    if (e.hasFirewall) lines.push({ value: t('graph.tooltip.firewallApplied') })
+    if (e.hasWhitelist) lines.push({ value: t('graph.tooltip.whitelistApplied') })
+    e.contacts?.forEach(c => lines.push({ label: t('graph.tooltip.contact'), value: c.name }))
     if (e.description) lines.push({ value: truncate(e.description, 30) })
   } else if (node.nodeKind === 'dns') {
     const d = node as unknown as DnsNode
-    lines.push({ label: '타입', value: d.dnsType })
-    if (d.recordValue) lines.push({ label: '값', value: d.recordValue, isTech: true })
+    lines.push({ label: t('graph.tooltip.type'), value: d.dnsType })
+    if (d.recordValue) lines.push({ label: t('graph.tooltip.dnsValue'), value: d.recordValue, isTech: true })
     if (d.ttl != null) lines.push({ label: 'TTL', value: String(d.ttl), isTech: true })
     if (d.description) lines.push({ value: truncate(d.description, 30) })
   }
@@ -1140,11 +1142,8 @@ function getTooltipData(node: D3Node): TooltipLine[] {
 }
 
 function nodeKindLabel(kind: string): string {
-  if (kind === 'l7') return 'L7 로드밸런서'
-  if (kind === 'infra') return '인프라'
-  if (kind === 'external') return '외부 서비스'
-  if (kind === 'dns') return 'DNS'
-  return '서버'
+  const key = kind as 'server' | 'l7' | 'infra' | 'external' | 'dns'
+  return t(`graph.nodeKindLabel.${key || 'server'}`)
 }
 
 // ─── 색상 ───────────────────────────────────────────────
@@ -1996,13 +1995,13 @@ function searchNodeSubInfo(node: D3Node): string {
       const matched = allIps.filter(ip => ip.toLowerCase().includes(q))
       if (matched.length > 0) {
         const rest = allIps.length - matched.length
-        const label = matched[0] + (matched.length > 1 ? ` 외 ${matched.length - 1}개 매칭` : '')
-        return rest > 0 ? `${label} (총 ${allIps.length}개)` : label
+        const label = matched[0] + (matched.length > 1 ? ' ' + t('graph.search.matchedIp', { ip: '', count: matched.length - 1 }).trim() : '')
+        return rest > 0 ? t('graph.search.matchedIpTotal', { label, total: allIps.length }) : label
       }
     }
     // 기본: 대표 IP + 총 개수
     if (allIps.length === 0) return ''
-    return allIps.length > 1 ? `${allIps[0]} 외 ${allIps.length - 1}개` : allIps[0]
+    return allIps.length > 1 ? t('graph.search.ipMore', { ip: allIps[0], count: allIps.length - 1 }) : allIps[0]
   }
   if (node.nodeKind === 'l7') return (node as any).ip ?? ''
   if (node.nodeKind === 'infra') {
@@ -2132,7 +2131,7 @@ async function exportGraph(format: 'svg' | 'png', transparent = false) {
   const img = new Image()
   await new Promise<void>((resolve, reject) => {
     img.onload = () => resolve()
-    img.onerror = () => reject(new Error('SVG 로드 실패'))
+    img.onerror = () => reject(new Error(t('graph.exportError')))
     img.src = url
   })
   const scale = 2
