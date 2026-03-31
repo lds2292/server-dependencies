@@ -28,6 +28,7 @@
           <transition name="fade">
             <router-link v-if="showHeaderCta" to="/register" class="btn-primary btn-sm">{{ $t('hero.nav.start') }}</router-link>
           </transition>
+          <button class="locale-toggle" @click="toggleLocale">{{ currentLocale === 'ko' ? 'English' : '한국어' }}</button>
         </div>
       </div>
     </header>
@@ -387,6 +388,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { setLocale, getLocale } from '../i18n'
+
+const currentLocale = ref(getLocale())
+function toggleLocale() {
+  const next = currentLocale.value === 'ko' ? 'en' : 'ko'
+  setLocale(next)
+  currentLocale.value = next
+}
 
 const heroPageRef = ref<HTMLElement | null>(null)
 const heroActionsRef = ref<HTMLElement | null>(null)
@@ -478,6 +487,23 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+.locale-toggle {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  transition: color 0.15s, border-color 0.15s;
+}
+.locale-toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
 }
 .nav-login {
   font-size: var(--text-sm);

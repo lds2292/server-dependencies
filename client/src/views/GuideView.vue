@@ -28,6 +28,7 @@
           <router-link to="/guide" class="nav-link active">{{ $t('guide.nav.guide') }}</router-link>
           <router-link to="/login" class="nav-login">{{ $t('guide.nav.login') }}</router-link>
           <router-link to="/register" class="btn-primary btn-sm">{{ $t('guide.nav.start') }}</router-link>
+          <button class="locale-toggle" @click="toggleLocale">{{ currentLocale === 'ko' ? 'English' : '한국어' }}</button>
         </div>
       </div>
     </header>
@@ -381,8 +382,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { setLocale, getLocale } from '../i18n'
 
 const { tm } = useI18n()
+const currentLocale = ref(getLocale())
+function toggleLocale() {
+  const next = currentLocale.value === 'ko' ? 'en' : 'ko'
+  setLocale(next)
+  currentLocale.value = next
+}
 
 const guidePageRef = ref<HTMLElement | null>(null)
 const sectionRefs = ref<HTMLElement[]>([])
@@ -515,6 +523,23 @@ onUnmounted(() => {
   padding-right: 12px;
   margin-right: 4px;
   border-right: 1px solid var(--border-default);
+}
+.locale-toggle {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  transition: color 0.15s, border-color 0.15s;
+}
+.locale-toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
 }
 .nav-login {
   font-size: var(--text-sm);

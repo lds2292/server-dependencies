@@ -58,6 +58,9 @@
       <div v-if="googleError" class="form-error">{{ googleError }}</div>
 
       <p class="auth-link">{{ $t('auth.login.noAccount') }} <router-link to="/register">{{ $t('auth.login.register') }}</router-link></p>
+      <div class="auth-locale">
+        <button class="locale-toggle" @click="toggleLocale">{{ currentLocale === 'ko' ? 'English' : '한국어' }}</button>
+      </div>
     </div>
   </div>
 </template>
@@ -67,9 +70,16 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
+import { setLocale, getLocale } from '../i18n'
 import { renderGoogleButton, isGoogleAuthAvailable } from '../utils/googleAuth'
 
 const { t } = useI18n()
+const currentLocale = ref(getLocale())
+function toggleLocale() {
+  const next = currentLocale.value === 'ko' ? 'en' : 'ko'
+  setLocale(next)
+  currentLocale.value = next
+}
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
@@ -231,4 +241,12 @@ onMounted(() => {
 .auth-link { text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin: 20px 0 0 0; }
 .auth-link a { color: var(--accent-soft); text-decoration: none; }
 .auth-link a:hover { text-decoration: underline; }
+.auth-locale { text-align: center; margin-top: 16px; }
+.locale-toggle {
+  font-size: var(--text-xs); font-weight: 600; color: var(--text-tertiary);
+  background: transparent; border: 1px solid var(--border-default); border-radius: 4px;
+  padding: 4px 12px; cursor: pointer; font-family: var(--font-mono);
+  transition: color 0.15s, border-color 0.15s;
+}
+.locale-toggle:hover { color: var(--text-primary); border-color: var(--border-strong); }
 </style>
