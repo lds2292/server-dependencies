@@ -23,6 +23,7 @@
         </div>
 
         <div class="header-actions">
+          <router-link to="/guide" class="nav-link">가이드</router-link>
           <router-link to="/login" class="nav-login">로그인</router-link>
           <transition name="fade">
             <router-link v-if="showHeaderCta" to="/register" class="btn-primary btn-sm">시작하기</router-link>
@@ -470,11 +471,6 @@ onUnmounted(() => {
   letter-spacing: 0.02em;
   flex-shrink: 0;
 }
-.header-nav {
-  display: none;
-  align-items: center;
-  gap: 32px;
-}
 .nav-link {
   font-size: var(--text-sm);
   font-weight: 500;
@@ -484,6 +480,11 @@ onUnmounted(() => {
 }
 .nav-link:hover {
   color: var(--text-primary);
+}
+.header-actions .nav-link {
+  padding-right: 12px;
+  margin-right: 4px;
+  border-right: 1px solid var(--border-default);
 }
 .header-actions {
   display: flex;
@@ -1128,9 +1129,12 @@ onUnmounted(() => {
   }
 }
 
-@media (min-width: 768px) {
-  .header-nav {
-    display: flex;
+@media (max-width: 400px) {
+  .header-brand {
+    font-size: 0;
+  }
+  .header-brand svg {
+    flex-shrink: 0;
   }
 }
 
