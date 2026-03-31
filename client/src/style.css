@@ -45,6 +45,10 @@
   --accent-bg-deep: #1f1a12;   /* 깊은 앰버 배경 (버튼, 뱃지) */
   --accent-bg-subtle: #17140e; /* 그라디언트 등 */
 
+  /* ── i18n locale badge ── */
+  --locale-badge-bg: var(--bg-elevated);
+  --locale-badge-color: var(--text-muted);
+
   /* ── 상태 색상 ── */
   --color-success: #22c55e;
   --color-success-light: #4ade80;   /* green-400 */
