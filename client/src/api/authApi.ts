@@ -5,6 +5,8 @@ export interface AuthUser {
   email: string
   username: string
   createdAt: string
+  hasPassword: boolean
+  providers: string[]
 }
 
 export interface AuthResponse {
@@ -19,6 +21,9 @@ export const authApi = {
   },
   login(email: string, password: string) {
     return http.post<AuthResponse>('/auth/login', { email, password })
+  },
+  googleLogin(idToken: string) {
+    return http.post<AuthResponse>('/auth/google', { idToken })
   },
   logout(refreshToken: string) {
     return http.post('/auth/logout', { refreshToken })
@@ -35,7 +40,7 @@ export const authApi = {
   changePassword(data: { currentPassword: string; newPassword: string }) {
     return http.put<{ message: string }>('/auth/password', data)
   },
-  deleteAccount(password: string) {
-    return http.delete('/auth/account', { data: { password } })
+  deleteAccount(params: { password: string } | { provider: string; idToken: string }) {
+    return http.delete('/auth/account', { data: params })
   },
 }

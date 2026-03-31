@@ -70,6 +70,42 @@ export async function login(req: Request, res: Response): Promise<void> {
   }
 }
 
+export async function googleLogin(req: Request, res: Response): Promise<void> {
+  const { ipAddress, userAgent } = getClientInfo(req)
+  try {
+    const { idToken } = req.body
+    if (!idToken) {
+      res.status(400).json({ error: 'idToken이 필요합니다.', code: 'VALIDATION_ERROR' })
+      return
+    }
+    const result = await authService.googleLogin(idToken)
+    await auditLogService.createAuditLog({
+      action: result.isNewUser ? 'REGISTER_GOOGLE' : 'LOGIN_GOOGLE',
+      status: 'SUCCESS',
+      userId: result.user.id,
+      email: result.user.email,
+      ipAddress,
+      userAgent,
+    })
+    logger.info(`AUTH google ${result.isNewUser ? 'register' : 'login'} success`, { userId: result.user.id, email: result.user.email, ipAddress })
+    const status = result.isNewUser ? 201 : 200
+    res.status(status).json({
+      user: { id: result.user.id, email: result.user.email, username: result.user.username, createdAt: result.user.createdAt },
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    })
+  } catch (err: unknown) {
+    const e = err as { code?: string; message?: string }
+    if (e.code === 'INVALID_GOOGLE_TOKEN' || e.code === 'EMAIL_NOT_VERIFIED') {
+      logger.warn('AUTH google login failed', { reason: e.code })
+      res.status(401).json({ error: e.message, code: e.code })
+    } else {
+      logger.error('AUTH google login error', { error: (err as Error).message })
+      res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+    }
+  }
+}
+
 export async function logout(req: Request, res: Response): Promise<void> {
   const { ipAddress, userAgent } = getClientInfo(req)
   try {
@@ -166,6 +202,8 @@ export async function changePassword(req: Request, res: Response): Promise<void>
     const e = err as { code?: string; message?: string }
     if (e.code === 'INVALID_CREDENTIALS') {
       res.status(401).json({ error: '현재 비밀번호가 올바르지 않습니다.', code: e.code })
+    } else if (e.code === 'OAUTH_ONLY_ACCOUNT') {
+      res.status(403).json({ error: '비밀번호가 설정되어 있지 않습니다.', code: e.code })
     } else if (e.code === 'VALIDATION_ERROR') {
       res.status(400).json({ error: e.message, code: e.code })
     } else {
@@ -178,13 +216,18 @@ export async function changePassword(req: Request, res: Response): Promise<void>
 export async function deleteAccount(req: Request, res: Response): Promise<void> {
   const { ipAddress, userAgent } = getClientInfo(req)
   try {
-    const { password } = req.body
-    if (!password) {
-      res.status(400).json({ error: '비밀번호를 입력하세요.', code: 'VALIDATION_ERROR' })
+    const { password, provider, idToken } = req.body
+    const userId = req.user!.userId
+
+    if (provider && idToken) {
+      await authService.deleteAccountWithOAuth(userId, provider, idToken)
+    } else if (password) {
+      await authService.deleteAccount(userId, password)
+    } else {
+      res.status(400).json({ error: '본인 확인 정보가 필요합니다.', code: 'VALIDATION_ERROR' })
       return
     }
-    const userId = req.user!.userId
-    await authService.deleteAccount(userId, password)
+
     await auditLogService.createAuditLog({
       action: 'ACCOUNT_DELETE', status: 'SUCCESS',
       email: req.user!.email, ipAddress, userAgent,
@@ -195,8 +238,12 @@ export async function deleteAccount(req: Request, res: Response): Promise<void> 
     const e = err as { code?: string; message?: string }
     if (e.code === 'INVALID_CREDENTIALS') {
       res.status(401).json({ error: '비밀번호가 올바르지 않습니다.', code: e.code })
+    } else if (e.code === 'INVALID_GOOGLE_TOKEN') {
+      res.status(401).json({ error: 'Google 인증에 실패했습니다.', code: e.code })
     } else if (e.code === 'MASTER_ROLE_EXISTS') {
       res.status(409).json({ error: e.message, code: e.code })
+    } else if (e.code === 'UNSUPPORTED_PROVIDER') {
+      res.status(400).json({ error: e.message, code: e.code })
     } else {
       logger.error('AUTH account delete error', { userId: req.user!.userId, error: (err as Error).message })
       res.status(500).json({ error: '서버 오류가 발생했습니다.' })
@@ -212,7 +259,18 @@ export async function me(req: Request, res: Response): Promise<void> {
       res.status(404).json({ error: '사용자를 찾을 수 없습니다.' }); return
     }
     const decrypted = authService.decryptUserFields(user)
-    res.json({ id: decrypted.id, email: decrypted.email, username: decrypted.username, createdAt: decrypted.createdAt })
+    const oauthAccounts = await prisma.oAuthAccount.findMany({
+      where: { userId: decrypted.id },
+      select: { provider: true },
+    })
+    res.json({
+      id: decrypted.id,
+      email: decrypted.email,
+      username: decrypted.username,
+      createdAt: decrypted.createdAt,
+      hasPassword: user.passwordHash !== null,
+      providers: oauthAccounts.map(a => a.provider),
+    })
   } catch (err) {
     logger.error('AUTH me error', { userId: req.user!.userId, error: (err as Error).message })
     res.status(500).json({ error: '서버 오류가 발생했습니다.' })

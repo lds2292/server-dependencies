@@ -60,15 +60,21 @@
         </button>
       </form>
 
+      <!-- 소셜 로그인 구분선 + Google 버튼 -->
+      <div class="auth-divider"><span>또는</span></div>
+      <div ref="googleBtnRef" class="google-btn-container"></div>
+      <div v-if="googleError" class="form-error">{{ googleError }}</div>
+
       <p class="auth-link">이미 계정이 있으신가요? <router-link to="/login">로그인</router-link></p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { renderGoogleButton, isGoogleAuthAvailable } from '../utils/googleAuth'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -76,6 +82,8 @@ const auth = useAuthStore()
 const form = ref({ email: '', username: '', password: '', confirm: '' })
 const errorMsg = ref('')
 const loading = ref(false)
+const googleBtnRef = ref<HTMLElement | null>(null)
+const googleError = ref('')
 
 async function onSubmit() {
   errorMsg.value = ''
@@ -97,6 +105,42 @@ async function onSubmit() {
     loading.value = false
   }
 }
+
+async function onGoogleToken(idToken: string) {
+  googleError.value = ''
+  try {
+    await auth.googleLogin(idToken)
+    router.push({ name: 'projects' })
+  } catch (err: unknown) {
+    const e = err as { response?: { data?: { code?: string } } }
+    const code = e.response?.data?.code
+    if (code === 'EMAIL_NOT_VERIFIED') {
+      googleError.value = '이메일이 인증되지 않은 Google 계정입니다.'
+    } else {
+      googleError.value = 'Google 인증에 실패했습니다. 다시 시도해 주세요.'
+    }
+  }
+}
+
+function tryRenderGoogleButton() {
+  if (googleBtnRef.value && isGoogleAuthAvailable()) {
+    renderGoogleButton(googleBtnRef.value, onGoogleToken)
+    return true
+  }
+  return false
+}
+
+onMounted(() => {
+  if (!tryRenderGoogleButton()) {
+    let attempts = 0
+    const interval = setInterval(() => {
+      attempts++
+      if (tryRenderGoogleButton() || attempts >= 20) {
+        clearInterval(interval)
+      }
+    }, 200)
+  }
+})
 </script>
 
 <style scoped>
@@ -162,6 +206,33 @@ async function onSubmit() {
   border-radius: 6px; padding: 8px 12px;
 }
 .btn-auth-submit { width: 100%; margin-top: 4px; }
+
+/* 구분선 */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-default);
+}
+.auth-divider span {
+  font-size: var(--text-xs);
+  color: var(--text-disabled);
+  white-space: nowrap;
+}
+
+/* Google 버튼 컨테이너 */
+.google-btn-container {
+  display: flex;
+  justify-content: center;
+}
+
 .auth-link { text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin: 20px 0 0 0; }
 .auth-link a { color: var(--accent-soft); text-decoration: none; }
 .auth-link a:hover { text-decoration: underline; }

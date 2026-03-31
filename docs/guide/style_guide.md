@@ -594,6 +594,62 @@ import Icon from '../components/Icon.vue'
 
 ---
 
+## 소셜 로그인 버튼
+
+### Google 로그인 버튼 (GIS 빌트인)
+
+Google 로그인 버튼은 Google Identity Services(GIS) 빌트인 렌더링을 사용한다. 커스텀 스타일링하지 않는다.
+
+```typescript
+import { renderGoogleButton } from '../utils/googleAuth'
+
+// DOM 요소에 Google 공식 버튼을 렌더링
+renderGoogleButton(element, (idToken) => { /* 처리 */ })
+```
+
+설정: `theme: 'filled_black'`, `size: 'large'`, `text: 'continue_with'`
+버튼은 iframe으로 렌더링되므로 앱 CSS와 충돌하지 않는다.
+
+### Google "G" 로고 (SVG)
+
+AccountView의 로그인 방법 섹션 등에서 Google 아이콘이 필요할 때는 공식 다색 "G" 로고를 인라인 SVG로 사용한다.
+Icon.vue에 등록하지 않는다 (브랜드 로고는 Icon 컴포넌트 대상이 아님).
+
+### 구분선 (auth-divider)
+
+로그인/회원가입 페이지에서 일반 폼과 소셜 로그인을 구분하는 "또는" 구분선.
+각 뷰의 scoped style에 정의한다.
+
+```css
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-default);
+}
+.auth-divider span {
+  font-size: var(--text-xs);
+  color: var(--text-disabled);
+  white-space: nowrap;
+}
+```
+
+### 향후 OAuth 프로바이더 추가 시
+
+새 OAuth 프로바이더(GitHub, Kakao 등) 추가 시:
+- GIS 빌트인처럼 공식 SDK 렌더링이 있으면 그것을 사용한다
+- 커스텀 버튼이 필요하면 `style.css`에 글로벌 CSS 변수를 추가한다 (예: `--btn-github-bg`)
+- `client/src/utils/` 아래에 프로바이더별 유틸 파일을 생성한다
+
+---
+
 ## JS에서 CSS 변수 읽기
 
 GraphCanvas 등 D3/Canvas 기반 컴포넌트에서는 `getComputedStyle`로 CSS 변수를 읽는다.

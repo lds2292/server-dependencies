@@ -17,6 +17,8 @@ export type AuditAction =
   | 'PROFILE_UPDATE'
   | 'PASSWORD_CHANGE'
   | 'ACCOUNT_DELETE'
+  | 'LOGIN_GOOGLE'
+  | 'REGISTER_GOOGLE'
 export type AuditStatus = 'SUCCESS' | 'FAILED'
 
 interface CreateAuditLogParams {

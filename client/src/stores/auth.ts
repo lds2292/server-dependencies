@@ -8,6 +8,8 @@ export const useAuthStore = defineStore('auth', () => {
   const sessionInitialized = ref(false)
 
   const isLoggedIn = computed(() => user.value !== null)
+  const isOAuthOnly = computed(() => user.value !== null && !user.value.hasPassword)
+  const hasGoogleProvider = computed(() => user.value?.providers?.includes('google') ?? false)
 
   async function initializeSession(): Promise<void> {
     if (sessionInitialized.value) return
@@ -41,6 +43,13 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = data.user
   }
 
+  async function googleLogin(idToken: string): Promise<void> {
+    const { data } = await authApi.googleLogin(idToken)
+    setAccessToken(data.accessToken)
+    localStorage.setItem('refreshToken', data.refreshToken)
+    user.value = data.user
+  }
+
   async function logout(): Promise<void> {
     const refreshToken = localStorage.getItem('refreshToken')
     if (refreshToken) {
@@ -62,12 +71,16 @@ export const useAuthStore = defineStore('auth', () => {
     await authApi.changePassword({ currentPassword, newPassword })
   }
 
-  async function deleteAccount(password: string): Promise<void> {
-    await authApi.deleteAccount(password)
+  async function deleteAccount(params: { password: string } | { provider: string; idToken: string }): Promise<void> {
+    await authApi.deleteAccount(params)
     setAccessToken(null)
     localStorage.removeItem('refreshToken')
     user.value = null
   }
 
-  return { user, isLoggedIn, sessionInitialized, initializeSession, login, register, logout, updateProfile, changePassword, deleteAccount }
+  return {
+    user, isLoggedIn, isOAuthOnly, hasGoogleProvider, sessionInitialized,
+    initializeSession, login, register, googleLogin, logout,
+    updateProfile, changePassword, deleteAccount,
+  }
 })

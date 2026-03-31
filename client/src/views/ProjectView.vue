@@ -81,6 +81,7 @@
               <Icon name="settings" :size="16" />
             </button>
             <div v-if="showSettingsDropdown" class="toolbar-dropdown">
+              <button v-if="projectStore.canAdmin" @click="router.push({ name: 'projectSettings', params: { id: projectStore.currentProject!.id } }); showSettingsDropdown = false">프로젝트 설정</button>
               <button v-if="projectStore.canAdmin" @click="router.push({ name: 'auditLogs', params: { id: projectStore.currentProject!.id } }); showSettingsDropdown = false">감사 로그</button>
               <button v-if="projectStore.canAdmin" @click="onOpenMembersModal(); showSettingsDropdown = false">멤버 관리</button>
               <div v-if="projectStore.canAdmin && projectStore.canWrite && !hasData" class="toolbar-dropdown-divider"></div>
