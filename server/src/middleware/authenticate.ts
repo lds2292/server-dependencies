@@ -13,7 +13,7 @@ declare global {
 export function authenticate(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization
   if (!authHeader?.startsWith('Bearer ')) {
-    res.status(401).json({ error: '인증이 필요합니다.' })
+    res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' })
     return
   }
   try {
@@ -21,6 +21,6 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
     req.user = verifyAccessToken(token)
     next()
   } catch {
-    res.status(401).json({ error: '유효하지 않거나 만료된 토큰입니다.' })
+    res.status(401).json({ error: 'Invalid or expired token', code: 'INVALID_TOKEN' })
   }
 }

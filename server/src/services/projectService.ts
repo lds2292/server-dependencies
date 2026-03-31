@@ -33,8 +33,8 @@ async function getRequesterMember(projectId: string, requestingUserId: string) {
 
 export async function checkPermission(projectId: string, userId: string, action: import('../lib/permissions').PermissionAction) {
   const member = await getRequesterMember(projectId, userId)
-  if (!member) throw Object.assign(new Error('프로젝트를 찾을 수 없습니다.'), { code: 'NOT_FOUND' })
-  if (!can(member.role, action)) throw Object.assign(new Error('접근 권한이 없습니다.'), { code: 'ACCESS_DENIED' })
+  if (!member) throw Object.assign(new Error('Project not found'), { code: 'NOT_FOUND' })
+  if (!can(member.role, action)) throw Object.assign(new Error('Access denied'), { code: 'ACCESS_DENIED' })
 }
 
 export async function getProjectsForUser(userId: string) {
@@ -51,9 +51,9 @@ export async function getProjectById(projectId: string, requestingUserId: string
     where: { id: projectId },
     include: memberInclude,
   })
-  if (!project) throw Object.assign(new Error('프로젝트를 찾을 수 없습니다.'), { code: 'NOT_FOUND' })
+  if (!project) throw Object.assign(new Error('Project not found'), { code: 'NOT_FOUND' })
   const isMember = project.members.some((m: { userId: string }) => m.userId === requestingUserId)
-  if (!isMember) throw Object.assign(new Error('접근 권한이 없습니다.'), { code: 'ACCESS_DENIED' })
+  if (!isMember) throw Object.assign(new Error('Access denied'), { code: 'ACCESS_DENIED' })
   return decryptProjectMembers(project)
 }
 
@@ -78,8 +78,8 @@ export async function createProject(name: string, ownerId: string, description?:
 
 export async function updateProject(projectId: string, requestingUserId: string, patch: { name?: string; description?: string }) {
   const requester = await getRequesterMember(projectId, requestingUserId)
-  if (!requester) throw Object.assign(new Error('프로젝트를 찾을 수 없습니다.'), { code: 'NOT_FOUND' })
-  if (!can(requester.role, 'update_project')) throw Object.assign(new Error('접근 권한이 없습니다.'), { code: 'ACCESS_DENIED' })
+  if (!requester) throw Object.assign(new Error('Project not found'), { code: 'NOT_FOUND' })
+  if (!can(requester.role, 'update_project')) throw Object.assign(new Error('Access denied'), { code: 'ACCESS_DENIED' })
 
   const updated = await prisma.project.update({
     where: { id: projectId },
@@ -91,27 +91,27 @@ export async function updateProject(projectId: string, requestingUserId: string,
 
 export async function deleteProject(projectId: string, requestingUserId: string) {
   const requester = await getRequesterMember(projectId, requestingUserId)
-  if (!requester) throw Object.assign(new Error('프로젝트를 찾을 수 없습니다.'), { code: 'NOT_FOUND' })
-  if (!can(requester.role, 'delete_project')) throw Object.assign(new Error('접근 권한이 없습니다.'), { code: 'ACCESS_DENIED' })
+  if (!requester) throw Object.assign(new Error('Project not found'), { code: 'NOT_FOUND' })
+  if (!can(requester.role, 'delete_project')) throw Object.assign(new Error('Access denied'), { code: 'ACCESS_DENIED' })
   await prisma.project.delete({ where: { id: projectId } })
 }
 
 export async function addMember(projectId: string, requestingUserId: string, identifier: string, role: ProjectMemberRole) {
   const requester = await getRequesterMember(projectId, requestingUserId)
-  if (!requester) throw Object.assign(new Error('프로젝트를 찾을 수 없습니다.'), { code: 'NOT_FOUND' })
-  if (!can(requester.role, 'add_member')) throw Object.assign(new Error('접근 권한이 없습니다.'), { code: 'ACCESS_DENIED' })
-  if (!canAssignRole(requester.role, role)) throw Object.assign(new Error('해당 역할을 부여할 권한이 없습니다.'), { code: 'ACCESS_DENIED' })
+  if (!requester) throw Object.assign(new Error('Project not found'), { code: 'NOT_FOUND' })
+  if (!can(requester.role, 'add_member')) throw Object.assign(new Error('Access denied'), { code: 'ACCESS_DENIED' })
+  if (!canAssignRole(requester.role, role)) throw Object.assign(new Error('Not authorized to assign this role'), { code: 'ACCESS_DENIED' })
 
   const emailHash = hmac(identifier.toLowerCase())
   const target = await prisma.user.findUnique({
     where: { emailHash },
   })
-  if (!target) throw Object.assign(new Error('해당 사용자를 찾을 수 없습니다.'), { code: 'MEMBER_NOT_FOUND' })
+  if (!target) throw Object.assign(new Error('User not found'), { code: 'MEMBER_NOT_FOUND' })
 
   const alreadyMember = await prisma.projectMember.findUnique({
     where: { projectId_userId: { projectId, userId: target.id } },
   })
-  if (alreadyMember) throw Object.assign(new Error('이미 멤버입니다.'), { code: 'ALREADY_MEMBER' })
+  if (alreadyMember) throw Object.assign(new Error('Already a member'), { code: 'ALREADY_MEMBER' })
 
   await prisma.projectMember.create({ data: { projectId, userId: target.id, role } })
   return getProjectById(projectId, requestingUserId)
@@ -122,14 +122,14 @@ export async function removeMember(projectId: string, requestingUserId: string, 
     getRequesterMember(projectId, requestingUserId),
     getRequesterMember(projectId, targetUserId),
   ])
-  if (!requester) throw Object.assign(new Error('프로젝트를 찾을 수 없습니다.'), { code: 'NOT_FOUND' })
-  if (!target) throw Object.assign(new Error('해당 멤버를 찾을 수 없습니다.'), { code: 'NOT_FOUND' })
+  if (!requester) throw Object.assign(new Error('Project not found'), { code: 'NOT_FOUND' })
+  if (!target) throw Object.assign(new Error('Member not found'), { code: 'NOT_FOUND' })
 
   const isSelf = requestingUserId === targetUserId
   if (isSelf) {
-    if (requester.role === 'MASTER') throw Object.assign(new Error('Master는 ownership을 이전한 후 탈퇴할 수 있습니다.'), { code: 'ACCESS_DENIED' })
+    if (requester.role === 'MASTER') throw Object.assign(new Error('Master must transfer ownership before leaving'), { code: 'ACCESS_DENIED' })
   } else {
-    if (!canManageTarget(requester.role, target.role)) throw Object.assign(new Error('접근 권한이 없습니다.'), { code: 'ACCESS_DENIED' })
+    if (!canManageTarget(requester.role, target.role)) throw Object.assign(new Error('Access denied'), { code: 'ACCESS_DENIED' })
   }
 
   await prisma.projectMember.delete({ where: { projectId_userId: { projectId, userId: targetUserId } } })
@@ -140,8 +140,8 @@ export async function removeMember(projectId: string, requestingUserId: string, 
 
 export async function leaveProject(projectId: string, userId: string) {
   const member = await getRequesterMember(projectId, userId)
-  if (!member) throw Object.assign(new Error('프로젝트 멤버가 아닙니다.'), { code: 'NOT_FOUND' })
-  if (member.role === 'MASTER') throw Object.assign(new Error('Master는 ownership을 이전한 후 탈퇴할 수 있습니다.'), { code: 'ACCESS_DENIED' })
+  if (!member) throw Object.assign(new Error('Not a project member'), { code: 'NOT_FOUND' })
+  if (member.role === 'MASTER') throw Object.assign(new Error('Master must transfer ownership before leaving'), { code: 'ACCESS_DENIED' })
   await prisma.projectMember.delete({ where: { projectId_userId: { projectId, userId } } })
 }
 
@@ -150,12 +150,12 @@ export async function updateMemberRole(projectId: string, requestingUserId: stri
     getRequesterMember(projectId, requestingUserId),
     getRequesterMember(projectId, targetUserId),
   ])
-  if (!requester) throw Object.assign(new Error('프로젝트를 찾을 수 없습니다.'), { code: 'NOT_FOUND' })
-  if (!target) throw Object.assign(new Error('해당 멤버를 찾을 수 없습니다.'), { code: 'NOT_FOUND' })
+  if (!requester) throw Object.assign(new Error('Project not found'), { code: 'NOT_FOUND' })
+  if (!target) throw Object.assign(new Error('Member not found'), { code: 'NOT_FOUND' })
 
   // Ownership 이전: 새 역할이 MASTER인 경우
   if (newRole === 'MASTER') {
-    if (requester.role !== 'MASTER') throw Object.assign(new Error('Ownership 이전은 Master만 가능합니다.'), { code: 'ACCESS_DENIED' })
+    if (requester.role !== 'MASTER') throw Object.assign(new Error('Only Master can transfer ownership'), { code: 'ACCESS_DENIED' })
 
     await prisma.$transaction([
       prisma.projectMember.update({
@@ -175,8 +175,8 @@ export async function updateMemberRole(projectId: string, requestingUserId: stri
   }
 
   // 일반 역할 변경
-  if (!canManageTarget(requester.role, target.role)) throw Object.assign(new Error('접근 권한이 없습니다.'), { code: 'ACCESS_DENIED' })
-  if (!canAssignRole(requester.role, newRole)) throw Object.assign(new Error('해당 역할을 부여할 권한이 없습니다.'), { code: 'ACCESS_DENIED' })
+  if (!canManageTarget(requester.role, target.role)) throw Object.assign(new Error('Access denied'), { code: 'ACCESS_DENIED' })
+  if (!canAssignRole(requester.role, newRole)) throw Object.assign(new Error('Not authorized to assign this role'), { code: 'ACCESS_DENIED' })
 
   await prisma.projectMember.update({
     where: { projectId_userId: { projectId, userId: targetUserId } },

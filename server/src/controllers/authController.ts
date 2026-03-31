@@ -34,7 +34,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       res.status(409).json({ error: e.message, code: e.code })
     } else {
       logger.error('AUTH register error', { email: req.body.email, error: (err as Error).message })
-      res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+      res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
     }
   }
 }
@@ -65,7 +65,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       res.status(401).json({ error: e.message, code: e.code })
     } else {
       logger.error('AUTH login error', { email, error: (err as Error).message })
-      res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+      res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
     }
   }
 }
@@ -75,7 +75,7 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
   try {
     const { idToken } = req.body
     if (!idToken) {
-      res.status(400).json({ error: 'idToken이 필요합니다.', code: 'VALIDATION_ERROR' })
+      res.status(400).json({ error: 'idToken is required', code: 'VALIDATION_ERROR' })
       return
     }
     const result = await authService.googleLogin(idToken)
@@ -101,7 +101,7 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
       res.status(401).json({ error: e.message, code: e.code })
     } else {
       logger.error('AUTH google login error', { error: (err as Error).message })
-      res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+      res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
     }
   }
 }
@@ -124,14 +124,14 @@ export async function logout(req: Request, res: Response): Promise<void> {
     res.status(204).send()
   } catch (err) {
     logger.error('AUTH logout error', { error: (err as Error).message })
-    res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+    res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
   }
 }
 
 export async function refresh(req: Request, res: Response): Promise<void> {
   try {
     const { refreshToken } = req.body
-    if (!refreshToken) { res.status(400).json({ error: 'refreshToken이 필요합니다.' }); return }
+    if (!refreshToken) { res.status(400).json({ error: 'refreshToken required', code: 'VALIDATION_ERROR' }); return }
     const result = await authService.refresh(refreshToken)
     logger.info('AUTH token refreshed')
     res.json(result)
@@ -139,10 +139,10 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     const e = err as { code?: string }
     if (e.code === 'SESSION_EXPIRED') {
       logger.warn('AUTH token refresh failed', { reason: 'SESSION_EXPIRED' })
-      res.status(401).json({ error: '세션이 만료되었습니다.', code: 'SESSION_EXPIRED' })
+      res.status(401).json({ error: 'Session expired', code: 'SESSION_EXPIRED' })
     } else {
       logger.warn('AUTH token refresh failed', { reason: 'INVALID_TOKEN', error: (err as Error).message })
-      res.status(401).json({ error: '유효하지 않은 토큰입니다.' })
+      res.status(401).json({ error: 'Invalid token', code: 'INVALID_TOKEN' })
     }
   }
 }
@@ -152,11 +152,11 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
   try {
     const { username } = req.body
     if (!username) {
-      res.status(400).json({ error: '변경할 항목이 없습니다.', code: 'VALIDATION_ERROR' })
+      res.status(400).json({ error: 'Nothing to update', code: 'VALIDATION_ERROR' })
       return
     }
     if (typeof username !== 'string' || username.length < 2 || username.length > 30) {
-      res.status(400).json({ error: '사용자명은 2~30자여야 합니다.', code: 'VALIDATION_ERROR' })
+      res.status(400).json({ error: 'Username must be 2-30 characters', code: 'VALIDATION_ERROR' })
       return
     }
     const user = await authService.updateProfile(req.user!.userId, { username })
@@ -174,7 +174,7 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
       res.status(400).json({ error: e.message, code: e.code })
     } else {
       logger.error('AUTH profile update error', { userId: req.user!.userId, error: (err as Error).message })
-      res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+      res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
     }
   }
 }
@@ -184,11 +184,11 @@ export async function changePassword(req: Request, res: Response): Promise<void>
   try {
     const { currentPassword, newPassword } = req.body
     if (!currentPassword || !newPassword) {
-      res.status(400).json({ error: '현재 비밀번호와 새 비밀번호를 입력하세요.', code: 'VALIDATION_ERROR' })
+      res.status(400).json({ error: 'Current password and new password are required', code: 'VALIDATION_ERROR' })
       return
     }
     if (typeof newPassword !== 'string' || newPassword.length < 8) {
-      res.status(400).json({ error: '새 비밀번호는 최소 8자여야 합니다.', code: 'VALIDATION_ERROR' })
+      res.status(400).json({ error: 'New password must be at least 8 characters', code: 'VALIDATION_ERROR' })
       return
     }
     await authService.changePassword(req.user!.userId, currentPassword, newPassword)
@@ -197,18 +197,18 @@ export async function changePassword(req: Request, res: Response): Promise<void>
       userId: req.user!.userId, ipAddress, userAgent,
     }).catch(() => {})
     logger.info('AUTH password changed', { userId: req.user!.userId })
-    res.json({ message: '비밀번호가 변경되었습니다.' })
+    res.json({ message: 'Password changed' })
   } catch (err: unknown) {
     const e = err as { code?: string; message?: string }
     if (e.code === 'INVALID_CREDENTIALS') {
-      res.status(401).json({ error: '현재 비밀번호가 올바르지 않습니다.', code: e.code })
+      res.status(401).json({ error: 'Current password is incorrect', code: e.code })
     } else if (e.code === 'OAUTH_ONLY_ACCOUNT') {
-      res.status(403).json({ error: '비밀번호가 설정되어 있지 않습니다.', code: e.code })
+      res.status(403).json({ error: 'No password is set', code: e.code })
     } else if (e.code === 'VALIDATION_ERROR') {
       res.status(400).json({ error: e.message, code: e.code })
     } else {
       logger.error('AUTH password change error', { userId: req.user!.userId, error: (err as Error).message })
-      res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+      res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
     }
   }
 }
@@ -224,7 +224,7 @@ export async function deleteAccount(req: Request, res: Response): Promise<void> 
     } else if (password) {
       await authService.deleteAccount(userId, password)
     } else {
-      res.status(400).json({ error: '본인 확인 정보가 필요합니다.', code: 'VALIDATION_ERROR' })
+      res.status(400).json({ error: 'Verification information is required', code: 'VALIDATION_ERROR' })
       return
     }
 
@@ -237,16 +237,16 @@ export async function deleteAccount(req: Request, res: Response): Promise<void> 
   } catch (err: unknown) {
     const e = err as { code?: string; message?: string }
     if (e.code === 'INVALID_CREDENTIALS') {
-      res.status(401).json({ error: '비밀번호가 올바르지 않습니다.', code: e.code })
+      res.status(401).json({ error: 'Invalid password', code: e.code })
     } else if (e.code === 'INVALID_GOOGLE_TOKEN') {
-      res.status(401).json({ error: 'Google 인증에 실패했습니다.', code: e.code })
+      res.status(401).json({ error: 'Google authentication failed', code: e.code })
     } else if (e.code === 'MASTER_ROLE_EXISTS') {
       res.status(409).json({ error: e.message, code: e.code })
     } else if (e.code === 'UNSUPPORTED_PROVIDER') {
       res.status(400).json({ error: e.message, code: e.code })
     } else {
       logger.error('AUTH account delete error', { userId: req.user!.userId, error: (err as Error).message })
-      res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+      res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
     }
   }
 }
@@ -256,7 +256,7 @@ export async function me(req: Request, res: Response): Promise<void> {
     const user = await prisma.user.findUnique({ where: { id: req.user!.userId } })
     if (!user) {
       logger.warn('AUTH me user not found', { userId: req.user!.userId })
-      res.status(404).json({ error: '사용자를 찾을 수 없습니다.' }); return
+      res.status(404).json({ error: 'User not found', code: 'NOT_FOUND' }); return
     }
     const decrypted = authService.decryptUserFields(user)
     const oauthAccounts = await prisma.oAuthAccount.findMany({
@@ -273,6 +273,6 @@ export async function me(req: Request, res: Response): Promise<void> {
     })
   } catch (err) {
     logger.error('AUTH me error', { userId: req.user!.userId, error: (err as Error).message })
-    res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+    res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
   }
 }

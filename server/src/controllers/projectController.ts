@@ -25,7 +25,7 @@ function handleProjectError(err: unknown, res: Response, context?: string): void
     res.status(409).json({ error: e.message, code: e.code }); return
   }
   logger.error(`PROJECT ${ctx} error`, { error: (err as Error).message })
-  res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+  res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
 }
 
 export async function listProjects(req: Request, res: Response): Promise<void> {
@@ -70,7 +70,7 @@ export async function deleteProject(req: Request, res: Response): Promise<void> 
 export async function addMember(req: Request, res: Response): Promise<void> {
   try {
     const { identifier, role } = req.body
-    if (!role) { res.status(400).json({ error: 'role은 필수입니다.' }); return }
+    if (!role) { res.status(400).json({ error: 'role is required', code: 'VALIDATION_ERROR' }); return }
     const project = await projectService.addMember(req.params.id, req.user!.userId, identifier, role)
     await auditLogService.createAuditLog({
       userId: req.user!.userId, projectId: req.params.id, action: 'MEMBER_ADDED', status: 'SUCCESS',
@@ -94,7 +94,7 @@ export async function removeMember(req: Request, res: Response): Promise<void> {
 export async function updateMemberRole(req: Request, res: Response): Promise<void> {
   try {
     const { role } = req.body
-    if (!role) { res.status(400).json({ error: 'role은 필수입니다.' }); return }
+    if (!role) { res.status(400).json({ error: 'role is required', code: 'VALIDATION_ERROR' }); return }
     const project = await projectService.updateMemberRole(req.params.id, req.user!.userId, req.params.userId, role)
     const auditAction = role === 'MASTER' ? 'OWNERSHIP_TRANSFERRED' : 'MEMBER_ROLE_CHANGED'
     await auditLogService.createAuditLog({
@@ -124,7 +124,7 @@ export async function transferOwnership(req: Request, res: Response): Promise<vo
   const userAgent = req.headers['user-agent']
 
   if (!targetUserId || !password) {
-    res.status(400).json({ error: 'targetUserId와 password는 필수입니다.' })
+    res.status(400).json({ error: 'targetUserId and password are required', code: 'VALIDATION_ERROR' })
     return
   }
 
@@ -148,7 +148,7 @@ export async function transferOwnership(req: Request, res: Response): Promise<vo
         userId, projectId: id, action: 'OWNERSHIP_TRANSFERRED', status: 'FAILED',
         ipAddress, userAgent, failReason: 'INVALID_CREDENTIALS',
       }).catch(() => {})
-      res.status(401).json({ error: '비밀번호가 올바르지 않습니다.', code: e.code })
+      res.status(401).json({ error: 'Invalid password', code: e.code })
       return
     }
     handleProjectError(err, res, 'transferOwnership')
@@ -165,7 +165,7 @@ export async function unmasksContacts(req: Request, res: Response): Promise<void
     await authService.verifyUserPassword(userId, password)
     const contacts = await graphService.getRawNodeContacts(id, nodeId)
     if (contacts === null) {
-      res.status(404).json({ error: '노드를 찾을 수 없습니다.' }); return
+      res.status(404).json({ error: 'Node not found', code: 'NOT_FOUND' }); return
     }
     const nodeName = await graphService.getExternalNodeName(id, nodeId)
     await auditLogService.createAuditLog({
@@ -186,7 +186,7 @@ export async function unmasksContacts(req: Request, res: Response): Promise<void
       res.status(401).json({ error: e.message, code: e.code }); return
     }
     logger.error('PROJECT unmasksContacts error', { projectId: id, userId, error: (err as Error).message })
-    res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+    res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
   }
 }
 
@@ -215,9 +215,9 @@ function validateContacts(contacts: unknown): { index: number; field: string; me
   return contacts.flatMap((c: { phone?: string; email?: string }, i) => {
     const errs: { index: number; field: string; message: string }[] = []
     if (c.phone?.trim() && !PHONE_REGEX.test(c.phone.trim()))
-      errs.push({ index: i, field: 'phone', message: '올바르지 않은 전화번호 형식입니다.' })
+      errs.push({ index: i, field: 'phone', message: 'Invalid phone number format' })
     if (c.email?.trim() && !EMAIL_REGEX.test(c.email.trim()))
-      errs.push({ index: i, field: 'email', message: '올바르지 않은 이메일 형식입니다.' })
+      errs.push({ index: i, field: 'email', message: 'Invalid email format' })
     return errs
   })
 }
@@ -228,7 +228,7 @@ export async function saveNodeContacts(req: Request, res: Response): Promise<voi
   try {
     const errors = validateContacts(contacts)
     if (errors.length > 0) {
-      res.status(400).json({ error: '유효하지 않은 연락처 데이터가 있습니다.', details: errors })
+      res.status(400).json({ error: 'Invalid contact data', code: 'VALIDATION_ERROR', details: errors })
       return
     }
     await graphService.saveNodeContacts(id, nodeId, contacts)

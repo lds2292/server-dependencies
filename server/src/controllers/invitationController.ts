@@ -11,13 +11,13 @@ function handleError(err: unknown, res: Response, context: string): void {
   if (e.code === 'ALREADY_INVITED') { res.status(409).json({ error: e.message, code: e.code }); return }
   if (e.code === 'ALREADY_PROCESSED') { res.status(409).json({ error: e.message, code: e.code }); return }
   logger.error(`INVITATION ${context} error`, { error: (err as Error).message })
-  res.status(500).json({ error: '서버 오류가 발생했습니다.' })
+  res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
 }
 
 export async function sendInvitation(req: Request, res: Response): Promise<void> {
   try {
     const { identifier, role } = req.body
-    if (!identifier || !role) { res.status(400).json({ error: 'identifier와 role은 필수입니다.' }); return }
+    if (!identifier || !role) { res.status(400).json({ error: 'identifier and role are required', code: 'VALIDATION_ERROR' }); return }
     const invitation = await invitationService.sendInvitation(req.params.id, req.user!.userId, identifier, role)
     await auditLogService.createAuditLog({
       userId: req.user!.userId, projectId: req.params.id, action: 'INVITATION_SENT', status: 'SUCCESS',

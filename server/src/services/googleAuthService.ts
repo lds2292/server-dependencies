@@ -18,10 +18,10 @@ export async function verifyGoogleIdToken(idToken: string): Promise<GoogleTokenP
   })
   const payload = ticket.getPayload()
   if (!payload || !payload.email || !payload.sub) {
-    throw Object.assign(new Error('유효하지 않은 Google ID Token입니다.'), { code: 'INVALID_GOOGLE_TOKEN' })
+    throw Object.assign(new Error('Invalid Google ID Token'), { code: 'INVALID_GOOGLE_TOKEN' })
   }
   if (!payload.email_verified) {
-    throw Object.assign(new Error('이메일이 인증되지 않은 Google 계정입니다.'), { code: 'EMAIL_NOT_VERIFIED' })
+    throw Object.assign(new Error('Google account email is not verified'), { code: 'EMAIL_NOT_VERIFIED' })
   }
   return {
     sub: payload.sub,

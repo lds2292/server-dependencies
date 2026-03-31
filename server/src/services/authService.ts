@@ -67,7 +67,7 @@ async function generateUniqueUsername(base: string): Promise<string> {
     if (!found) return candidate
     suffix++
   }
-  throw new Error('사용자명 생성에 실패했습니다.')
+  throw new Error('Failed to generate username')
 }
 
 export async function register(email: string, username: string, password: string) {
@@ -75,10 +75,10 @@ export async function register(email: string, username: string, password: string
   const usernameHash = hmac(username)
 
   const existingEmail = await prisma.user.findUnique({ where: { emailHash } })
-  if (existingEmail) throw Object.assign(new Error('이미 사용 중인 이메일입니다.'), { code: 'EMAIL_TAKEN' })
+  if (existingEmail) throw Object.assign(new Error('Email is already taken'), { code: 'EMAIL_TAKEN' })
 
   const existingUsername = await prisma.user.findUnique({ where: { usernameHash } })
-  if (existingUsername) throw Object.assign(new Error('이미 사용 중인 사용자명입니다.'), { code: 'USERNAME_TAKEN' })
+  if (existingUsername) throw Object.assign(new Error('Username is already taken'), { code: 'USERNAME_TAKEN' })
 
   const passwordHash = await hashPassword(password)
   const user = await prisma.user.create({
@@ -96,12 +96,12 @@ export async function register(email: string, username: string, password: string
 export async function login(email: string, password: string) {
   const emailHash = hmac(email.toLowerCase())
   const user = await prisma.user.findUnique({ where: { emailHash } })
-  if (!user) throw Object.assign(new Error('이메일 또는 비밀번호가 올바르지 않습니다.'), { code: 'INVALID_CREDENTIALS' })
+  if (!user) throw Object.assign(new Error('Invalid email or password'), { code: 'INVALID_CREDENTIALS' })
 
-  if (!user.passwordHash) throw Object.assign(new Error('이메일 또는 비밀번호가 올바르지 않습니다.'), { code: 'INVALID_CREDENTIALS' })
+  if (!user.passwordHash) throw Object.assign(new Error('Invalid email or password'), { code: 'INVALID_CREDENTIALS' })
 
   const valid = await verifyPassword(password, user.passwordHash)
-  if (!valid) throw Object.assign(new Error('이메일 또는 비밀번호가 올바르지 않습니다.'), { code: 'INVALID_CREDENTIALS' })
+  if (!valid) throw Object.assign(new Error('Invalid email or password'), { code: 'INVALID_CREDENTIALS' })
 
   const decrypted = decryptUserFields(user)
   const tokens = await issueTokens(decrypted)
@@ -171,10 +171,10 @@ export async function googleLogin(idToken: string) {
 
 export async function verifyUserPassword(userId: string, password: string): Promise<void> {
   const user = await prisma.user.findUnique({ where: { id: userId } })
-  if (!user) throw Object.assign(new Error('비밀번호가 올바르지 않습니다.'), { code: 'INVALID_CREDENTIALS' })
-  if (!user.passwordHash) throw Object.assign(new Error('비밀번호가 설정되어 있지 않습니다.'), { code: 'OAUTH_ONLY_ACCOUNT' })
+  if (!user) throw Object.assign(new Error('Invalid password'), { code: 'INVALID_CREDENTIALS' })
+  if (!user.passwordHash) throw Object.assign(new Error('No password is set'), { code: 'OAUTH_ONLY_ACCOUNT' })
   const ok = await verifyPassword(password, user.passwordHash)
-  if (!ok) throw Object.assign(new Error('비밀번호가 올바르지 않습니다.'), { code: 'INVALID_CREDENTIALS' })
+  if (!ok) throw Object.assign(new Error('Invalid password'), { code: 'INVALID_CREDENTIALS' })
 }
 
 export async function updateProfile(
@@ -187,14 +187,14 @@ export async function updateProfile(
     const usernameHash = hmac(data.username)
     const existing = await prisma.user.findUnique({ where: { usernameHash } })
     if (existing && existing.id !== userId) {
-      throw Object.assign(new Error('이미 사용 중인 사용자명입니다.'), { code: 'USERNAME_TAKEN' })
+      throw Object.assign(new Error('Username is already taken'), { code: 'USERNAME_TAKEN' })
     }
     updateData.username = encrypt(data.username)
     updateData.usernameHash = usernameHash
   }
 
   if (Object.keys(updateData).length === 0) {
-    throw Object.assign(new Error('변경할 항목이 없습니다.'), { code: 'VALIDATION_ERROR' })
+    throw Object.assign(new Error('Nothing to update'), { code: 'VALIDATION_ERROR' })
   }
 
   const user = await prisma.user.update({ where: { id: userId }, data: updateData })
@@ -219,7 +219,7 @@ async function performAccountDeletion(userId: string) {
   })
   if (masterProjects.length > 0) {
     const names = masterProjects.map(m => m.project.name).join(', ')
-    const err = new Error(`MASTER 권한을 보유한 프로젝트가 있습니다: ${names}. 권한을 이전한 후 탈퇴해 주세요.`)
+    const err = new Error(`You are master of projects: ${names}. Transfer ownership before deleting.`)
     ;(err as unknown as { code: string }).code = 'MASTER_ROLE_EXISTS'
     throw err
   }
@@ -239,7 +239,7 @@ export async function deleteAccount(userId: string, password: string) {
 /** OAuth 재인증으로 계정 삭제 */
 export async function deleteAccountWithOAuth(userId: string, provider: string, idToken: string) {
   if (provider !== 'google') {
-    throw Object.assign(new Error('지원하지 않는 OAuth 프로바이더입니다.'), { code: 'UNSUPPORTED_PROVIDER' })
+    throw Object.assign(new Error('Unsupported OAuth provider'), { code: 'UNSUPPORTED_PROVIDER' })
   }
 
   const googleUser = await verifyGoogleIdToken(idToken)
@@ -248,7 +248,7 @@ export async function deleteAccountWithOAuth(userId: string, provider: string, i
     where: { provider_providerSub: { provider: 'google', providerSub: googleUser.sub } },
   })
   if (!oauthAccount || oauthAccount.userId !== userId) {
-    throw Object.assign(new Error('Google 인증 정보가 일치하지 않습니다.'), { code: 'INVALID_GOOGLE_TOKEN' })
+    throw Object.assign(new Error('Google authentication does not match'), { code: 'INVALID_GOOGLE_TOKEN' })
   }
 
   await performAccountDeletion(userId)
@@ -262,7 +262,7 @@ export async function refresh(refreshToken: string) {
   const session = await prisma.session.findUnique({ where: { token: refreshToken } })
   if (!session || session.expiresAt < new Date()) {
     if (session) await prisma.session.delete({ where: { id: session.id } })
-    throw Object.assign(new Error('세션이 만료되었습니다.'), { code: 'SESSION_EXPIRED' })
+    throw Object.assign(new Error('Session expired'), { code: 'SESSION_EXPIRED' })
   }
 
   const payload = verifyRefreshToken(refreshToken)
