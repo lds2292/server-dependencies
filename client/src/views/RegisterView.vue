@@ -32,6 +32,16 @@
       </svg>
     </div>
 
+    <!-- OAuth 로그인 처리 중 오버레이 -->
+    <transition name="fade">
+      <div v-if="oauthLoading" class="oauth-loading-overlay">
+        <div class="oauth-loading-card">
+          <div class="oauth-spinner"></div>
+          <p class="oauth-loading-text">{{ $t('auth.oauthLoading') }}</p>
+        </div>
+      </div>
+    </transition>
+
     <!-- 폼 카드 -->
     <div class="auth-card">
       <router-link to="/" class="auth-logo">Seraph</router-link>
@@ -60,10 +70,30 @@
         </button>
       </form>
 
-      <!-- Social login divider + Google button -->
+      <!-- Social login divider + OAuth buttons -->
       <div class="auth-divider"><span>{{ $t('auth.register.or') }}</span></div>
-      <div ref="googleBtnRef" class="google-btn-container"></div>
+      <div class="oauth-buttons">
+        <div class="oauth-btn-wrapper">
+          <button class="oauth-btn" type="button" aria-hidden="true" tabindex="-1">
+            <svg class="oauth-btn-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            {{ $t('auth.google.continueWith') }}
+          </button>
+          <div ref="googleBtnRef" class="google-btn-overlay"></div>
+        </div>
+        <button class="oauth-btn" @click="onGitHubLogin" :disabled="githubLoading">
+          <svg class="oauth-btn-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.337-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836a9.59 9.59 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+          </svg>
+          {{ githubLoading ? $t('auth.github.processing') : $t('auth.github.continueWith') }}
+        </button>
+      </div>
       <div v-if="googleError" class="form-error">{{ googleError }}</div>
+      <div v-if="githubError" class="form-error">{{ githubError }}</div>
 
       <p class="auth-link">{{ $t('auth.register.hasAccount') }} <router-link to="/login">{{ $t('auth.register.login') }}</router-link></p>
       <div class="auth-locale">
@@ -80,6 +110,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { setLocale, getLocale } from '../i18n'
 import { renderGoogleButton, isGoogleAuthAvailable } from '../utils/googleAuth'
+import { openGitHubAuthPopup } from '../utils/githubAuth'
 import { usePageSeo } from '../composables/usePageSeo'
 
 usePageSeo({
@@ -102,6 +133,9 @@ const errorMsg = ref('')
 const loading = ref(false)
 const googleBtnRef = ref<HTMLElement | null>(null)
 const googleError = ref('')
+const githubError = ref('')
+const githubLoading = ref(false)
+const oauthLoading = ref(false)
 
 async function onSubmit() {
   errorMsg.value = ''
@@ -126,10 +160,12 @@ async function onSubmit() {
 
 async function onGoogleToken(idToken: string) {
   googleError.value = ''
+  oauthLoading.value = true
   try {
     await auth.googleLogin(idToken)
     router.push({ name: 'projects' })
   } catch (err: unknown) {
+    oauthLoading.value = false
     const e = err as { response?: { data?: { code?: string } } }
     const code = e.response?.data?.code
     if (code === 'EMAIL_NOT_VERIFIED') {
@@ -137,6 +173,32 @@ async function onGoogleToken(idToken: string) {
     } else {
       googleError.value = t('auth.google.error')
     }
+  }
+}
+
+async function onGitHubLogin() {
+  githubError.value = ''
+  githubLoading.value = true
+  try {
+    const code = await openGitHubAuthPopup()
+    oauthLoading.value = true
+    await auth.githubLogin(code)
+    router.push({ name: 'projects' })
+  } catch (err: unknown) {
+    oauthLoading.value = false
+    const e = err as { message?: string; response?: { data?: { code?: string } } }
+    const code = e.response?.data?.code
+    if (code === 'EMAIL_NOT_VERIFIED') {
+      githubError.value = t('auth.github.emailNotVerified')
+    } else if (e.message === 'POPUP_BLOCKED') {
+      githubError.value = t('auth.github.popupBlocked')
+    } else if (e.message === 'POPUP_CLOSED') {
+      // User closed popup intentionally
+    } else {
+      githubError.value = t('auth.github.error')
+    }
+  } finally {
+    githubLoading.value = false
   }
 }
 
@@ -205,7 +267,7 @@ onMounted(() => {
     inset 0 1px 0 rgba(255,255,255,0.05);
 }
 .auth-logo {
-  display: block; text-align: center; font-size: var(--text-xs); font-weight: 700;
+  display: block; text-align: center; font-size: var(--text-xl); font-weight: 700;
   color: var(--accent-soft); text-decoration: none; letter-spacing: 0.05em; margin-bottom: 24px;
 }
 .auth-title { font-size: var(--text-xl); font-weight: 700; color: var(--text-primary); text-align: center; margin: 0 0 28px 0; }
@@ -245,11 +307,55 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-/* Google 버튼 컨테이너 */
-.google-btn-container {
+/* OAuth 버튼 */
+.oauth-buttons {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
 }
+.oauth-btn-wrapper {
+  position: relative;
+  width: 100%;
+  height: 40px;
+}
+.oauth-btn-wrapper .oauth-btn {
+  pointer-events: none;
+}
+.oauth-btn-wrapper:hover .oauth-btn {
+  border-color: var(--border-strong);
+  background: var(--bg-elevated);
+}
+.google-btn-overlay {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0.01;
+  cursor: pointer;
+}
+.google-btn-overlay :deep(iframe),
+.google-btn-overlay :deep(div) {
+  width: 100% !important;
+  height: 40px !important;
+}
+.oauth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.oauth-btn:hover { border-color: var(--border-strong); background: var(--bg-elevated); }
+.oauth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.oauth-btn-logo { width: 18px; height: 18px; flex-shrink: 0; }
 
 .auth-link { text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin: 20px 0 0 0; }
 .auth-link a { color: var(--accent-soft); text-decoration: none; }
@@ -262,4 +368,45 @@ onMounted(() => {
   transition: color 0.15s, border-color 0.15s;
 }
 .locale-toggle:hover { color: var(--text-primary); border-color: var(--border-strong); }
+
+/* OAuth 로딩 오버레이 */
+.oauth-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.oauth-loading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  padding: 32px 48px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.oauth-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border-default);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: oauth-spin 0.7s linear infinite;
+}
+@keyframes oauth-spin {
+  to { transform: rotate(360deg); }
+}
+.oauth-loading-text {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.fade-enter-active, .fade-leave-active { transition: opacity 0.15s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

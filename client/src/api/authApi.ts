@@ -25,6 +25,9 @@ export const authApi = {
   googleLogin(idToken: string) {
     return http.post<AuthResponse>('/auth/google', { idToken })
   },
+  githubLogin(code: string) {
+    return http.post<AuthResponse>('/auth/github', { code })
+  },
   logout(refreshToken: string) {
     return http.post('/auth/logout', { refreshToken })
   },
@@ -42,5 +45,8 @@ export const authApi = {
   },
   deleteAccount(params: { password: string } | { provider: string; idToken: string }) {
     return http.delete('/auth/account', { data: params })
+  },
+  reactivateAccount(params: { email: string; password: string } | { provider: string; idToken: string }) {
+    return http.post<AuthResponse>('/auth/reactivate', params)
   },
 }

@@ -7,14 +7,21 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum UserStatus {
+  ACTIVE
+  DEACTIVATED
+}
+
 model User {
-  id           String   @id @default(uuid())
-  email        String              /// AES-256-GCM 암호화 저장
-  emailHash    String   @unique    /// HMAC-SHA256 (조회/유일성 검증)
-  username     String              /// AES-256-GCM 암호화 저장
-  usernameHash String   @unique    /// HMAC-SHA256 (조회/유일성 검증)
-  passwordHash String?
-  createdAt    DateTime @default(now())
+  id            String     @id @default(uuid())
+  email         String              /// AES-256-GCM 암호화 저장
+  emailHash     String     @unique  /// HMAC-SHA256 (조회/유일성 검증)
+  username      String              /// AES-256-GCM 암호화 저장
+  usernameHash  String     @unique  /// HMAC-SHA256 (조회/유일성 검증)
+  passwordHash  String?
+  status        UserStatus @default(ACTIVE)
+  deactivatedAt DateTime?
+  createdAt     DateTime   @default(now())
 
   ownedProjects       Project[]           @relation("ProjectOwner")
   memberships         ProjectMember[]
@@ -23,6 +30,8 @@ model User {
   invitationsSent     ProjectInvitation[] @relation("InvitationsSent")
   invitationsReceived ProjectInvitation[] @relation("InvitationsReceived")
   oauthAccounts       OAuthAccount[]
+
+  @@index([status, deactivatedAt])
 }
 
 model Session {

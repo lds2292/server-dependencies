@@ -37,10 +37,16 @@ export function usePageSeo(options: SeoOptions): void {
     robots: 'max-snippet:-1, max-image-preview:large',
   })
 
+  const koUrl = computed(() => `${BASE_URL}${route.path}?lang=ko`)
+  const enUrl = computed(() => `${BASE_URL}${route.path}`)
+
   useHead({
     htmlAttrs: { lang: computed(() => locale.value) },
     link: [
       { rel: 'canonical', href: canonicalUrl },
+      { rel: 'alternate', hreflang: 'ko', href: koUrl },
+      { rel: 'alternate', hreflang: 'en', href: enUrl },
+      { rel: 'alternate', hreflang: 'x-default', href: enUrl },
     ],
   })
 }

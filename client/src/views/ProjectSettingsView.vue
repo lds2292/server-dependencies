@@ -670,6 +670,7 @@ onMounted(async () => {
 .delete-dialog-body { display: flex; flex-direction: column; gap: 8px; text-align: center; }
 .delete-dialog-title { font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); }
 .delete-dialog-desc { font-size: var(--text-sm); color: var(--text-tertiary); line-height: 1.6; }
+.delete-dialog-desc :deep(strong) { color: var(--text-primary); font-weight: 700; }
 .delete-name-input {
   background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 7px;
   color: var(--text-secondary); font-size: var(--text-sm); padding: 8px 12px; outline: none;

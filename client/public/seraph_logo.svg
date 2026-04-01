@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background squircle -->
+  <rect x="32" y="32" width="448" height="448" rx="72" fill="#d97706"/>
+
+  <!-- S topology path -->
+  <path
+    d="M 40 370 H 304 Q 340 370 340 334 V 292 Q 340 256 304 256 H 208 Q 172 256 172 220 V 178 Q 172 142 208 142 H 471"
+    stroke="#FFF5E1"
+    stroke-width="65"
+    stroke-linecap="butt"
+    stroke-linejoin="round"
+    fill="none"
+  />
+
+  <!-- Bottom-left node -->
+  <circle cx="140" cy="370" r="55" fill="#FFF5E1"/>
+
+  <!-- Top-right node -->
+  <circle cx="372" cy="142" r="55" fill="#FFF5E1"/>
+</svg>

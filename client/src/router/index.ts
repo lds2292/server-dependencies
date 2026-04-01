@@ -1,5 +1,6 @@
 import { useAuthStore } from '../stores/auth'
 import { useProjectStore } from '../stores/project'
+import { setLocale, type AppLocale } from '../i18n'
 import type { RouteRecordRaw } from 'vue-router'
 
 async function checkProjectAccess(id: string): Promise<true | { name: string }> {
@@ -17,6 +18,7 @@ export const routes: RouteRecordRaw[] = [
   { path: '/', name: 'hero', component: () => import('../views/HeroView.vue') },
   { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
   { path: '/register', name: 'register', component: () => import('../views/RegisterView.vue') },
+  { path: '/auth/github/callback', name: 'github-callback', component: () => import('../views/GitHubCallbackView.vue') },
   { path: '/guide', name: 'guide', component: () => import('../views/GuideView.vue') },
   { path: '/projects', name: 'projects', component: () => import('../views/ProjectsView.vue'), meta: { requiresAuth: true } },
   {
@@ -45,11 +47,19 @@ export function setupRouterGuards(router: import('vue-router').Router): void {
   router.beforeEach(async to => {
     if (typeof window === 'undefined') return
 
+    // ?lang= 쿼리 파라미터로 locale 변경
+    const lang = to.query.lang as string | undefined
+    if (lang && (lang === 'ko' || lang === 'en')) {
+      setLocale(lang as AppLocale)
+    }
+
     const auth = useAuthStore()
     await auth.initializeSession()
 
     if (to.meta.requiresAuth && !auth.isLoggedIn) {
-      return { name: 'login', query: { redirect: to.fullPath } }
+      const query: Record<string, string> = { redirect: to.fullPath }
+      if (lang) query.lang = lang
+      return { name: 'login', query }
     }
 
     const publicOnly = ['hero', 'login', 'register']

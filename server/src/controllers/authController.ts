@@ -56,7 +56,13 @@ export async function login(req: Request, res: Response): Promise<void> {
     })
   } catch (err: unknown) {
     const e = err as { code?: string; message?: string }
-    if (e.code === 'INVALID_CREDENTIALS') {
+    if (e.code === 'ACCOUNT_DEACTIVATED') {
+      logger.warn('AUTH login blocked - deactivated', { email, ipAddress })
+      res.status(403).json({
+        error: 'Account is deactivated', code: 'ACCOUNT_DEACTIVATED',
+        deactivatedAt: (err as unknown as { deactivatedAt: Date }).deactivatedAt,
+      })
+    } else if (e.code === 'INVALID_CREDENTIALS') {
       await auditLogService.createAuditLog({
         action: 'LOGIN_FAILED', status: 'FAILED',
         email, ipAddress, userAgent, failReason: 'INVALID_CREDENTIALS',
@@ -96,11 +102,57 @@ export async function googleLogin(req: Request, res: Response): Promise<void> {
     })
   } catch (err: unknown) {
     const e = err as { code?: string; message?: string }
-    if (e.code === 'INVALID_GOOGLE_TOKEN' || e.code === 'EMAIL_NOT_VERIFIED') {
+    if (e.code === 'ACCOUNT_DEACTIVATED') {
+      res.status(403).json({
+        error: 'Account is deactivated', code: 'ACCOUNT_DEACTIVATED',
+        deactivatedAt: (err as unknown as { deactivatedAt: Date }).deactivatedAt,
+      })
+    } else if (e.code === 'INVALID_GOOGLE_TOKEN' || e.code === 'EMAIL_NOT_VERIFIED') {
       logger.warn('AUTH google login failed', { reason: e.code })
       res.status(401).json({ error: e.message, code: e.code })
     } else {
       logger.error('AUTH google login error', { error: (err as Error).message })
+      res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
+    }
+  }
+}
+
+export async function githubLogin(req: Request, res: Response): Promise<void> {
+  const { ipAddress, userAgent } = getClientInfo(req)
+  try {
+    const { code } = req.body
+    if (!code) {
+      res.status(400).json({ error: 'code is required', code: 'VALIDATION_ERROR' })
+      return
+    }
+    const result = await authService.githubLogin(code)
+    await auditLogService.createAuditLog({
+      action: result.isNewUser ? 'REGISTER_GITHUB' : 'LOGIN_GITHUB',
+      status: 'SUCCESS',
+      userId: result.user.id,
+      email: result.user.email,
+      ipAddress,
+      userAgent,
+    })
+    logger.info(`AUTH github ${result.isNewUser ? 'register' : 'login'} success`, { userId: result.user.id, email: result.user.email, ipAddress })
+    const status = result.isNewUser ? 201 : 200
+    res.status(status).json({
+      user: { id: result.user.id, email: result.user.email, username: result.user.username, createdAt: result.user.createdAt },
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    })
+  } catch (err: unknown) {
+    const e = err as { code?: string; message?: string }
+    if (e.code === 'ACCOUNT_DEACTIVATED') {
+      res.status(403).json({
+        error: 'Account is deactivated', code: 'ACCOUNT_DEACTIVATED',
+        deactivatedAt: (err as unknown as { deactivatedAt: Date }).deactivatedAt,
+      })
+    } else if (e.code === 'INVALID_GITHUB_TOKEN' || e.code === 'EMAIL_NOT_VERIFIED') {
+      logger.warn('AUTH github login failed', { reason: e.code })
+      res.status(401).json({ error: e.message, code: e.code })
+    } else {
+      logger.error('AUTH github login error', { error: (err as Error).message })
       res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
     }
   }
@@ -229,7 +281,7 @@ export async function deleteAccount(req: Request, res: Response): Promise<void> 
     }
 
     await auditLogService.createAuditLog({
-      action: 'ACCOUNT_DELETE', status: 'SUCCESS',
+      action: 'ACCOUNT_DEACTIVATE', status: 'SUCCESS',
       email: req.user!.email, ipAddress, userAgent,
     }).catch(() => {})
     logger.info('AUTH account deleted', { userId, ipAddress })
@@ -238,14 +290,57 @@ export async function deleteAccount(req: Request, res: Response): Promise<void> 
     const e = err as { code?: string; message?: string }
     if (e.code === 'INVALID_CREDENTIALS') {
       res.status(401).json({ error: 'Invalid password', code: e.code })
-    } else if (e.code === 'INVALID_GOOGLE_TOKEN') {
-      res.status(401).json({ error: 'Google authentication failed', code: e.code })
+    } else if (e.code === 'INVALID_GOOGLE_TOKEN' || e.code === 'INVALID_OAUTH_TOKEN' || e.code === 'INVALID_GITHUB_TOKEN') {
+      res.status(401).json({ error: 'OAuth authentication failed', code: e.code })
     } else if (e.code === 'MASTER_ROLE_EXISTS') {
       res.status(409).json({ error: e.message, code: e.code })
     } else if (e.code === 'UNSUPPORTED_PROVIDER') {
       res.status(400).json({ error: e.message, code: e.code })
     } else {
       logger.error('AUTH account delete error', { userId: req.user!.userId, error: (err as Error).message })
+      res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
+    }
+  }
+}
+
+export async function reactivateAccount(req: Request, res: Response): Promise<void> {
+  const { ipAddress, userAgent } = getClientInfo(req)
+  try {
+    const { email, password, provider, idToken } = req.body
+
+    let result
+    if (provider && idToken) {
+      result = await authService.reactivateAccountWithOAuth(provider, idToken)
+    } else if (email && password) {
+      result = await authService.reactivateAccount(email, password)
+    } else {
+      res.status(400).json({ error: 'Email and password, or OAuth credentials required', code: 'VALIDATION_ERROR' })
+      return
+    }
+
+    await auditLogService.createAuditLog({
+      action: 'ACCOUNT_REACTIVATE', status: 'SUCCESS',
+      userId: result.user.id, email: result.user.email, ipAddress, userAgent,
+    }).catch(() => {})
+    logger.info('AUTH account reactivated', { userId: result.user.id, ipAddress })
+
+    res.json({
+      user: { id: result.user.id, email: result.user.email, username: result.user.username, createdAt: result.user.createdAt },
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    })
+  } catch (err: unknown) {
+    const e = err as { code?: string; message?: string }
+    if (e.code === 'INVALID_CREDENTIALS') {
+      res.status(401).json({ error: 'Invalid credentials', code: e.code })
+    } else if (e.code === 'ACCOUNT_NOT_DEACTIVATED') {
+      res.status(400).json({ error: e.message, code: e.code })
+    } else if (e.code === 'RECOVERY_EXPIRED') {
+      res.status(410).json({ error: 'Recovery period has expired', code: e.code })
+    } else if (e.code === 'INVALID_GOOGLE_TOKEN' || e.code === 'INVALID_GITHUB_TOKEN') {
+      res.status(401).json({ error: 'OAuth authentication failed', code: e.code })
+    } else {
+      logger.error('AUTH reactivate error', { error: (err as Error).message })
       res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' })
     }
   }

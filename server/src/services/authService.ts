@@ -4,6 +4,7 @@ import prisma from '../prisma'
 import type { AuthTokenPayload } from '../types'
 import { encrypt, decrypt, hmac } from './cryptoService'
 import { verifyGoogleIdToken } from './googleAuthService'
+import { verifyGitHubCode } from './githubAuthService'
 
 const SALT_ROUNDS = 12
 
@@ -103,6 +104,13 @@ export async function login(email: string, password: string) {
   const valid = await verifyPassword(password, user.passwordHash)
   if (!valid) throw Object.assign(new Error('Invalid email or password'), { code: 'INVALID_CREDENTIALS' })
 
+  if (user.status === 'DEACTIVATED') {
+    throw Object.assign(new Error('Account is deactivated'), {
+      code: 'ACCOUNT_DEACTIVATED',
+      deactivatedAt: user.deactivatedAt,
+    })
+  }
+
   const decrypted = decryptUserFields(user)
   const tokens = await issueTokens(decrypted)
 
@@ -126,6 +134,11 @@ export async function googleLogin(idToken: string) {
   })
 
   if (existingOAuth) {
+    if (existingOAuth.user.status === 'DEACTIVATED') {
+      throw Object.assign(new Error('Account is deactivated'), {
+        code: 'ACCOUNT_DEACTIVATED', deactivatedAt: existingOAuth.user.deactivatedAt,
+      })
+    }
     const user = decryptUserFields(existingOAuth.user)
     const tokens = await issueTokens(user)
     return { user, ...tokens, isNewUser: false }
@@ -136,6 +149,11 @@ export async function googleLogin(idToken: string) {
   const existingUser = await prisma.user.findUnique({ where: { emailHash } })
 
   if (existingUser) {
+    if (existingUser.status === 'DEACTIVATED') {
+      throw Object.assign(new Error('Account is deactivated'), {
+        code: 'ACCOUNT_DEACTIVATED', deactivatedAt: existingUser.deactivatedAt,
+      })
+    }
     await prisma.oAuthAccount.create({
       data: { userId: existingUser.id, provider: 'google', providerSub: googleUser.sub },
     })
@@ -160,6 +178,73 @@ export async function googleLogin(idToken: string) {
     })
     await tx.oAuthAccount.create({
       data: { userId: user.id, provider: 'google', providerSub: googleUser.sub },
+    })
+    return user
+  })
+
+  const user = decryptUserFields(newUser)
+  const tokens = await issueTokens(user)
+  return { user, ...tokens, isNewUser: true }
+}
+
+/**
+ * GitHub OAuth 로그인/회원가입 통합 처리
+ * googleLogin과 동일한 3단계 로직
+ */
+export async function githubLogin(code: string) {
+  const githubUser = await verifyGitHubCode(code)
+
+  // 1) OAuthAccount로 기존 연동 확인
+  const existingOAuth = await prisma.oAuthAccount.findUnique({
+    where: { provider_providerSub: { provider: 'github', providerSub: githubUser.sub } },
+    include: { user: true },
+  })
+
+  if (existingOAuth) {
+    if (existingOAuth.user.status === 'DEACTIVATED') {
+      throw Object.assign(new Error('Account is deactivated'), {
+        code: 'ACCOUNT_DEACTIVATED', deactivatedAt: existingOAuth.user.deactivatedAt,
+      })
+    }
+    const user = decryptUserFields(existingOAuth.user)
+    const tokens = await issueTokens(user)
+    return { user, ...tokens, isNewUser: false }
+  }
+
+  // 2) emailHash로 기존 계정 확인 (자동 병합)
+  const emailHash = hmac(githubUser.email.toLowerCase())
+  const existingUser = await prisma.user.findUnique({ where: { emailHash } })
+
+  if (existingUser) {
+    if (existingUser.status === 'DEACTIVATED') {
+      throw Object.assign(new Error('Account is deactivated'), {
+        code: 'ACCOUNT_DEACTIVATED', deactivatedAt: existingUser.deactivatedAt,
+      })
+    }
+    await prisma.oAuthAccount.create({
+      data: { userId: existingUser.id, provider: 'github', providerSub: githubUser.sub },
+    })
+    const user = decryptUserFields(existingUser)
+    const tokens = await issueTokens(user)
+    return { user, ...tokens, isNewUser: false }
+  }
+
+  // 3) 신규 사용자 생성
+  const username = await generateUniqueUsername(githubUser.name)
+  const usernameHash = hmac(username)
+
+  const newUser = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        email: encrypt(githubUser.email),
+        emailHash,
+        username: encrypt(username),
+        usernameHash,
+        passwordHash: null,
+      },
+    })
+    await tx.oAuthAccount.create({
+      data: { userId: user.id, provider: 'github', providerSub: githubUser.sub },
     })
     return user
   })
@@ -211,8 +296,8 @@ export async function changePassword(
   await prisma.user.update({ where: { id: userId }, data: { passwordHash: passwordHashValue } })
 }
 
-/** 계정 삭제 공통 로직 (MASTER 체크 + 트랜잭션) */
-async function performAccountDeletion(userId: string) {
+/** 계정 비활성화 (소프트 딜리트) — MASTER 체크 + 상태 전환 + 세션 무효화 */
+async function deactivateAccount(userId: string) {
   const masterProjects = await prisma.projectMember.findMany({
     where: { userId, role: 'MASTER' },
     include: { project: { select: { name: true } } },
@@ -225,33 +310,144 @@ async function performAccountDeletion(userId: string) {
   }
 
   await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: userId },
+      data: { status: 'DEACTIVATED', deactivatedAt: new Date() },
+    })
+    await tx.session.deleteMany({ where: { userId } })
+  })
+}
+
+export async function deleteAccount(userId: string, password: string) {
+  await verifyUserPassword(userId, password)
+  await deactivateAccount(userId)
+}
+
+/** OAuth 재인증으로 계정 비활성화 */
+export async function deleteAccountWithOAuth(userId: string, provider: string, credential: string) {
+  let providerSub: string
+
+  if (provider === 'google') {
+    const googleUser = await verifyGoogleIdToken(credential)
+    providerSub = googleUser.sub
+  } else if (provider === 'github') {
+    const githubUser = await verifyGitHubCode(credential)
+    providerSub = githubUser.sub
+  } else {
+    throw Object.assign(new Error('Unsupported OAuth provider'), { code: 'UNSUPPORTED_PROVIDER' })
+  }
+
+  const oauthAccount = await prisma.oAuthAccount.findUnique({
+    where: { provider_providerSub: { provider, providerSub } },
+  })
+  if (!oauthAccount || oauthAccount.userId !== userId) {
+    throw Object.assign(new Error('OAuth authentication does not match'), { code: 'INVALID_OAUTH_TOKEN' })
+  }
+
+  await deactivateAccount(userId)
+}
+
+/** 비활성 계정 복구 (비밀번호) */
+export async function reactivateAccount(email: string, password: string) {
+  const emailHash = hmac(email.toLowerCase())
+  const user = await prisma.user.findUnique({ where: { emailHash } })
+  if (!user) throw Object.assign(new Error('Invalid email or password'), { code: 'INVALID_CREDENTIALS' })
+  if (user.status !== 'DEACTIVATED') throw Object.assign(new Error('Account is not deactivated'), { code: 'ACCOUNT_NOT_DEACTIVATED' })
+  if (!user.passwordHash) throw Object.assign(new Error('Use OAuth to reactivate'), { code: 'OAUTH_ONLY_ACCOUNT' })
+
+  const valid = await verifyPassword(password, user.passwordHash)
+  if (!valid) throw Object.assign(new Error('Invalid email or password'), { code: 'INVALID_CREDENTIALS' })
+
+  const deletionDate = new Date(user.deactivatedAt!)
+  deletionDate.setDate(deletionDate.getDate() + 30)
+  if (new Date() >= deletionDate) {
+    throw Object.assign(new Error('Recovery period has expired'), { code: 'RECOVERY_EXPIRED' })
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: user.id },
+    data: { status: 'ACTIVE', deactivatedAt: null },
+  })
+  const decrypted = decryptUserFields(updated)
+  const tokens = await issueTokens(decrypted)
+  return { user: decrypted, ...tokens }
+}
+
+/** 비활성 계정 복구 (OAuth) */
+export async function reactivateAccountWithOAuth(provider: string, credential: string) {
+  let providerSub: string
+  let oauthEmail: string
+
+  if (provider === 'google') {
+    const googleUser = await verifyGoogleIdToken(credential)
+    providerSub = googleUser.sub
+    oauthEmail = googleUser.email
+  } else if (provider === 'github') {
+    const githubUser = await verifyGitHubCode(credential)
+    providerSub = githubUser.sub
+    oauthEmail = githubUser.email
+  } else {
+    throw Object.assign(new Error('Unsupported OAuth provider'), { code: 'UNSUPPORTED_PROVIDER' })
+  }
+
+  const oauthAccount = await prisma.oAuthAccount.findUnique({
+    where: { provider_providerSub: { provider, providerSub } },
+    include: { user: true },
+  })
+
+  let user = oauthAccount?.user ?? null
+  if (!user) {
+    const emailHash = hmac(oauthEmail.toLowerCase())
+    user = await prisma.user.findUnique({ where: { emailHash } })
+  }
+
+  if (!user) throw Object.assign(new Error('Account not found'), { code: 'INVALID_CREDENTIALS' })
+  if (user.status !== 'DEACTIVATED') throw Object.assign(new Error('Account is not deactivated'), { code: 'ACCOUNT_NOT_DEACTIVATED' })
+
+  const deletionDate = new Date(user.deactivatedAt!)
+  deletionDate.setDate(deletionDate.getDate() + 30)
+  if (new Date() >= deletionDate) {
+    throw Object.assign(new Error('Recovery period has expired'), { code: 'RECOVERY_EXPIRED' })
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: user.id },
+    data: { status: 'ACTIVE', deactivatedAt: null },
+  })
+  const decrypted = decryptUserFields(updated)
+  const tokens = await issueTokens(decrypted)
+  return { user: decrypted, ...tokens }
+}
+
+/** 영구 삭제 (배치용) */
+async function permanentlyDeleteAccount(userId: string) {
+  await prisma.$transaction(async (tx) => {
     await tx.auditLog.updateMany({ where: { userId }, data: { userId: null } })
     await tx.projectInvitation.deleteMany({ where: { OR: [{ inviterId: userId }, { inviteeId: userId }] } })
     await tx.user.delete({ where: { id: userId } })
   })
 }
 
-export async function deleteAccount(userId: string, password: string) {
-  await verifyUserPassword(userId, password)
-  await performAccountDeletion(userId)
-}
+/** 30일 경과된 비활성 계정 일괄 영구 삭제 */
+export async function purgeExpiredAccounts() {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - 30)
 
-/** OAuth 재인증으로 계정 삭제 */
-export async function deleteAccountWithOAuth(userId: string, provider: string, idToken: string) {
-  if (provider !== 'google') {
-    throw Object.assign(new Error('Unsupported OAuth provider'), { code: 'UNSUPPORTED_PROVIDER' })
-  }
-
-  const googleUser = await verifyGoogleIdToken(idToken)
-
-  const oauthAccount = await prisma.oAuthAccount.findUnique({
-    where: { provider_providerSub: { provider: 'google', providerSub: googleUser.sub } },
+  const expiredUsers = await prisma.user.findMany({
+    where: { status: 'DEACTIVATED', deactivatedAt: { lte: cutoff } },
+    select: { id: true },
   })
-  if (!oauthAccount || oauthAccount.userId !== userId) {
-    throw Object.assign(new Error('Google authentication does not match'), { code: 'INVALID_GOOGLE_TOKEN' })
-  }
 
-  await performAccountDeletion(userId)
+  let deleted = 0
+  for (const u of expiredUsers) {
+    try {
+      await permanentlyDeleteAccount(u.id)
+      deleted++
+    } catch (err) {
+      // 개별 실패 시 계속 진행
+    }
+  }
+  return { total: expiredUsers.length, deleted }
 }
 
 export async function logout(refreshToken: string) {

@@ -1,4 +1,4 @@
-const GOOGLE_CLIENT_ID = '374996474078-79ppp4r3hsm1vmo7ch2e14mujlke2u6r.apps.googleusercontent.com'
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
 
 declare global {
   interface Window {

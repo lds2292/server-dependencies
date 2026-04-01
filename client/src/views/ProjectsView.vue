@@ -2,25 +2,7 @@
   <div class="projects-page">
     <header class="projects-header">
       <div class="projects-logo">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- 좌상단 → 우하단 방향 화살표 (파랑) -->
-          <line x1="4" y1="4" x2="22" y2="22" stroke="#5b8def" stroke-width="2.2" stroke-linecap="round"/>
-          <polyline points="14,22 22,22 22,14" stroke="#5b8def" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <!-- 우하단 → 좌상단 방향 화살표 (주황) -->
-          <line x1="28" y1="28" x2="10" y2="10" stroke="#f97316" stroke-width="2.2" stroke-linecap="round"/>
-          <polyline points="18,10 10,10 10,18" stroke="#f97316" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <!-- 웹 로고 (좌하단) -->
-          <circle cx="6" cy="26" r="3.5" stroke="#787878" stroke-width="1.4" fill="none"/>
-          <line x1="6" y1="22.5" x2="6" y2="29.5" stroke="#787878" stroke-width="1" stroke-linecap="round"/>
-          <line x1="2.5" y1="26" x2="9.5" y2="26" stroke="#787878" stroke-width="1" stroke-linecap="round"/>
-          <path d="M3.5 23.8 Q6 25 8.5 23.8" stroke="#787878" stroke-width="1" fill="none" stroke-linecap="round"/>
-          <path d="M3.5 28.2 Q6 27 8.5 28.2" stroke="#787878" stroke-width="1" fill="none" stroke-linecap="round"/>
-          <!-- DB 로고 (우상단) -->
-          <ellipse cx="26" cy="5" rx="4" ry="1.8" stroke="#787878" stroke-width="1.4" fill="none"/>
-          <line x1="22" y1="5" x2="22" y2="9" stroke="#787878" stroke-width="1.4"/>
-          <line x1="30" y1="5" x2="30" y2="9" stroke="#787878" stroke-width="1.4"/>
-          <path d="M22 9 Q26 11 30 9" stroke="#787878" stroke-width="1.4" fill="none"/>
-        </svg>
+        <img src="/seraph_logo.svg" alt="Seraph" width="42" height="42" />
         <span>Seraph</span>
       </div>
       <div class="header-right">
@@ -62,36 +44,86 @@
         <button class="btn-outline btn-sm" @click="showCreate = true">{{ $t('projects.newProject') }}</button>
       </div>
 
-      <div v-if="loading" class="projects-grid">
-        <div v-for="i in 4" :key="i" class="project-card-skeleton">
-          <div class="skeleton sk-graph"></div>
-          <div class="sk-body">
-            <div class="skeleton sk-title"></div>
-            <div class="skeleton sk-desc"></div>
-            <div class="sk-meta">
-              <div class="skeleton sk-badge"></div>
-              <div class="skeleton sk-date"></div>
+      <template v-if="!loaded"><!-- 로딩 중: 빈 화면 --></template>
+
+      <div v-else-if="projectStore.projects.length === 0" class="projects-empty-wrapper">
+        <!-- 온보딩 가이드 (스텝 바이 스텝) -->
+        <div v-if="showOnboarding" class="onboarding-guide">
+          <div class="onboarding-header">
+            <div class="onboarding-header-text">
+              <h2 class="onboarding-title">{{ $t('projects.onboarding.title') }}</h2>
+              <p class="onboarding-subtitle">{{ $t('projects.onboarding.subtitle') }}</p>
+            </div>
+            <button class="btn-ghost btn-sm" @click="dismissOnboarding">{{ $t('projects.onboarding.dismiss') }}</button>
+          </div>
+
+          <!-- 스텝 인디케이터 -->
+          <div class="onboarding-indicators">
+            <button
+              v-for="(step, idx) in onboardingSteps"
+              :key="idx"
+              class="onboarding-indicator"
+              :class="{ active: idx === currentStep }"
+              @click="currentStep = idx"
+            >
+              {{ step.number }}
+            </button>
+          </div>
+
+          <!-- 현재 스텝 콘텐츠 -->
+          <div class="onboarding-content">
+            <div class="onboarding-visual">
+              <GuideStepVisual :step="currentStep" />
+            </div>
+            <div class="onboarding-text">
+              <h3 class="onboarding-step-title">{{ onboardingSteps[currentStep].title }}</h3>
+              <p class="onboarding-step-desc">{{ onboardingSteps[currentStep].description }}</p>
+              <ul class="onboarding-highlights">
+                <li v-for="(item, i) in onboardingSteps[currentStep].highlights" :key="i">{{ item }}</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- 하단 네비게이션 -->
+          <div class="onboarding-footer">
+            <router-link to="/guide" class="onboarding-guide-link">
+              {{ $t('projects.onboarding.fullGuide') }}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </router-link>
+            <div class="onboarding-nav">
+              <button class="btn-ghost btn-sm" :disabled="currentStep === 0" @click="currentStep--">
+                {{ $t('projects.onboarding.prev') }}
+              </button>
+              <button class="btn-outline btn-sm" v-if="currentStep < onboardingSteps.length - 1" @click="currentStep++">
+                {{ $t('projects.onboarding.next') }}
+              </button>
+              <button class="btn-outline btn-sm" v-else @click="dismissOnboarding">
+                {{ $t('projects.onboarding.done') }}
+              </button>
             </div>
           </div>
         </div>
-      </div>
 
-      <div v-else-if="projectStore.projects.length === 0" class="projects-empty">
-        <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="36" cy="36" r="10" stroke="#3a3a42" stroke-width="1.8"/>
-          <circle cx="12" cy="18" r="6" stroke="#2a2a30" stroke-width="1.4"/>
-          <circle cx="60" cy="18" r="6" stroke="#2a2a30" stroke-width="1.4"/>
-          <circle cx="12" cy="54" r="6" stroke="#2a2a30" stroke-width="1.4"/>
-          <circle cx="60" cy="54" r="6" stroke="#2a2a30" stroke-width="1.4"/>
-          <line x1="18" y1="22" x2="28" y2="29" stroke="#2a2a30" stroke-width="1.2"/>
-          <line x1="54" y1="22" x2="44" y2="29" stroke="#2a2a30" stroke-width="1.2"/>
-          <line x1="18" y1="50" x2="28" y2="43" stroke="#2a2a30" stroke-width="1.2"/>
-          <line x1="54" y1="50" x2="44" y2="43" stroke="#2a2a30" stroke-width="1.2"/>
-          <circle cx="36" cy="36" r="3" fill="#3a3a42"/>
-        </svg>
-        <p class="empty-title">{{ $t('projects.empty.title') }}</p>
-        <p class="empty-desc">{{ $t('projects.empty.desc') }}</p>
-        <button class="btn-outline btn-sm" @click="showCreate = true">{{ $t('projects.empty.create') }}</button>
+        <!-- 기존 empty state -->
+        <div class="projects-empty">
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="36" cy="36" r="10" stroke="#3a3a42" stroke-width="1.8"/>
+            <circle cx="12" cy="18" r="6" stroke="#2a2a30" stroke-width="1.4"/>
+            <circle cx="60" cy="18" r="6" stroke="#2a2a30" stroke-width="1.4"/>
+            <circle cx="12" cy="54" r="6" stroke="#2a2a30" stroke-width="1.4"/>
+            <circle cx="60" cy="54" r="6" stroke="#2a2a30" stroke-width="1.4"/>
+            <line x1="18" y1="22" x2="28" y2="29" stroke="#2a2a30" stroke-width="1.2"/>
+            <line x1="54" y1="22" x2="44" y2="29" stroke="#2a2a30" stroke-width="1.2"/>
+            <line x1="18" y1="50" x2="28" y2="43" stroke="#2a2a30" stroke-width="1.2"/>
+            <line x1="54" y1="50" x2="44" y2="43" stroke="#2a2a30" stroke-width="1.2"/>
+            <circle cx="36" cy="36" r="3" fill="#3a3a42"/>
+          </svg>
+          <p class="empty-title">{{ $t('projects.empty.title') }}</p>
+          <p class="empty-desc">{{ $t('projects.empty.desc') }}</p>
+          <button class="btn-outline btn-sm" @click="showCreate = true">{{ $t('projects.empty.create') }}</button>
+        </div>
       </div>
 
       <template v-else>
@@ -265,18 +297,46 @@ import { useProjectStore } from '../stores/project'
 import { getLocale } from '../i18n'
 import type { ProjectMemberRole } from '../api/projectApi'
 import UserProfileDropdown from '../components/UserProfileDropdown.vue'
+import GuideStepVisual from '../components/GuideStepVisual.vue'
 
-const { t } = useI18n()
+const { t, tm } = useI18n()
 const router = useRouter()
 const auth = useAuthStore()
 const projectStore = useProjectStore()
 
-const loading = ref(false)
+const loading = ref(true)
 const showCreate = ref(false)
 const showLogoutConfirm = ref(false)
 const createForm = ref({ name: '', description: '' })
 const createError = ref('')
 const creating = ref(false)
+
+// ─── 온보딩 가이드 ──────────────────────────────────────
+const ONBOARDING_DISMISSED_KEY = 'seraph_onboarding_dismissed'
+const onboardingDismissed = ref(localStorage.getItem(ONBOARDING_DISMISSED_KEY) === 'true')
+
+const showOnboarding = computed(() =>
+  loaded.value && projectStore.projects.length === 0 && !onboardingDismissed.value
+)
+
+function dismissOnboarding() {
+  onboardingDismissed.value = true
+  localStorage.setItem(ONBOARDING_DISMISSED_KEY, 'true')
+}
+
+const currentStep = ref(0)
+const STEP_NUMBERS = ['01', '02', '03', '04', '05', '06']
+const onboardingSteps = computed(() => {
+  const raw = tm('guide.sections') as Array<{ title: string; description: string; highlights: string[] }>
+  return raw.map((s, i) => ({
+    number: STEP_NUMBERS[i],
+    title: s.title,
+    description: s.description,
+    highlights: s.highlights as unknown as string[],
+  }))
+})
+
+const loaded = ref(false)
 
 onMounted(async () => {
   loading.value = true
@@ -287,6 +347,7 @@ onMounted(async () => {
     ])
   } finally {
     loading.value = false
+    loaded.value = true
   }
 })
 
@@ -367,7 +428,7 @@ function ownerName(project: { members: { role: string; user: { username: string 
 }
 .projects-logo {
   display: flex; align-items: center; gap: 8px;
-  font-size: var(--text-sm); font-weight: 700; color: var(--accent-soft); letter-spacing: 0.04em;
+  font-size: var(--text-xl); font-weight: 700; color: var(--accent-soft); letter-spacing: 0.04em;
 }
 .header-right { display: flex; align-items: center; gap: 12px; }
 .projects-body { max-width: 960px; margin: 0 auto; padding: 40px 32px; }
@@ -386,6 +447,162 @@ function ownerName(project: { members: { role: string; user: { username: string 
 .section-empty-text { font-size: var(--text-sm); color: var(--text-disabled); margin: 0 0 12px 0; }
 .projects-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
 .projects-title { font-size: var(--text-xl); font-weight: 700; color: var(--text-primary); margin: 0; }
+/* 프로젝트 비어있음 + 온보딩 래퍼 */
+.projects-empty-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* 온보딩 가이드 */
+.onboarding-guide {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 8px;
+  width: 100%;
+}
+.onboarding-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.onboarding-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.onboarding-title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.onboarding-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+/* 스텝 인디케이터 */
+.onboarding-indicators {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.onboarding-indicator {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.onboarding-indicator:hover {
+  border-color: var(--border-strong);
+  color: var(--text-secondary);
+}
+.onboarding-indicator.active {
+  background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+/* 스텝 콘텐츠 */
+.onboarding-content {
+  display: flex;
+  gap: 24px;
+  height: 240px;
+}
+.onboarding-visual {
+  flex: 0 0 45%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 16px;
+  overflow: hidden;
+}
+.onboarding-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 8px;
+  overflow: hidden;
+}
+.onboarding-step-title {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.onboarding-step-desc {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  line-height: 1.6;
+  margin: 0;
+}
+.onboarding-highlights {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.onboarding-highlights li {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  padding-left: 14px;
+  position: relative;
+}
+.onboarding-highlights li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  opacity: 0.6;
+}
+
+/* 하단 네비게이션 */
+.onboarding-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+.onboarding-guide-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--accent-soft);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.onboarding-guide-link:hover {
+  color: var(--accent-light);
+}
+.onboarding-nav {
+  display: flex;
+  gap: 8px;
+}
+
 .projects-empty { text-align: center; padding: 72px 0; color: var(--border-strong); font-size: var(--text-base); display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .empty-title { font-size: var(--text-base); font-weight: 600; color: var(--text-tertiary); margin: 6px 0 0; }
 .empty-desc  { font-size: var(--text-sm); color: var(--border-strong); margin: 0 0 6px; }

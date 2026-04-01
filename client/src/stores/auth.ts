@@ -10,6 +10,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn = computed(() => user.value !== null)
   const isOAuthOnly = computed(() => user.value !== null && !user.value.hasPassword)
   const hasGoogleProvider = computed(() => user.value?.providers?.includes('google') ?? false)
+  const hasGitHubProvider = computed(() => user.value?.providers?.includes('github') ?? false)
 
   async function initializeSession(): Promise<void> {
     if (sessionInitialized.value) return
@@ -29,25 +30,32 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /** 토큰 저장 후 /me로 전체 사용자 정보(providers, hasPassword 포함) 로드 */
+  async function setTokensAndLoadUser(accessToken: string, refreshToken: string): Promise<void> {
+    setAccessToken(accessToken)
+    localStorage.setItem('refreshToken', refreshToken)
+    const { data: userData } = await authApi.me()
+    user.value = userData
+  }
+
   async function login(email: string, password: string): Promise<void> {
     const { data } = await authApi.login(email, password)
-    setAccessToken(data.accessToken)
-    localStorage.setItem('refreshToken', data.refreshToken)
-    user.value = data.user
+    await setTokensAndLoadUser(data.accessToken, data.refreshToken)
   }
 
   async function register(email: string, username: string, password: string): Promise<void> {
     const { data } = await authApi.register(email, username, password)
-    setAccessToken(data.accessToken)
-    localStorage.setItem('refreshToken', data.refreshToken)
-    user.value = data.user
+    await setTokensAndLoadUser(data.accessToken, data.refreshToken)
   }
 
   async function googleLogin(idToken: string): Promise<void> {
     const { data } = await authApi.googleLogin(idToken)
-    setAccessToken(data.accessToken)
-    localStorage.setItem('refreshToken', data.refreshToken)
-    user.value = data.user
+    await setTokensAndLoadUser(data.accessToken, data.refreshToken)
+  }
+
+  async function githubLogin(code: string): Promise<void> {
+    const { data } = await authApi.githubLogin(code)
+    await setTokensAndLoadUser(data.accessToken, data.refreshToken)
   }
 
   async function logout(): Promise<void> {
@@ -78,9 +86,14 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
+  async function reactivateAccount(params: { email: string; password: string } | { provider: string; idToken: string }): Promise<void> {
+    const { data } = await authApi.reactivateAccount(params)
+    await setTokensAndLoadUser(data.accessToken, data.refreshToken)
+  }
+
   return {
-    user, isLoggedIn, isOAuthOnly, hasGoogleProvider, sessionInitialized,
-    initializeSession, login, register, googleLogin, logout,
-    updateProfile, changePassword, deleteAccount,
+    user, isLoggedIn, isOAuthOnly, hasGoogleProvider, hasGitHubProvider, sessionInitialized,
+    initializeSession, login, register, googleLogin, githubLogin, logout,
+    updateProfile, changePassword, deleteAccount, reactivateAccount,
   }
 })

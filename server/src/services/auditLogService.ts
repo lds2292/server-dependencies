@@ -19,6 +19,10 @@ export type AuditAction =
   | 'ACCOUNT_DELETE'
   | 'LOGIN_GOOGLE'
   | 'REGISTER_GOOGLE'
+  | 'LOGIN_GITHUB'
+  | 'REGISTER_GITHUB'
+  | 'ACCOUNT_DEACTIVATE'
+  | 'ACCOUNT_REACTIVATE'
 export type AuditStatus = 'SUCCESS' | 'FAILED'
 
 interface CreateAuditLogParams {

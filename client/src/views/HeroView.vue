@@ -4,21 +4,7 @@
     <header class="site-header" :class="{ 'cta-visible': showHeaderCta }">
       <div class="header-inner">
         <div class="header-brand">
-          <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <line x1="4" y1="4" x2="22" y2="22" stroke="#5b8def" stroke-width="2.2" stroke-linecap="round"/>
-            <polyline points="14,22 22,22 22,14" stroke="#5b8def" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-            <line x1="28" y1="28" x2="10" y2="10" stroke="#f97316" stroke-width="2.2" stroke-linecap="round"/>
-            <polyline points="18,10 10,10 10,18" stroke="#f97316" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-            <circle cx="6" cy="26" r="3.5" stroke="#787878" stroke-width="1.4" fill="none"/>
-            <line x1="6" y1="22.5" x2="6" y2="29.5" stroke="#787878" stroke-width="1" stroke-linecap="round"/>
-            <line x1="2.5" y1="26" x2="9.5" y2="26" stroke="#787878" stroke-width="1" stroke-linecap="round"/>
-            <path d="M3.5 23.8 Q6 25 8.5 23.8" stroke="#787878" stroke-width="1" fill="none" stroke-linecap="round"/>
-            <path d="M3.5 28.2 Q6 27 8.5 28.2" stroke="#787878" stroke-width="1" fill="none" stroke-linecap="round"/>
-            <ellipse cx="26" cy="5" rx="4" ry="1.8" stroke="#787878" stroke-width="1.4" fill="none"/>
-            <line x1="22" y1="5" x2="22" y2="9" stroke="#787878" stroke-width="1.4"/>
-            <line x1="30" y1="5" x2="30" y2="9" stroke="#787878" stroke-width="1.4"/>
-            <path d="M22 9 Q26 11 30 9" stroke="#787878" stroke-width="1.4" fill="none"/>
-          </svg>
+          <img src="/seraph_logo.svg" alt="Seraph" width="42" height="42" />
           Seraph
         </div>
 
@@ -383,12 +369,15 @@
         </div>
       </div>
     </section>
+
+    <PublicFooter />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { setLocale, getLocale } from '../i18n'
+import PublicFooter from '../components/PublicFooter.vue'
 import { usePageSeo } from '../composables/usePageSeo'
 import { useJsonLd } from '../composables/useJsonLd'
 
@@ -489,7 +478,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: var(--text-sm);
+  font-size: var(--text-xl);
   font-weight: 700;
   color: var(--accent-soft);
   letter-spacing: 0.02em;

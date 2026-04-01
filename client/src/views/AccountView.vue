@@ -56,6 +56,12 @@
             </svg>
             <span class="login-method-label">{{ t('account.googleLinked') }}</span>
           </div>
+          <div v-if="authStore.hasGitHubProvider" class="login-method-item">
+            <svg class="github-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.337-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836a9.59 9.59 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+            </svg>
+            <span class="login-method-label">{{ t('account.githubLinked') }}</span>
+          </div>
           <div class="login-method-item">
             <Icon name="lock" :size="14" class="login-method-icon" />
             <span class="login-method-label">{{ authStore.user?.hasPassword ? t('account.passwordSet') : t('account.passwordNotSet') }}</span>
@@ -109,9 +115,9 @@
         <p class="password-desc">{{ t('account.oauthOnlyDesc') }}</p>
       </section>
 
-      <!-- 회원탈퇴 -->
-      <section class="settings-section danger-section">
-        <h2 class="section-title section-title-danger">
+      <!-- 계정 비활성화 -->
+      <section class="settings-section deactivate-section">
+        <h2 class="section-title section-title-warning">
           <Icon name="warning-triangle" :size="13" class="section-icon" />
           {{ t('account.deleteAccount') }}
         </h2>
@@ -127,7 +133,7 @@
 
     <!-- 회원탈퇴 확인 모달 (비밀번호 방식) -->
     <transition name="fade">
-      <div v-if="showDeleteConfirm && !useGoogleDeleteAuth" class="modal-overlay" @click.self="onCancelDelete">
+      <div v-if="showDeleteConfirm && !useOAuthDeleteAuth" class="modal-overlay" @click.self="onCancelDelete">
         <div class="modal-card" style="max-width:400px">
           <h2 class="modal-title">{{ t('account.deleteModal.title') }}</h2>
           <p class="modal-desc">{{ t('account.deleteModal.passwordDesc') }}</p>
@@ -156,12 +162,12 @@
       </div>
     </transition>
 
-    <!-- 회원탈퇴 확인 모달 (Google 재인증 방식) -->
+    <!-- 회원탈퇴 확인 모달 (OAuth 재인증 방식) -->
     <transition name="fade">
-      <div v-if="showDeleteConfirm && useGoogleDeleteAuth" class="modal-overlay" @click.self="onCancelDelete">
+      <div v-if="showDeleteConfirm && useOAuthDeleteAuth" class="modal-overlay" @click.self="onCancelDelete">
         <div class="modal-card" style="max-width:400px">
           <h2 class="modal-title">{{ t('account.deleteModal.title') }}</h2>
-          <p class="modal-desc">{{ t('account.deleteModal.googleDesc') }}</p>
+          <p class="modal-desc">{{ oauthDeleteProvider === 'github' ? t('account.deleteModal.githubDesc') : t('account.deleteModal.googleDesc') }}</p>
           <div v-if="deleteError" class="form-error" style="margin-bottom:16px">{{ deleteError }}</div>
           <div class="modal-actions">
             <button type="button" class="btn-ghost" @click="onCancelDelete">{{ t('common.cancel') }}</button>
@@ -169,9 +175,9 @@
               type="button"
               class="btn-danger"
               :disabled="deletingAccount"
-              @click="onDeleteAccountWithGoogle"
+              @click="onDeleteAccountWithOAuth"
             >
-              {{ deletingAccount ? t('common.deleting') : t('account.deleteModal.googleButton') }}
+              {{ deletingAccount ? t('common.deleting') : (oauthDeleteProvider === 'github' ? t('account.deleteModal.githubButton') : t('account.deleteModal.googleButton')) }}
             </button>
           </div>
         </div>
@@ -200,6 +206,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { promptGoogleReauth } from '../utils/googleAuth'
+import { openGitHubAuthPopup } from '../utils/githubAuth'
 import UserProfileDropdown from '../components/UserProfileDropdown.vue'
 import Icon from '../components/Icon.vue'
 
@@ -209,8 +216,13 @@ const authStore = useAuthStore()
 
 const showLogoutConfirm = ref(false)
 
-// OAuth 전용 계정이면서 Google 프로바이더가 있으면 Google 재인증 사용
-const useGoogleDeleteAuth = computed(() => authStore.isOAuthOnly && authStore.hasGoogleProvider)
+// OAuth 전용 계정이면 OAuth 재인증 사용 (Google 우선, GitHub 폴백)
+const useOAuthDeleteAuth = computed(() => authStore.isOAuthOnly && (authStore.hasGoogleProvider || authStore.hasGitHubProvider))
+const oauthDeleteProvider = computed(() => {
+  if (authStore.hasGoogleProvider) return 'google'
+  if (authStore.hasGitHubProvider) return 'github'
+  return null
+})
 
 // ─── 토스트 ───────────────────────────────────────────────
 const toastMsg = ref('')
@@ -339,7 +351,7 @@ async function onDeleteAccount() {
   deletingAccount.value = true
   try {
     await authStore.deleteAccount({ password: deletePassword.value })
-    window.location.replace('/login')
+    window.location.replace('/login?deactivated=1')
   } catch (err: unknown) {
     const e = err as { response?: { data?: { error?: string; code?: string } } }
     const msg = e.response?.data?.error || t('account.toast.deleteFailed')
@@ -349,19 +361,32 @@ async function onDeleteAccount() {
   }
 }
 
-async function onDeleteAccountWithGoogle() {
+async function onDeleteAccountWithOAuth() {
   deletingAccount.value = true
   deleteError.value = ''
   try {
-    const idToken = await promptGoogleReauth()
-    await authStore.deleteAccount({ provider: 'google', idToken })
-    window.location.replace('/login')
+    const provider = oauthDeleteProvider.value
+    let credential: string
+
+    if (provider === 'google') {
+      credential = await promptGoogleReauth()
+    } else if (provider === 'github') {
+      credential = await openGitHubAuthPopup()
+    } else {
+      return
+    }
+
+    await authStore.deleteAccount({ provider: provider!, idToken: credential })
+    window.location.replace('/login?deactivated=1')
   } catch (err: unknown) {
-    const e = err as { response?: { data?: { error?: string; code?: string } } }
+    const e = err as { message?: string; response?: { data?: { error?: string; code?: string } } }
     if (e.response?.data?.error) {
       deleteError.value = e.response.data.error
+    } else if (e.message === 'POPUP_CLOSED') {
+      // User closed popup intentionally
     } else {
-      deleteError.value = (err as Error).message || t('account.toast.googleAuthFailed')
+      const provider = oauthDeleteProvider.value
+      deleteError.value = (err as Error).message || t(provider === 'github' ? 'account.toast.githubAuthFailed' : 'account.toast.googleAuthFailed')
     }
   } finally {
     deletingAccount.value = false
@@ -473,7 +498,8 @@ onMounted(() => {
   font-size: var(--text-sm);
   color: var(--text-secondary);
 }
-.google-logo {
+.google-logo,
+.github-logo {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
@@ -544,15 +570,15 @@ onMounted(() => {
   align-items: center;
 }
 
-/* 위험 영역 (회원탈퇴) */
-.danger-section {
-  border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
+/* 계정 비활성화 영역 (warning 톤) */
+.deactivate-section {
+  border-color: color-mix(in srgb, var(--color-warning) 30%, transparent);
 }
-.section-title-danger::before {
-  background: var(--color-danger) !important;
+.section-title-warning::before {
+  background: var(--color-warning) !important;
 }
-.section-title-danger .section-icon {
-  color: var(--color-danger);
+.section-title-warning .section-icon {
+  color: var(--color-warning);
 }
 .danger-desc {
   font-size: var(--text-sm);
