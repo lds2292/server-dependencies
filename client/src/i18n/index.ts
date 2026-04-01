@@ -3,6 +3,7 @@ import ko from './locales/ko'
 import en from './locales/en'
 
 function detectLocale(): 'ko' | 'en' {
+  if (typeof window === 'undefined') return 'ko'
   const saved = localStorage.getItem('app-locale')
   if (saved === 'ko' || saved === 'en') return saved
   const browserLang = navigator.language || (navigator as any).userLanguage || ''
@@ -21,8 +22,10 @@ export default i18n
 /** Change locale and persist to localStorage */
 export function setLocale(locale: 'ko' | 'en'): void {
   i18n.global.locale.value = locale
-  localStorage.setItem('app-locale', locale)
-  document.documentElement.lang = locale
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('app-locale', locale)
+    document.documentElement.lang = locale
+  }
 }
 
 export function getLocale(): 'ko' | 'en' {

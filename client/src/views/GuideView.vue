@@ -383,6 +383,63 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { setLocale, getLocale } from '../i18n'
+import { usePageSeo } from '../composables/usePageSeo'
+import { useJsonLd } from '../composables/useJsonLd'
+
+usePageSeo({
+  titleKey: 'seo.guide.title',
+  descriptionKey: 'seo.guide.description',
+})
+
+useJsonLd({
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'How do I create an infrastructure project in Seraph?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Manage your team\'s infrastructure topology by project. Each project has independent graphs and members with role-based access control and full audit logging.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'What types of infrastructure nodes can Seraph visualize?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Seraph supports 5 node types: Server (application/web servers), L7 (HTTP load balancers, reverse proxies), Infra (databases, caches, message queues), External (APIs, SaaS services), and DNS (domain name servers).',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'How does Seraph analyze failure impact scope?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Select a node to instantly see upstream and downstream propagation. Affected nodes are highlighted while unaffected nodes are dimmed, with visual distinction by impact depth.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Can Seraph detect circular dependencies?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes. Seraph automatically detects circular dependencies and displays warning badges. You can also find all paths between two nodes by specifying source and target.',
+      },
+    },
+  ],
+})
+
+useJsonLd({
+  '@type': 'HowTo',
+  name: 'How to visualize infrastructure dependencies with Seraph',
+  step: [
+    { '@type': 'HowToStep', position: 1, name: 'Create a project', text: 'Create a project to manage your team\'s infrastructure topology. Each project has independent graphs and members.' },
+    { '@type': 'HowToStep', position: 2, name: 'Add nodes', text: 'Express every infrastructure component with 5 node types: Server, L7, Infra, External, DNS.' },
+    { '@type': 'HowToStep', position: 3, name: 'Connect dependencies', text: 'Express call relationships between nodes as directed edges using drag-and-drop.' },
+    { '@type': 'HowToStep', position: 4, name: 'Analyze impact scope', text: 'Select a node to instantly see the scope of failure or change propagation.' },
+    { '@type': 'HowToStep', position: 5, name: 'Find paths and detect cycles', text: 'Find all paths between two nodes and get automatic warnings for circular dependencies.' },
+  ],
+})
 
 const { tm } = useI18n()
 const currentLocale = ref(getLocale())

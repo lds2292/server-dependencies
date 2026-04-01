@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useIdleTimeout } from './composables/useIdleTimeout'
 import SessionTimeoutWarning from './components/SessionTimeoutWarning.vue'
 
-const router = useRouter()
 const authStore = useAuthStore()
 
 const { isWarningVisible, remainingSeconds, start, stop, extend } = useIdleTimeout({
@@ -37,11 +35,13 @@ async function handleLogout(): Promise<void> {
 </script>
 
 <template>
-  <router-view v-slot="{ Component }">
-    <transition name="page" mode="out-in">
-      <component :is="Component" />
-    </transition>
-  </router-view>
+  <main>
+    <router-view v-slot="{ Component }">
+      <transition name="page" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </router-view>
+  </main>
 
   <SessionTimeoutWarning
     :visible="isWarningVisible"

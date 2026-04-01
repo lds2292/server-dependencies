@@ -1,6 +1,6 @@
-import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useProjectStore } from '../stores/project'
+import type { RouteRecordRaw } from 'vue-router'
 
 async function checkProjectAccess(id: string): Promise<true | { name: string }> {
   try {
@@ -13,49 +13,48 @@ async function checkProjectAccess(id: string): Promise<true | { name: string }> 
   }
 }
 
-const router = createRouter({
-  history: createWebHistory(),
-  routes: [
-    { path: '/', name: 'hero', component: () => import('../views/HeroView.vue') },
-    { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
-    { path: '/register', name: 'register', component: () => import('../views/RegisterView.vue') },
-    { path: '/guide', name: 'guide', component: () => import('../views/GuideView.vue') },
-    { path: '/projects', name: 'projects', component: () => import('../views/ProjectsView.vue'), meta: { requiresAuth: true } },
-    {
-      path: '/projects/:id', name: 'project',
-      component: () => import('../views/ProjectView.vue'),
-      meta: { requiresAuth: true },
-      beforeEnter: async to => checkProjectAccess(to.params.id as string),
-    },
-    {
-      path: '/projects/:id/audit-logs', name: 'auditLogs',
-      component: () => import('../views/AuditLogView.vue'),
-      meta: { requiresAuth: true },
-      beforeEnter: async to => checkProjectAccess(to.params.id as string),
-    },
-    {
-      path: '/projects/:id/settings', name: 'projectSettings',
-      component: () => import('../views/ProjectSettingsView.vue'),
-      meta: { requiresAuth: true },
-      beforeEnter: async to => checkProjectAccess(to.params.id as string),
-    },
-    { path: '/account', name: 'account', component: () => import('../views/AccountView.vue'), meta: { requiresAuth: true } },
-    { path: '/forbidden', name: 'forbidden', component: () => import('../views/ForbiddenView.vue'), meta: { requiresAuth: true } },
-  ],
-})
+export const routes: RouteRecordRaw[] = [
+  { path: '/', name: 'hero', component: () => import('../views/HeroView.vue') },
+  { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
+  { path: '/register', name: 'register', component: () => import('../views/RegisterView.vue') },
+  { path: '/guide', name: 'guide', component: () => import('../views/GuideView.vue') },
+  { path: '/projects', name: 'projects', component: () => import('../views/ProjectsView.vue'), meta: { requiresAuth: true } },
+  {
+    path: '/projects/:id', name: 'project',
+    component: () => import('../views/ProjectView.vue'),
+    meta: { requiresAuth: true },
+    beforeEnter: async to => checkProjectAccess(to.params.id as string),
+  },
+  {
+    path: '/projects/:id/audit-logs', name: 'auditLogs',
+    component: () => import('../views/AuditLogView.vue'),
+    meta: { requiresAuth: true },
+    beforeEnter: async to => checkProjectAccess(to.params.id as string),
+  },
+  {
+    path: '/projects/:id/settings', name: 'projectSettings',
+    component: () => import('../views/ProjectSettingsView.vue'),
+    meta: { requiresAuth: true },
+    beforeEnter: async to => checkProjectAccess(to.params.id as string),
+  },
+  { path: '/account', name: 'account', component: () => import('../views/AccountView.vue'), meta: { requiresAuth: true } },
+  { path: '/forbidden', name: 'forbidden', component: () => import('../views/ForbiddenView.vue'), meta: { requiresAuth: true } },
+]
 
-router.beforeEach(async to => {
-  const auth = useAuthStore()
-  await auth.initializeSession()
+export function setupRouterGuards(router: import('vue-router').Router): void {
+  router.beforeEach(async to => {
+    if (typeof window === 'undefined') return
 
-  if (to.meta.requiresAuth && !auth.isLoggedIn) {
-    return { name: 'login', query: { redirect: to.fullPath } }
-  }
+    const auth = useAuthStore()
+    await auth.initializeSession()
 
-  const publicOnly = ['hero', 'login', 'register']
-  if (publicOnly.includes(to.name as string) && auth.isLoggedIn) {
-    return { name: 'projects' }
-  }
-})
+    if (to.meta.requiresAuth && !auth.isLoggedIn) {
+      return { name: 'login', query: { redirect: to.fullPath } }
+    }
 
-export default router
+    const publicOnly = ['hero', 'login', 'register']
+    if (publicOnly.includes(to.name as string) && auth.isLoggedIn) {
+      return { name: 'projects' }
+    }
+  })
+}

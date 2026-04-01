@@ -875,4 +875,24 @@ export default {
     SERVER_ERROR: '서버 오류가 발생했습니다.',
     UNSUPPORTED_PROVIDER: '지원하지 않는 인증 방식입니다.',
   },
+
+  // -- seo --
+  seo: {
+    hero: {
+      title: 'Seraph - 인프라 의존성 시각화 도구',
+      description: '에이전트 없이 서버 인프라 의존성을 시각화하고 장애 영향 범위를 즉시 파악하세요. 순환 의존성 탐지, 경로 분석, 팀 협업을 지원합니다.',
+    },
+    guide: {
+      title: '시작 가이드 - Seraph',
+      description: 'Seraph로 프로젝트를 생성하고, 인프라 노드를 추가하고, 의존성을 연결하고, 영향도 분석을 실행하는 방법을 알아보세요.',
+    },
+    login: {
+      title: '로그인 - Seraph',
+      description: 'Seraph에 로그인하여 인프라 의존성 맵을 관리하세요.',
+    },
+    register: {
+      title: '회원가입 - Seraph',
+      description: '무료 Seraph 계정을 만들어 인프라 의존성 시각화를 시작하세요.',
+    },
+  },
 }

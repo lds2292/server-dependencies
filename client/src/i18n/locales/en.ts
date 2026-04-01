@@ -875,4 +875,24 @@ export default {
     SERVER_ERROR: 'A server error occurred.',
     UNSUPPORTED_PROVIDER: 'Unsupported authentication provider.',
   },
+
+  // -- seo --
+  seo: {
+    hero: {
+      title: 'Seraph - Infrastructure Dependency Visualization',
+      description: 'Visualize and analyze server infrastructure dependencies without agents. Identify blast radius, detect circular dependencies, and collaborate with your team.',
+    },
+    guide: {
+      title: 'Getting Started - Seraph',
+      description: 'Learn how to create projects, add infrastructure nodes, connect dependencies, and run impact analysis in Seraph.',
+    },
+    login: {
+      title: 'Sign In - Seraph',
+      description: 'Sign in to Seraph to manage your infrastructure dependency maps.',
+    },
+    register: {
+      title: 'Sign Up - Seraph',
+      description: 'Create a free Seraph account to start visualizing your infrastructure dependencies.',
+    },
+  },
 }

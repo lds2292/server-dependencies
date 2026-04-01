@@ -389,6 +389,33 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { setLocale, getLocale } from '../i18n'
+import { usePageSeo } from '../composables/usePageSeo'
+import { useJsonLd } from '../composables/useJsonLd'
+
+usePageSeo({
+  titleKey: 'seo.hero.title',
+  descriptionKey: 'seo.hero.description',
+})
+
+useJsonLd({
+  '@type': 'WebPage',
+  name: 'Seraph',
+  description: 'Infrastructure dependency visualization and impact analysis tool. Visualize server dependencies without agents.',
+  url: 'https://seraph.toolzy.com/',
+})
+
+useJsonLd({
+  '@type': 'SoftwareApplication',
+  name: 'Seraph',
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Web',
+  description: 'Visualize and analyze server infrastructure dependencies without agents. Identify blast radius, detect circular dependencies, and collaborate with your team.',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+  },
+})
 
 const currentLocale = ref(getLocale())
 function toggleLocale() {

@@ -80,6 +80,12 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { setLocale, getLocale } from '../i18n'
 import { renderGoogleButton, isGoogleAuthAvailable } from '../utils/googleAuth'
+import { usePageSeo } from '../composables/usePageSeo'
+
+usePageSeo({
+  titleKey: 'seo.register.title',
+  descriptionKey: 'seo.register.description',
+})
 
 const { t } = useI18n()
 const currentLocale = ref(getLocale())
