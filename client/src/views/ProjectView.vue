@@ -1017,7 +1017,7 @@ function onCsvImport(result: CsvParseResult) {
   store.endBatch()
 
   // import된 노드에 계층적 초기 위치 부여
-  const layerOrder: Record<string, number> = { dns: 0, l7: 1, server: 2, external: 2, infra: 3 }
+  const layerOrder: Record<string, number> = { dns: 0, l7: 1, server: 2, infra: 3, external: 4 }
   const layerGroups = new Map<number, string[]>()
   for (const node of selectedNodes) {
     const realId = nameToRealId.get(node.name)
@@ -1142,7 +1142,7 @@ function onTerraformImport(result: TfParseResult) {
   store.endBatch()
 
   // import된 노드에 계층적 초기 위치 부여 (DNS → L7 → Server → Infra 순으로 상단→하단)
-  const layerOrder: Record<string, number> = { dns: 0, l7: 1, server: 2, external: 2, infra: 3 }
+  const layerOrder: Record<string, number> = { dns: 0, l7: 1, server: 2, infra: 3, external: 4 }
   const layerGroups = new Map<number, string[]>()
   for (const node of selectedNodes) {
     const realId = tempIdToRealId.get(node.tempId)
