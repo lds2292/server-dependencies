@@ -16,6 +16,7 @@ export interface CsvParsedNode {
   team?: string
   internalIps?: string[]
   natIps?: string[]
+  memberNames?: string[]
   infraType?: string
   host?: string
   port?: string
@@ -233,6 +234,9 @@ export function parseCSV(text: string): CsvParseResult {
         node.team = col('team')
         node.internalIps = parseIpList(col('internal_ips'))
         node.natIps = parseIpList(col('nat_ips'))
+        break
+      case 'l7':
+        node.memberNames = col('members') ? col('members').split(';').map(s => s.trim()).filter(Boolean) : []
         break
       case 'infra':
         node.infraType = col('infra_type')

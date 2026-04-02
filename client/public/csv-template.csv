@@ -5,8 +5,8 @@ web-api-2,Main API server (replica),Backend,10.0.1.20,52.78.100.2
 worker-1,Background job processor,Backend,10.0.2.10,
 
 # L7
-name,description
-main-alb,Application Load Balancer
+name,description,members
+main-alb,Application Load Balancer,web-api-1;web-api-2
 
 # Infra
 name,description,infra_type,host,port

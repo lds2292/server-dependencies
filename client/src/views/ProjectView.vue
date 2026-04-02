@@ -939,7 +939,11 @@ function onCsvImport(result: CsvParseResult) {
 
   store.beginBatch()
 
-  for (const node of selectedNodes) {
+  // 서버를 먼저 생성해야 L7의 memberServerIds를 매핑할 수 있음
+  const sortOrder: Record<string, number> = { server: 0, l7: 1, infra: 2, dns: 3, external: 4 }
+  const sortedNodes = [...selectedNodes].sort((a, b) => (sortOrder[a.nodeKind] ?? 9) - (sortOrder[b.nodeKind] ?? 9))
+
+  for (const node of sortedNodes) {
     let created: { id: string } | null = null
     switch (node.nodeKind) {
       case 'server':
@@ -952,14 +956,18 @@ function onCsvImport(result: CsvParseResult) {
           description: node.description,
         })
         break
-      case 'l7':
+      case 'l7': {
+        const memberIds = (node.memberNames ?? [])
+          .map(mName => nameToRealId.get(mName))
+          .filter((id): id is string => !!id)
         created = store.addL7Node({
           nodeKind: 'l7',
           name: node.name,
-          memberServerIds: [],
+          memberServerIds: memberIds,
           description: node.description,
         })
         break
+      }
       case 'infra':
         created = store.addInfraNode({
           nodeKind: 'infra',
