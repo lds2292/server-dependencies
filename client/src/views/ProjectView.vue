@@ -1052,6 +1052,7 @@ function onCsvImport(result: CsvParseResult) {
 
   store.savePositions(positions)
   store.saveGraph()
+  store.flushPositions()
   showCsvImport.value = false
 }
 
@@ -1177,6 +1178,7 @@ function onTerraformImport(result: TfParseResult) {
 
   store.savePositions(positions)
   store.saveGraph()
+  store.flushPositions()
   showTerraformImport.value = false
 }
 
