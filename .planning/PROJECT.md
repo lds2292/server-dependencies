@@ -12,7 +12,9 @@
 
 ### Validated
 
-(None yet -- ship to validate)
+- [x] CSS 변수 시스템으로 그래프 노드 텍스트 스타일 관리 (Validated in Phase 1: CSS Foundation)
+- [x] infra/dns 노드 인라인 스타일 제거, CSS 변수로 대체 (Validated in Phase 1: CSS Foundation)
+- [x] node-meta WCAG AA 4.5:1 대비율 충족 (Validated in Phase 1: CSS Foundation)
 
 ### Active
 
@@ -73,4 +75,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-02 after initialization*
+*Last updated: 2026-04-03 after Phase 1 completion*
