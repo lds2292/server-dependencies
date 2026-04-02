@@ -9,9 +9,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### CSS Foundation
 
-- [ ] **CSS-01**: 그래프 전용 CSS 변수 추가 (`--graph-label-size`, `--graph-sub-size`, `--graph-meta-size`)
-- [ ] **CSS-02**: infra/dns 노드의 인라인 `fill:rgba(...)` 스타일을 CSS 변수로 대체
-- [ ] **CSS-03**: node-meta opacity를 WCAG AA 대비율(4.5:1 이상)을 충족하도록 조정
+- [x] **CSS-01**: 그래프 전용 CSS 변수 추가 (`--graph-label-size`, `--graph-sub-size`, `--graph-meta-size`)
+- [x] **CSS-02**: infra/dns 노드의 인라인 `fill:rgba(...)` 스타일을 CSS 변수로 대체
+- [x] **CSS-03**: node-meta opacity를 WCAG AA 대비율(4.5:1 이상)을 충족하도록 조정
 
 ### Font Size & Spacing
 
@@ -60,9 +60,9 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CSS-01 | Phase 1 | Pending |
-| CSS-02 | Phase 1 | Pending |
-| CSS-03 | Phase 1 | Pending |
+| CSS-01 | Phase 1 | Complete |
+| CSS-02 | Phase 1 | Complete |
+| CSS-03 | Phase 1 | Complete |
 | FONT-01 | Phase 2 | Pending |
 | FONT-02 | Phase 2 | Pending |
 | FONT-03 | Phase 2 | Pending |

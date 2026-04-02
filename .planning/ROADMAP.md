@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **UI hint**: yes
 
 Plans:
-- [ ] 01-01-PLAN.md -- CSS 변수 추가, 인라인 스타일 제거, WCAG 대비율 개선, 스타일 가이드 업데이트
+- [x] 01-01-PLAN.md -- CSS 변수 추가, 인라인 스타일 제거, WCAG 대비율 개선, 스타일 가이드 업데이트
 
 ### Phase 2: Font Size & Spacing
 **Goal**: 노드 텍스트가 캔버스에서 즉시 읽히고, 5종 노드 모두에서 텍스트가 노드 경계 안에 깔끔하게 배치된다
