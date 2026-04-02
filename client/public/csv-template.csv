@@ -1,6 +1,6 @@
 type,name,description,team,internal_ips,nat_ips,infra_type,host,port,dns_type,record_value
-server,web-api-1,Main API server,Backend,10.0.1.10,52.78.100.1,,,,,
-server,web-api-2,Main API server (replica),Backend,10.0.1.11,52.78.100.2,,,,,
+server,web-api-1,Main API server,Backend,10.0.1.10;10.0.1.11,52.78.100.1,,,,,
+server,web-api-2,Main API server (replica),Backend,10.0.1.20,52.78.100.2,,,,,
 server,worker-1,Background job processor,Backend,10.0.2.10,,,,,,
 l7,main-alb,Application Load Balancer,,,,,,,,
 infra,postgres-primary,Primary database,,,,PostgreSQL,db.internal.io,5432,,
@@ -10,7 +10,7 @@ external,Stripe API,Payment gateway,,,,,,,,
 
 # Dependencies
 source,target,type,description
-dns,main-alb,dns,DNS resolution
+api.example.com,main-alb,dns,DNS resolution
 main-alb,web-api-1,http,Load balanced traffic
 main-alb,web-api-2,http,Load balanced traffic
 web-api-1,postgres-primary,tcp,Database connection
