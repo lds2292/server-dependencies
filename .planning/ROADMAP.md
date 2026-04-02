@@ -12,7 +12,7 @@
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: CSS Foundation** - 그래프 전용 CSS 변수 추가 및 인라인 스타일 정리, 대비율 개선
+- [x] **Phase 1: CSS Foundation** - 그래프 전용 CSS 변수 추가 및 인라인 스타일 정리, 대비율 개선 (completed 2026-04-02)
 - [ ] **Phase 2: Font Size & Spacing** - 폰트 크기 증가 및 행간 재계산으로 텍스트 가독성 확보
 - [ ] **Phase 3: Smart Truncation** - 너비 기반 텍스트 잘림으로 한글/영문 혼합 정확 대응
 - [ ] **Phase 4: Export Sync** - 변경된 스타일을 exportGraph() 블록에 반영
@@ -27,7 +27,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. style.css에 `--graph-label-size`, `--graph-sub-size`, `--graph-meta-size` 변수가 존재하고 GraphCanvas에서 참조된다
   2. infra/dns 노드에 인라인 `fill:rgba(...)` 스타일이 없고, CSS 변수로 대체되어 있다
   3. node-meta 텍스트가 어두운 배경/밝은 배경 모두에서 WCAG AA 대비율(4.5:1 이상)을 충족한다
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 **UI hint**: yes
 
 Plans:
@@ -82,7 +82,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. CSS Foundation | 0/1 | Planning complete | - |
+| 1. CSS Foundation | 1/1 | Complete   | 2026-04-02 |
 | 2. Font Size & Spacing | 0/0 | Not started | - |
 | 3. Smart Truncation | 0/0 | Not started | - |
 | 4. Export Sync | 0/0 | Not started | - |
