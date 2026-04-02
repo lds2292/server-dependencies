@@ -65,7 +65,6 @@ export async function getAuditLogs(projectId: string, limit = 200) {
     user: log.user
       ? {
           ...log.user,
-          username: isEncrypted(log.user.username) ? decrypt(log.user.username) : log.user.username,
           email: isEncrypted(log.user.email) ? decrypt(log.user.email) : log.user.email,
         }
       : null,

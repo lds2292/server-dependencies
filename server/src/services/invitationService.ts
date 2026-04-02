@@ -54,7 +54,6 @@ export async function getMyInvitations(userId: string) {
   })
   return invitations.map(inv => ({
     ...inv,
-    inviter: { ...inv.inviter, username: decrypt(inv.inviter.username) },
   }))
 }
 
@@ -74,7 +73,6 @@ export async function getProjectInvitations(projectId: string, requesterId: stri
     ...inv,
     invitee: {
       ...inv.invitee,
-      username: decrypt(inv.invitee.username),
       email: decrypt(inv.invitee.email),
     },
   }))

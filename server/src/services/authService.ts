@@ -17,8 +17,8 @@ export async function verifyPassword(plain: string, hash: string): Promise<boole
 }
 
 /** DB에서 읽은 User 레코드의 암호화 필드를 복호화합니다. */
-export function decryptUserFields<T extends { email: string; username: string }>(user: T): T {
-  return { ...user, email: decrypt(user.email), username: decrypt(user.username) }
+export function decryptUserFields<T extends { email: string }>(user: T): T {
+  return { ...user, email: decrypt(user.email) }
 }
 
 export function generateAccessToken(payload: AuthTokenPayload): string {
@@ -56,15 +56,13 @@ async function issueTokens(user: { id: string; email: string; username: string; 
 
 /** username 중복 시 숫자 접미사를 추가하여 고유한 이름을 생성합니다. */
 async function generateUniqueUsername(base: string): Promise<string> {
-  const baseHash = hmac(base)
-  const existing = await prisma.user.findUnique({ where: { usernameHash: baseHash } })
+  const existing = await prisma.user.findUnique({ where: { username: base } })
   if (!existing) return base
 
   let suffix = 2
   while (suffix <= 100) {
     const candidate = `${base}${suffix}`
-    const candidateHash = hmac(candidate)
-    const found = await prisma.user.findUnique({ where: { usernameHash: candidateHash } })
+    const found = await prisma.user.findUnique({ where: { username: candidate } })
     if (!found) return candidate
     suffix++
   }
@@ -73,12 +71,11 @@ async function generateUniqueUsername(base: string): Promise<string> {
 
 export async function register(email: string, username: string, password: string) {
   const emailHash = hmac(email.toLowerCase())
-  const usernameHash = hmac(username)
 
   const existingEmail = await prisma.user.findUnique({ where: { emailHash } })
   if (existingEmail) throw Object.assign(new Error('Email is already taken'), { code: 'EMAIL_TAKEN' })
 
-  const existingUsername = await prisma.user.findUnique({ where: { usernameHash } })
+  const existingUsername = await prisma.user.findUnique({ where: { username } })
   if (existingUsername) throw Object.assign(new Error('Username is already taken'), { code: 'USERNAME_TAKEN' })
 
   const passwordHash = await hashPassword(password)
@@ -86,8 +83,7 @@ export async function register(email: string, username: string, password: string
     data: {
       email: encrypt(email),
       emailHash,
-      username: encrypt(username),
-      usernameHash,
+      username,
       passwordHash,
     },
   })
@@ -164,15 +160,12 @@ export async function googleLogin(idToken: string) {
 
   // 3) 신규 사용자 생성
   const username = await generateUniqueUsername(googleUser.name)
-  const usernameHash = hmac(username)
-
   const newUser = await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
         email: encrypt(googleUser.email),
         emailHash,
-        username: encrypt(username),
-        usernameHash,
+        username,
         passwordHash: null,
       },
     })
@@ -231,15 +224,13 @@ export async function githubLogin(code: string) {
 
   // 3) 신규 사용자 생성
   const username = await generateUniqueUsername(githubUser.name)
-  const usernameHash = hmac(username)
 
   const newUser = await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
         email: encrypt(githubUser.email),
         emailHash,
-        username: encrypt(username),
-        usernameHash,
+        username,
         passwordHash: null,
       },
     })
@@ -291,13 +282,11 @@ export async function updateProfile(
   const updateData: Record<string, string> = {}
 
   if (data.username) {
-    const usernameHash = hmac(data.username)
-    const existing = await prisma.user.findUnique({ where: { usernameHash } })
+    const existing = await prisma.user.findUnique({ where: { username: data.username } })
     if (existing && existing.id !== userId) {
       throw Object.assign(new Error('Username is already taken'), { code: 'USERNAME_TAKEN' })
     }
-    updateData.username = encrypt(data.username)
-    updateData.usernameHash = usernameHash
+    updateData.username = data.username
   }
 
   if (Object.keys(updateData).length === 0) {

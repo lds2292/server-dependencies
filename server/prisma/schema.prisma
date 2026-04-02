@@ -16,8 +16,7 @@ model User {
   id            String     @id @default(uuid())
   email         String              /// AES-256-GCM 암호화 저장
   emailHash     String     @unique  /// HMAC-SHA256 (조회/유일성 검증)
-  username      String              /// AES-256-GCM 암호화 저장
-  usernameHash  String     @unique  /// HMAC-SHA256 (조회/유일성 검증)
+  username      String     @unique
   passwordHash  String?
   status        UserStatus @default(ACTIVE)
   deactivatedAt DateTime?

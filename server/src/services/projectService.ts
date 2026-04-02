@@ -7,7 +7,7 @@ type UserFields = { id: string; email: string; username: string }
 type MemberWithUser = { role: ProjectMemberRole; user: UserFields; [key: string]: unknown }
 
 function decryptMemberUser<T extends MemberWithUser>(member: T): T {
-  return { ...member, user: { ...member.user, email: decrypt(member.user.email), username: decrypt(member.user.username) } }
+  return { ...member, user: { ...member.user, email: decrypt(member.user.email) } }
 }
 
 function decryptProjectMembers<T extends { members: MemberWithUser[] }>(project: T): T {
