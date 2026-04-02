@@ -71,6 +71,7 @@ export default {
       continueWith: 'Continue with Google',
       emailNotVerified: 'This Google account has an unverified email.',
       error: 'Google authentication failed. Please try again.',
+      processing: 'Processing...',
     },
     oauthLoading: 'Signing in...',
     github: {
@@ -566,6 +567,7 @@ export default {
       selectMember: 'Select member',
       password: 'Confirm Password',
       passwordPlaceholder: 'Enter password',
+      oauthDesc: '{provider} authentication is required for identity verification.',
       submit: 'Confirm Transfer',
       submitting: 'Transferring...',
     },

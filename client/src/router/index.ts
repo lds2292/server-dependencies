@@ -19,6 +19,7 @@ export const routes: RouteRecordRaw[] = [
   { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
   { path: '/register', name: 'register', component: () => import('../views/RegisterView.vue') },
   { path: '/auth/github/callback', name: 'github-callback', component: () => import('../views/GitHubCallbackView.vue') },
+  { path: '/auth/google/callback', name: 'google-callback', component: () => import('../views/GoogleCallbackView.vue') },
   { path: '/guide', name: 'guide', component: () => import('../views/GuideView.vue') },
   { path: '/projects', name: 'projects', component: () => import('../views/ProjectsView.vue'), meta: { requiresAuth: true } },
   {

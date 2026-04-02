@@ -71,6 +71,7 @@ export default {
       continueWith: 'Google로 계속하기',
       emailNotVerified: '이메일이 인증되지 않은 Google 계정입니다.',
       error: 'Google 인증에 실패했습니다. 다시 시도해 주세요.',
+      processing: '인증 처리 중...',
     },
     oauthLoading: '로그인 처리 중...',
     github: {
@@ -566,6 +567,7 @@ export default {
       selectMember: '멤버 선택',
       password: '비밀번호 확인',
       passwordPlaceholder: '비밀번호 입력',
+      oauthDesc: '본인 확인을 위해 {provider} 인증이 필요합니다.',
       submit: '위임 확인',
       submitting: '위임 중...',
     },

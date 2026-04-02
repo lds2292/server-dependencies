@@ -39,7 +39,7 @@ export async function checkPermission(projectId: string, userId: string, action:
 
 export async function getProjectsForUser(userId: string) {
   const projects = await prisma.project.findMany({
-    where: { members: { some: { userId } } },
+    where: { members: { some: { userId } }, status: 'ACTIVE' },
     include: memberInclude,
     orderBy: { updatedAt: 'desc' },
   })

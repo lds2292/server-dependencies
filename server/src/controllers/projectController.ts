@@ -118,18 +118,22 @@ export async function leaveProject(req: Request, res: Response): Promise<void> {
 
 export async function transferOwnership(req: Request, res: Response): Promise<void> {
   const { id } = req.params
-  const { targetUserId, password } = req.body
+  const { targetUserId, password, provider, idToken } = req.body
   const userId = req.user!.userId
   const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() ?? req.socket.remoteAddress
   const userAgent = req.headers['user-agent']
 
-  if (!targetUserId || !password) {
-    res.status(400).json({ error: 'targetUserId and password are required', code: 'VALIDATION_ERROR' })
+  if (!targetUserId || (!password && !(provider && idToken))) {
+    res.status(400).json({ error: 'targetUserId and verification (password or OAuth) are required', code: 'VALIDATION_ERROR' })
     return
   }
 
   try {
-    await authService.verifyUserPassword(userId, password)
+    if (provider && idToken) {
+      await authService.verifyUserOAuth(userId, provider, idToken)
+    } else {
+      await authService.verifyUserPassword(userId, password)
+    }
 
     const project = await projectService.updateMemberRole(id, userId, targetUserId, 'MASTER')
 
@@ -143,12 +147,12 @@ export async function transferOwnership(req: Request, res: Response): Promise<vo
     res.json(project)
   } catch (err: unknown) {
     const e = err as { code?: string; message?: string }
-    if (e.code === 'INVALID_CREDENTIALS') {
+    if (e.code === 'INVALID_CREDENTIALS' || e.code === 'INVALID_OAUTH_TOKEN') {
       await auditLogService.createAuditLog({
         userId, projectId: id, action: 'OWNERSHIP_TRANSFERRED', status: 'FAILED',
-        ipAddress, userAgent, failReason: 'INVALID_CREDENTIALS',
+        ipAddress, userAgent, failReason: e.code,
       }).catch(() => {})
-      res.status(401).json({ error: 'Invalid password', code: e.code })
+      res.status(401).json({ error: e.message ?? 'Authentication failed', code: e.code })
       return
     }
     handleProjectError(err, res, 'transferOwnership')

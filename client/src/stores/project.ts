@@ -73,8 +73,8 @@ export const useProjectStore = defineStore('project', () => {
     if (currentProject.value?.id === projectId) currentProject.value = data
   }
 
-  async function transferOwnership(projectId: string, targetUserId: string, password: string): Promise<void> {
-    const { data } = await projectApi.transferOwnership(projectId, targetUserId, password)
+  async function transferOwnership(projectId: string, targetUserId: string, verification: { password: string } | { provider: string; idToken: string }): Promise<void> {
+    const { data } = await projectApi.transferOwnership(projectId, targetUserId, verification)
     if (currentProject.value?.id === projectId) currentProject.value = data
   }
 

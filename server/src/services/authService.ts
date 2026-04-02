@@ -262,6 +262,28 @@ export async function verifyUserPassword(userId: string, password: string): Prom
   if (!ok) throw Object.assign(new Error('Invalid password'), { code: 'INVALID_CREDENTIALS' })
 }
 
+/** OAuth 재인증으로 본인 확인 (MASTER 위임 등) */
+export async function verifyUserOAuth(userId: string, provider: string, credential: string): Promise<void> {
+  let providerSub: string
+
+  if (provider === 'google') {
+    const googleUser = await verifyGoogleIdToken(credential)
+    providerSub = googleUser.sub
+  } else if (provider === 'github') {
+    const githubUser = await verifyGitHubCode(credential)
+    providerSub = githubUser.sub
+  } else {
+    throw Object.assign(new Error('Unsupported OAuth provider'), { code: 'UNSUPPORTED_PROVIDER' })
+  }
+
+  const oauthAccount = await prisma.oAuthAccount.findUnique({
+    where: { provider_providerSub: { provider, providerSub } },
+  })
+  if (!oauthAccount || oauthAccount.userId !== userId) {
+    throw Object.assign(new Error('OAuth authentication does not match'), { code: 'INVALID_OAUTH_TOKEN' })
+  }
+}
+
 export async function updateProfile(
   userId: string,
   data: { username?: string }
@@ -296,20 +318,57 @@ export async function changePassword(
   await prisma.user.update({ where: { id: userId }, data: { passwordHash: passwordHashValue } })
 }
 
-/** 계정 비활성화 (소프트 딜리트) — MASTER 체크 + 상태 전환 + 세션 무효화 */
-async function deactivateAccount(userId: string) {
-  const masterProjects = await prisma.projectMember.findMany({
-    where: { userId, role: 'MASTER' },
-    include: { project: { select: { name: true } } },
+/** 보관된 솔로 프로젝트를 ACTIVE로 복구 */
+async function restoreArchivedProjects(tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0], userId: string) {
+  const archivedMemberships = await tx.projectMember.findMany({
+    where: { userId, role: 'MASTER', project: { status: 'ARCHIVED' } },
+    select: { projectId: true },
   })
-  if (masterProjects.length > 0) {
-    const names = masterProjects.map(m => m.project.name).join(', ')
-    const err = new Error(`You are master of projects: ${names}. Transfer ownership before deleting.`)
-    ;(err as unknown as { code: string }).code = 'MASTER_ROLE_EXISTS'
-    throw err
+  if (archivedMemberships.length > 0) {
+    await tx.project.updateMany({
+      where: { id: { in: archivedMemberships.map(m => m.projectId) } },
+      data: { status: 'ACTIVE' },
+    })
   }
+}
 
+/** 계정 비활성화 (소프트 딜리트) — MASTER 자동 위임/보관 + 상태 전환 + 세션 무효화 */
+async function deactivateAccount(userId: string) {
   await prisma.$transaction(async (tx) => {
+    // MASTER인 프로젝트 처리
+    const masterMemberships = await tx.projectMember.findMany({
+      where: { userId, role: 'MASTER' },
+      select: { projectId: true },
+    })
+
+    for (const { projectId } of masterMemberships) {
+      const otherMembers = await tx.projectMember.findMany({
+        where: { projectId, userId: { not: userId } },
+        orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }],
+      })
+
+      if (otherMembers.length > 0) {
+        // 다른 멤버가 있으면 최상위 역할에게 MASTER 위임 + 본인 멤버십 삭제
+        const ROLE_PRIORITY: Record<string, number> = { MASTER: 0, ADMIN: 1, WRITER: 2, READONLY: 3 }
+        otherMembers.sort((a, b) => (ROLE_PRIORITY[a.role] ?? 9) - (ROLE_PRIORITY[b.role] ?? 9) || a.joinedAt.getTime() - b.joinedAt.getTime())
+        const successor = otherMembers[0]
+
+        await tx.projectMember.update({
+          where: { projectId_userId: { projectId, userId: successor.userId } },
+          data: { role: 'MASTER' },
+        })
+        await tx.projectMember.delete({
+          where: { projectId_userId: { projectId, userId } },
+        })
+      } else {
+        // 본인만 남은 프로젝트는 보관 처리
+        await tx.project.update({
+          where: { id: projectId },
+          data: { status: 'ARCHIVED' },
+        })
+      }
+    }
+
     await tx.user.update({
       where: { id: userId },
       data: { status: 'DEACTIVATED', deactivatedAt: new Date() },
@@ -364,9 +423,13 @@ export async function reactivateAccount(email: string, password: string) {
     throw Object.assign(new Error('Recovery period has expired'), { code: 'RECOVERY_EXPIRED' })
   }
 
-  const updated = await prisma.user.update({
-    where: { id: user.id },
-    data: { status: 'ACTIVE', deactivatedAt: null },
+  const updated = await prisma.$transaction(async (tx) => {
+    const u = await tx.user.update({
+      where: { id: user.id },
+      data: { status: 'ACTIVE', deactivatedAt: null },
+    })
+    await restoreArchivedProjects(tx, user.id)
+    return u
   })
   const decrypted = decryptUserFields(updated)
   const tokens = await issueTokens(decrypted)
@@ -410,9 +473,13 @@ export async function reactivateAccountWithOAuth(provider: string, credential: s
     throw Object.assign(new Error('Recovery period has expired'), { code: 'RECOVERY_EXPIRED' })
   }
 
-  const updated = await prisma.user.update({
-    where: { id: user.id },
-    data: { status: 'ACTIVE', deactivatedAt: null },
+  const updated = await prisma.$transaction(async (tx) => {
+    const u = await tx.user.update({
+      where: { id: user.id },
+      data: { status: 'ACTIVE', deactivatedAt: null },
+    })
+    await restoreArchivedProjects(tx, user.id)
+    return u
   })
   const decrypted = decryptUserFields(updated)
   const tokens = await issueTokens(decrypted)

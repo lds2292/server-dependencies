@@ -292,8 +292,6 @@ export async function deleteAccount(req: Request, res: Response): Promise<void> 
       res.status(401).json({ error: 'Invalid password', code: e.code })
     } else if (e.code === 'INVALID_GOOGLE_TOKEN' || e.code === 'INVALID_OAUTH_TOKEN' || e.code === 'INVALID_GITHUB_TOKEN') {
       res.status(401).json({ error: 'OAuth authentication failed', code: e.code })
-    } else if (e.code === 'MASTER_ROLE_EXISTS') {
-      res.status(409).json({ error: e.message, code: e.code })
     } else if (e.code === 'UNSUPPORTED_PROVIDER') {
       res.status(400).json({ error: e.message, code: e.code })
     } else {

@@ -199,7 +199,7 @@
               :options="transferableMembers.map(m => ({ value: m.userId, label: `${m.user.username} (${m.user.email})` }))"
             />
           </div>
-          <div class="transfer-field">
+          <div v-if="!useOAuthTransfer" class="transfer-field">
             <label class="transfer-field-label">{{ t('settings.transferModal.password') }}</label>
             <input
               v-model="transferPassword"
@@ -209,13 +209,16 @@
               @keydown.enter="onTransferOwnership"
             />
           </div>
+          <div v-else class="transfer-field">
+            <label class="transfer-field-label">{{ t('settings.transferModal.oauthDesc', { provider: transferOAuthProvider === 'github' ? 'GitHub' : 'Google' }) }}</label>
+          </div>
           <div v-if="transferError" class="transfer-error">{{ transferError }}</div>
           <div class="delete-dialog-actions">
             <button class="btn-ghost delete-dialog-btn" @click="closeTransferModal">{{ t('common.cancel') }}</button>
             <button
               class="btn-outline delete-dialog-btn"
               @click="onTransferOwnership"
-              :disabled="transferring || !transferTargetUserId || !transferPassword"
+              :disabled="transferring || !transferTargetUserId || (!useOAuthTransfer && !transferPassword)"
             >{{ transferring ? t('settings.transferModal.submitting') : t('settings.transferModal.submit') }}</button>
           </div>
         </div>
@@ -253,6 +256,8 @@ import type { ProjectMemberRole } from '../api/projectApi'
 import UserProfileDropdown from '../components/UserProfileDropdown.vue'
 import Icon from '../components/Icon.vue'
 import CustomSelect from '../components/CustomSelect.vue'
+import { promptGoogleReauth } from '../utils/googleAuth'
+import { openGitHubAuthPopup } from '../utils/githubAuth'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -390,6 +395,13 @@ const transferPassword = ref('')
 const transferring = ref(false)
 const transferError = ref('')
 
+const useOAuthTransfer = computed(() => authStore.isOAuthOnly && (authStore.hasGoogleProvider || authStore.hasGitHubProvider))
+const transferOAuthProvider = computed(() => {
+  if (authStore.hasGoogleProvider) return 'google'
+  if (authStore.hasGitHubProvider) return 'github'
+  return null
+})
+
 const transferableMembers = computed(() => {
   if (!projectStore.currentProject) return []
   return projectStore.currentProject.members.filter(m => m.role !== 'MASTER')
@@ -403,17 +415,35 @@ function closeTransferModal() {
 }
 
 async function onTransferOwnership() {
-  if (!transferTargetUserId.value || !transferPassword.value) return
+  if (!transferTargetUserId.value) return
+  if (!useOAuthTransfer.value && !transferPassword.value) return
   transferring.value = true
   transferError.value = ''
   try {
-    await projectStore.transferOwnership(projectId, transferTargetUserId.value, transferPassword.value)
+    let verification: { password: string } | { provider: string; idToken: string }
+
+    if (useOAuthTransfer.value) {
+      const provider = transferOAuthProvider.value!
+      let credential: string
+      if (provider === 'google') {
+        credential = await promptGoogleReauth()
+      } else {
+        credential = await openGitHubAuthPopup()
+      }
+      verification = { provider, idToken: credential }
+    } else {
+      verification = { password: transferPassword.value }
+    }
+
+    await projectStore.transferOwnership(projectId, transferTargetUserId.value, verification)
     closeTransferModal()
     showToast(t('settings.toast.transferred'), 'success')
   } catch (err: unknown) {
-    const e = err as { response?: { data?: { error?: string; code?: string } } }
-    if (e.response?.data?.code === 'INVALID_CREDENTIALS') {
-      transferError.value = t('settings.toast.transferPasswordError')
+    const e = err as { message?: string; response?: { data?: { error?: string; code?: string } } }
+    if (e.response?.data?.code === 'INVALID_CREDENTIALS' || e.response?.data?.code === 'INVALID_OAUTH_TOKEN') {
+      transferError.value = e.response.data.error ?? t('settings.toast.transferPasswordError')
+    } else if (e.message === 'POPUP_CLOSED') {
+      // User closed popup intentionally
     } else {
       closeTransferModal()
       showToast(e.response?.data?.error ?? t('settings.toast.transferFailed'))

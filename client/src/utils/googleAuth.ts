@@ -65,24 +65,80 @@ export function renderGoogleButton(element: HTMLElement, onToken: (token: string
 }
 
 /**
- * Google 재인증용: One Tap 프롬프트를 표시하여 ID Token을 받습니다.
- * AccountView 계정 삭제 시 사용합니다.
+ * Google 재인증용: OAuth 팝업 윈도우를 열어 ID Token을 받습니다.
+ * One Tap은 쿨다운 제한이 있어 반복 호출 시 표시되지 않으므로,
+ * 직접 OAuth implicit flow 팝업을 사용합니다.
  */
 export function promptGoogleReauth(): Promise<string> {
   return new Promise((resolve, reject) => {
-    if (!window.google) {
-      reject(new Error('Google Identity Services가 로드되지 않았습니다.'))
+    const redirectUri = `${window.location.origin}/auth/google/callback`
+    const state = crypto.randomUUID()
+    const nonce = crypto.randomUUID()
+    sessionStorage.setItem('google_oauth_state', state)
+
+    const params = new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      redirect_uri: redirectUri,
+      response_type: 'id_token',
+      scope: 'openid email profile',
+      state,
+      nonce,
+      prompt: 'select_account',
+    })
+
+    const width = 500
+    const height = 700
+    const left = window.screenX + (window.outerWidth - width) / 2
+    const top = window.screenY + (window.outerHeight - height) / 2
+
+    const popup = window.open(
+      `https://accounts.google.com/o/oauth2/v2/auth?${params}`,
+      'google-oauth',
+      `width=${width},height=${height},left=${left},top=${top},popup=yes`,
+    )
+
+    if (!popup) {
+      reject(new Error('POPUP_BLOCKED'))
       return
     }
 
-    tokenCallback = resolve
-    ensureInitialized()
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return
+      if (event.data?.type !== 'google-oauth-callback') return
 
-    window.google.accounts.id.prompt((notification) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        tokenCallback = null
-        reject(new Error('Google 인증 팝업을 표시할 수 없습니다. 팝업 차단을 확인해 주세요.'))
+      window.removeEventListener('message', onMessage)
+      clearInterval(pollTimer)
+
+      const { idToken, state: returnedState, error } = event.data
+      if (error) {
+        reject(new Error(error))
+        return
       }
-    })
+
+      const savedState = sessionStorage.getItem('google_oauth_state')
+      sessionStorage.removeItem('google_oauth_state')
+
+      if (returnedState !== savedState) {
+        reject(new Error('State mismatch'))
+        return
+      }
+
+      if (!idToken) {
+        reject(new Error('No ID token received'))
+        return
+      }
+
+      resolve(idToken)
+    }
+
+    window.addEventListener('message', onMessage)
+
+    const pollTimer = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(pollTimer)
+        window.removeEventListener('message', onMessage)
+        reject(new Error('POPUP_CLOSED'))
+      }
+    }, 500)
   })
 }
