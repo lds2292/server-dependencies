@@ -27,11 +27,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. style.css에 `--graph-label-size`, `--graph-sub-size`, `--graph-meta-size` 변수가 존재하고 GraphCanvas에서 참조된다
   2. infra/dns 노드에 인라인 `fill:rgba(...)` 스타일이 없고, CSS 변수로 대체되어 있다
   3. node-meta 텍스트가 어두운 배경/밝은 배경 모두에서 WCAG AA 대비율(3:1 이상)을 충족한다
-**Plans**: TBD
+**Plans:** 1 plan
 **UI hint**: yes
 
 Plans:
-- [ ] 01-01: TBD
+- [ ] 01-01-PLAN.md -- CSS 변수 추가, 인라인 스타일 제거, WCAG 대비율 개선, 스타일 가이드 업데이트
 
 ### Phase 2: Font Size & Spacing
 **Goal**: 노드 텍스트가 캔버스에서 즉시 읽히고, 5종 노드 모두에서 텍스트가 노드 경계 안에 깔끔하게 배치된다
@@ -82,7 +82,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. CSS Foundation | 0/0 | Not started | - |
+| 1. CSS Foundation | 0/1 | Planning complete | - |
 | 2. Font Size & Spacing | 0/0 | Not started | - |
 | 3. Smart Truncation | 0/0 | Not started | - |
 | 4. Export Sync | 0/0 | Not started | - |
