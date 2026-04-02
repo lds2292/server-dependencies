@@ -752,6 +752,7 @@ function confirmDeleteMulti() {
     if (node.nodeKind === 'l7') store.deleteL7Node(id)
     else if (node.nodeKind === 'infra') store.deleteInfraNode(id)
     else if (node.nodeKind === 'external') store.deleteExternalNode(id)
+    else if (node.nodeKind === 'dns') store.deleteDnsNode(id)
     else store.deleteServer(id)
   }
   store.endBatch()
