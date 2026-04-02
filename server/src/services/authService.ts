@@ -54,19 +54,9 @@ async function issueTokens(user: { id: string; email: string; username: string; 
   return { accessToken, refreshToken }
 }
 
-/** username 중복 시 숫자 접미사를 추가하여 고유한 이름을 생성합니다. */
-async function generateUniqueUsername(base: string): Promise<string> {
-  const existing = await prisma.user.findUnique({ where: { username: base } })
-  if (!existing) return base
-
-  let suffix = 2
-  while (suffix <= 100) {
-    const candidate = `${base}${suffix}`
-    const found = await prisma.user.findUnique({ where: { username: candidate } })
-    if (!found) return candidate
-    suffix++
-  }
-  throw new Error('Failed to generate username')
+/** OAuth 로그인 시 표시 이름을 반환합니다. */
+function resolveUsername(name: string): string {
+  return name || 'User'
 }
 
 export async function register(email: string, username: string, password: string) {
@@ -74,9 +64,6 @@ export async function register(email: string, username: string, password: string
 
   const existingEmail = await prisma.user.findUnique({ where: { emailHash } })
   if (existingEmail) throw Object.assign(new Error('Email is already taken'), { code: 'EMAIL_TAKEN' })
-
-  const existingUsername = await prisma.user.findUnique({ where: { username } })
-  if (existingUsername) throw Object.assign(new Error('Username is already taken'), { code: 'USERNAME_TAKEN' })
 
   const passwordHash = await hashPassword(password)
   const user = await prisma.user.create({
@@ -159,7 +146,7 @@ export async function googleLogin(idToken: string) {
   }
 
   // 3) 신규 사용자 생성
-  const username = await generateUniqueUsername(googleUser.name)
+  const username = resolveUsername(googleUser.name)
   const newUser = await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
@@ -223,7 +210,7 @@ export async function githubLogin(code: string) {
   }
 
   // 3) 신규 사용자 생성
-  const username = await generateUniqueUsername(githubUser.name)
+  const username = resolveUsername(githubUser.name)
 
   const newUser = await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
@@ -282,10 +269,6 @@ export async function updateProfile(
   const updateData: Record<string, string> = {}
 
   if (data.username) {
-    const existing = await prisma.user.findUnique({ where: { username: data.username } })
-    if (existing && existing.id !== userId) {
-      throw Object.assign(new Error('Username is already taken'), { code: 'USERNAME_TAKEN' })
-    }
     updateData.username = data.username
   }
 
