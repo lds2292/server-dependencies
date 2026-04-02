@@ -292,23 +292,23 @@
           </g>
 
           <!-- 노드 텍스트 (우측 텍스트 영역 좌측 정렬: x=-52) -->
-          <text x="-52" dy="-9" text-anchor="start" class="node-label" :style="(node.nodeKind === 'infra' || node.nodeKind === 'dns') ? `fill:${cssVar('--bg-base')}` : ''">{{ truncate(node.name) }}</text>
+          <text x="-52" dy="-9" text-anchor="start" class="node-label" :style="(node.nodeKind === 'infra' || node.nodeKind === 'dns') ? 'fill:var(--node-light-text)' : ''">{{ truncate(node.name) }}</text>
 
           <template v-if="node.nodeKind === 'l7'">
             <text x="-52" dy="6" text-anchor="start" class="node-sub">{{ t('graph.nodeText.memberServers', { count: (node as L7Node).memberServerIds?.length ?? 0 }) }}</text>
             <text x="-52" dy="19" text-anchor="start" class="node-meta">{{ (node as L7Node).ip || (node as L7Node).natIp || '-' }}</text>
           </template>
           <template v-else-if="node.nodeKind === 'infra'">
-            <text x="-52" dy="6" text-anchor="start" class="node-sub" style="fill:rgba(15,23,42,0.65)">{{ (node as any).infraType || 'Infra' }}</text>
-            <text x="-52" dy="19" text-anchor="start" class="node-meta" style="fill:rgba(15,23,42,0.5)">{{ (node as any).host || '-' }}{{ (node as any).port ? ':' + (node as any).port : '' }}</text>
+            <text x="-52" dy="6" text-anchor="start" class="node-sub" :style="'fill:var(--node-light-text)'">{{ (node as any).infraType || 'Infra' }}</text>
+            <text x="-52" dy="19" text-anchor="start" class="node-meta" :style="'fill:var(--node-light-text-muted)'">{{ (node as any).host || '-' }}{{ (node as any).port ? ':' + (node as any).port : '' }}</text>
           </template>
           <template v-else-if="node.nodeKind === 'external'">
             <text x="-52" dy="6" text-anchor="start" class="node-sub">{{ externalStatusText(node as ExternalServiceNode) }}</text>
             <text x="-52" dy="19" text-anchor="start" class="node-meta">{{ contactSummary((node as ExternalServiceNode).contacts) }}</text>
           </template>
           <template v-else-if="node.nodeKind === 'dns'">
-            <text x="-52" dy="6" text-anchor="start" class="node-sub" style="fill:rgba(15,23,42,0.65)">{{ (node as DnsNode).dnsType || 'DNS' }}</text>
-            <text x="-52" dy="19" text-anchor="start" class="node-meta" style="fill:rgba(15,23,42,0.5)">{{ (node as DnsNode).recordValue || '-' }}</text>
+            <text x="-52" dy="6" text-anchor="start" class="node-sub" :style="'fill:var(--node-light-text)'">{{ (node as DnsNode).dnsType || 'DNS' }}</text>
+            <text x="-52" dy="19" text-anchor="start" class="node-meta" :style="'fill:var(--node-light-text-muted)'">{{ (node as DnsNode).recordValue || '-' }}</text>
           </template>
           <template v-else>
             <text x="-52" dy="6" text-anchor="start" class="node-sub">{{ (node as Server).team || '-' }}</text>
@@ -2240,13 +2240,26 @@ async function exportGraph(format: 'svg' | 'png', transparent = false) {
   // 스코프된 CSS 텍스트 클래스 인라인
   const style = document.createElementNS('http://www.w3.org/2000/svg', 'style')
   style.textContent = [
-    `text { font-family: var(--font-sans); }`,
-    `.node-label { font-size: var(--text-xs); fill: #fff; font-weight: 700; }`,
+    `text { font-family: ${cssVar('--font-sans')}; }`,
+    `.node-label { font-size: ${cssVar('--graph-label-size')}; fill: #fff; font-weight: 700; }`,
     `.node-ip    { font-size: 10px; fill: rgba(255,255,255,0.75); }`,
-    `.node-sub   { font-size: 9px;  fill: rgba(255,255,255,0.65); font-weight: 600; letter-spacing: 0.02em; }`,
-    `.node-meta  { font-size: 9.5px; fill: rgba(255,255,255,0.5); }`,
+    `.node-sub   { font-size: ${cssVar('--graph-sub-size')};  fill: rgba(255,255,255,0.65); font-weight: 600; letter-spacing: 0.02em; }`,
+    `.node-meta  { font-size: ${cssVar('--graph-meta-size')}; fill: rgba(255,255,255,0.5); }`,
   ].join('\n')
   clone.insertBefore(style, clone.firstChild)
+
+  // infra/dns 노드의 inline fill:var(--node-light-text*) 를 computed 값으로 해석
+  // standalone SVG에서는 CSS 변수가 resolve되지 않으므로 직접 치환 필요
+  const lightText = cssVar('--node-light-text')
+  const lightTextMuted = cssVar('--node-light-text-muted')
+  clone.querySelectorAll('text').forEach(el => {
+    const s = el.getAttribute('style') || ''
+    if (s.includes('var(--node-light-text-muted)')) {
+      el.setAttribute('style', s.replace('var(--node-light-text-muted)', lightTextMuted))
+    } else if (s.includes('var(--node-light-text)')) {
+      el.setAttribute('style', s.replace('var(--node-light-text)', lightText))
+    }
+  })
 
   const svgStr = new XMLSerializer().serializeToString(clone)
 
@@ -2319,10 +2332,10 @@ defineExpose({ navigateTo, toggleTracking, multiSelectedIds, applyHierarchicalLa
   user-select: none;
 }
 .graph-svg { width: 100%; height: 100%; }
-.node-label { font-size: var(--text-xs); fill: #fff; pointer-events: none; font-weight: 700; }
+.node-label { font-size: var(--graph-label-size); fill: #fff; pointer-events: none; font-weight: 700; }
 .node-ip { font-size: 10px; fill: rgba(255,255,255,0.75); pointer-events: none; }
-.node-sub { font-size: 9px; fill: rgba(255,255,255,0.65); pointer-events: none; font-weight: 600; letter-spacing: 0.02em; }
-.node-meta { font-size: 9.5px; fill: rgba(255,255,255,0.5); pointer-events: none; }
+.node-sub { font-size: var(--graph-sub-size); fill: rgba(255,255,255,0.65); pointer-events: none; font-weight: 600; letter-spacing: 0.02em; }
+.node-meta { font-size: var(--graph-meta-size); fill: rgba(255,255,255,0.5); pointer-events: none; }
 .hover-tooltip {
   opacity: 0;
   animation: tooltip-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;

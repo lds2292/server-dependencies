@@ -14,6 +14,10 @@
   --text-display: 34px;  /* 섹션 대제목 (features-title 등) */
   --text-hero:    56px;  /* 랜딩 히어로 타이틀 */
 
+  /* -- 그래프 노드 텍스트 -- */
+  --graph-label-size: 11px;     /* 1행: 노드 이름 */
+  --graph-sub-size: 9px;        /* 2행: 보조 정보 */
+  --graph-meta-size: 9.5px;     /* 3행: 기술 식별자 */
 
   /* ── 배경 레이어 ── */
   --bg-base: #121214;        /* 메인 페이지 배경 */
@@ -100,6 +104,10 @@
   --node-dns-text: #f9a8d4;
   --node-dns-glow: rgba(244, 114, 182, 0.3);
   --node-dns-hover: #be185d;
+
+  /* -- 밝은 배경 노드(infra/dns) 텍스트 -- */
+  --node-light-text: rgba(15, 23, 42, 0.85);       /* 1행/2행: sub 텍스트 */
+  --node-light-text-muted: rgba(15, 23, 42, 0.7);  /* 3행: meta 텍스트 (WCAG AA 4.5:1 충족) */
 
   /* ── 역할(Role) 뱃지 ── */
   --role-master: #f59e0b;
