@@ -60,25 +60,25 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CSS-01 | Pending | Pending |
-| CSS-02 | Pending | Pending |
-| CSS-03 | Pending | Pending |
-| FONT-01 | Pending | Pending |
-| FONT-02 | Pending | Pending |
-| FONT-03 | Pending | Pending |
-| FONT-04 | Pending | Pending |
-| FONT-05 | Pending | Pending |
-| TRUNC-01 | Pending | Pending |
-| TRUNC-02 | Pending | Pending |
-| TRUNC-03 | Pending | Pending |
-| TRUNC-04 | Pending | Pending |
-| EXPORT-01 | Pending | Pending |
+| CSS-01 | Phase 1 | Pending |
+| CSS-02 | Phase 1 | Pending |
+| CSS-03 | Phase 1 | Pending |
+| FONT-01 | Phase 2 | Pending |
+| FONT-02 | Phase 2 | Pending |
+| FONT-03 | Phase 2 | Pending |
+| FONT-04 | Phase 2 | Pending |
+| FONT-05 | Phase 2 | Pending |
+| TRUNC-01 | Phase 3 | Pending |
+| TRUNC-02 | Phase 3 | Pending |
+| TRUNC-03 | Phase 3 | Pending |
+| TRUNC-04 | Phase 3 | Pending |
+| EXPORT-01 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 13 total
-- Mapped to phases: 0
-- Unmapped: 13
+- Mapped to phases: 13
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-02*
-*Last updated: 2026-04-02 after initial definition*
+*Last updated: 2026-04-02 after roadmap creation*
