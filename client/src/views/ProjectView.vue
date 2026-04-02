@@ -70,6 +70,9 @@
               Import <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="margin-left:2px"><path d="M2.5 4L5 6.5L7.5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
             <div v-if="showImportDropdown" class="toolbar-dropdown">
+              <button @click="showCsvImport = true; showImportDropdown = false">
+                CSV
+              </button>
               <button @click="showTerraformImport = true; showImportDropdown = false">
                 Terraform <span class="menu-beta-badge">Beta</span>
               </button>
@@ -325,6 +328,12 @@
       @close="externalModal.visible = false"
       @submit="onExternalModalSubmit"
     />
+    <CsvImportModal
+      v-if="showCsvImport"
+      @close="showCsvImport = false"
+      @import="onCsvImport"
+    />
+
     <TerraformImportModal
       v-if="showTerraformImport"
       @close="showTerraformImport = false"
@@ -549,7 +558,9 @@ import ExternalServiceModal from '../components/ExternalServiceModal.vue'
 import DependencyModal from '../components/DependencyModal.vue'
 import DnsModal from '../components/DnsModal.vue'
 import TerraformImportModal from '../components/TerraformImportModal.vue'
+import CsvImportModal from '../components/CsvImportModal.vue'
 import type { TfParseResult } from '../utils/terraformParser'
+import type { CsvParseResult } from '../utils/csvParser'
 import ImpactPanel from '../components/ImpactPanel.vue'
 import UserProfileDropdown from '../components/UserProfileDropdown.vue'
 import Icon from '../components/Icon.vue'
@@ -569,6 +580,7 @@ const readOnly = ref(false)
 const showShortcuts = ref(false)
 const showSettingsDropdown = ref(false)
 const showTerraformImport = ref(false)
+const showCsvImport = ref(false)
 const showImportDropdown = ref(false)
 const importWrapRef = ref<HTMLDivElement>()
 const settingsWrapRef = ref<HTMLDivElement>()
@@ -918,6 +930,121 @@ const hasData = computed(() =>
   store.servers.length + store.l7Nodes.length + store.infraNodes.length + store.externalNodes.length > 0
 )
 const hasSettingsItems = computed(() => projectStore.canAdmin || projectStore.canWrite)
+
+function onCsvImport(result: CsvParseResult) {
+  const selectedNodes = result.nodes.filter(n => n.selected)
+  const selectedDeps = result.dependencies.filter(d => d.selected)
+
+  const nameToRealId = new Map<string, string>()
+
+  store.beginBatch()
+
+  for (const node of selectedNodes) {
+    let created: { id: string } | null = null
+    switch (node.nodeKind) {
+      case 'server':
+        created = store.addServer({
+          nodeKind: 'server',
+          name: node.name,
+          team: node.team ?? '',
+          internalIps: node.internalIps ?? [],
+          natIps: node.natIps ?? [],
+          description: node.description,
+        })
+        break
+      case 'l7':
+        created = store.addL7Node({
+          nodeKind: 'l7',
+          name: node.name,
+          memberServerIds: [],
+          description: node.description,
+        })
+        break
+      case 'infra':
+        created = store.addInfraNode({
+          nodeKind: 'infra',
+          name: node.name,
+          infraType: node.infraType,
+          host: node.host,
+          port: node.port,
+          description: node.description,
+        })
+        break
+      case 'dns':
+        created = store.addDnsNode({
+          nodeKind: 'dns',
+          name: node.name,
+          dnsType: node.dnsType ?? 'A',
+          recordValue: node.recordValue,
+          description: node.description,
+        })
+        break
+      case 'external':
+        created = store.addExternalNode({
+          nodeKind: 'external',
+          name: node.name,
+          contacts: [],
+          description: node.description,
+        })
+        break
+    }
+    if (created) {
+      nameToRealId.set(node.name, created.id)
+    }
+  }
+
+  for (const dep of selectedDeps) {
+    const sourceId = nameToRealId.get(dep.sourceName)
+    const targetId = nameToRealId.get(dep.targetName)
+    if (!sourceId || !targetId) continue
+    store.addDependency({
+      source: sourceId,
+      target: targetId,
+      type: dep.type,
+      description: dep.description,
+    })
+  }
+
+  store.endBatch()
+
+  // import된 노드에 계층적 초기 위치 부여
+  const layerOrder: Record<string, number> = { dns: 0, l7: 1, server: 2, external: 2, infra: 3 }
+  const layerGroups = new Map<number, string[]>()
+  for (const node of selectedNodes) {
+    const realId = nameToRealId.get(node.name)
+    if (!realId) continue
+    const layer = layerOrder[node.nodeKind] ?? 2
+    if (!layerGroups.has(layer)) layerGroups.set(layer, [])
+    layerGroups.get(layer)!.push(realId)
+  }
+
+  const existingPositions = store.getPositions()
+  const existingCoords = Object.values(existingPositions)
+  let centerX = 0, centerY = 0
+  if (existingCoords.length > 0) {
+    centerX = existingCoords.reduce((s, p) => s + p.x, 0) / existingCoords.length + 400
+    centerY = existingCoords.reduce((s, p) => s + p.y, 0) / existingCoords.length
+  }
+
+  const positions = { ...existingPositions }
+  const layerGap = 180
+  const nodeGap = 200
+  const sortedLayers = [...layerGroups.entries()].sort((a, b) => a[0] - b[0])
+
+  let currentY = centerY - ((sortedLayers.length - 1) * layerGap) / 2
+  for (const [, nodeIds] of sortedLayers) {
+    let currentX = centerX - ((nodeIds.length - 1) * nodeGap) / 2
+    for (const id of nodeIds) {
+      positions[id] = { x: currentX, y: currentY }
+      currentX += nodeGap
+    }
+    currentY += layerGap
+  }
+
+  store.savePositions(positions)
+  store.saveGraph()
+  showCsvImport.value = false
+}
 
 function onTerraformImport(result: TfParseResult) {
   const selectedNodes = result.nodes.filter(n => n.selected)

@@ -540,6 +540,27 @@ export default {
     readError: '파일을 읽을 수 없습니다',
   },
 
+  // -- csv import --
+  csvImport: {
+    title: 'CSV Import',
+    dropzoneText: '.csv 파일을 드래그하거나 클릭하여 선택',
+    dropzoneHint: 'CSV 형식, 최대 5MB',
+    downloadTemplate: '양식 다운로드 (csv-template.csv)',
+    privacyTitle: '브라우저에서만 처리됩니다',
+    privacyDesc: '업로드된 파일은 서버로 전송되지 않으며, 브라우저에서 직접 파싱하여 노드와 의존성을 생성합니다.',
+    nodeSummary: '노드 {count}개',
+    depSummary: '의존성 {count}개',
+    warnings: '경고 ({count})',
+    nodes: '노드',
+    dependencies: '의존성',
+    selectAll: '전체 선택',
+    deselectAll: '전체 해제',
+    import: '가져오기 ({nodes}노드, {deps}의존성)',
+    fileTooLarge: '파일 크기가 5MB를 초과합니다',
+    unknownError: '파일 파싱 중 알 수 없는 오류가 발생했습니다',
+    readError: '파일을 읽을 수 없습니다',
+  },
+
   // -- settings --
   settings: {
     topbarTitle: '프로젝트 설정',

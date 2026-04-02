@@ -540,6 +540,27 @@ export default {
     readError: 'Cannot read file',
   },
 
+  // -- csv import --
+  csvImport: {
+    title: 'CSV Import',
+    dropzoneText: 'Drag & drop a .csv file or click to select',
+    dropzoneHint: 'CSV format, max 5MB',
+    downloadTemplate: 'Download template (csv-template.csv)',
+    privacyTitle: 'Processed in your browser only',
+    privacyDesc: 'Uploaded files are never sent to the server. They are parsed locally in your browser to create nodes and dependencies.',
+    nodeSummary: '{count} nodes',
+    depSummary: '{count} dependencies',
+    warnings: 'Warnings ({count})',
+    nodes: 'Nodes',
+    dependencies: 'Dependencies',
+    selectAll: 'Select all',
+    deselectAll: 'Deselect all',
+    import: 'Import ({nodes} nodes, {deps} deps)',
+    fileTooLarge: 'File size exceeds 5MB',
+    unknownError: 'An unknown error occurred while parsing',
+    readError: 'Cannot read file',
+  },
+
   // -- settings --
   settings: {
     topbarTitle: 'Project Settings',
