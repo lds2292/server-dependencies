@@ -11,7 +11,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **CSS-01**: 그래프 전용 CSS 변수 추가 (`--graph-label-size`, `--graph-sub-size`, `--graph-meta-size`)
 - [ ] **CSS-02**: infra/dns 노드의 인라인 `fill:rgba(...)` 스타일을 CSS 변수로 대체
-- [ ] **CSS-03**: node-meta opacity를 WCAG AA 대비율(3:1 이상)을 충족하도록 조정
+- [ ] **CSS-03**: node-meta opacity를 WCAG AA 대비율(4.5:1 이상)을 충족하도록 조정
 
 ### Font Size & Spacing
 

@@ -26,7 +26,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Success Criteria** (what must be TRUE):
   1. style.css에 `--graph-label-size`, `--graph-sub-size`, `--graph-meta-size` 변수가 존재하고 GraphCanvas에서 참조된다
   2. infra/dns 노드에 인라인 `fill:rgba(...)` 스타일이 없고, CSS 변수로 대체되어 있다
-  3. node-meta 텍스트가 어두운 배경/밝은 배경 모두에서 WCAG AA 대비율(3:1 이상)을 충족한다
+  3. node-meta 텍스트가 어두운 배경/밝은 배경 모두에서 WCAG AA 대비율(4.5:1 이상)을 충족한다
 **Plans:** 1 plan
 **UI hint**: yes
 
