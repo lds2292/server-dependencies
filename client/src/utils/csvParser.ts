@@ -1,9 +1,8 @@
 /** CSV Import Parser
- *  CSV 파일 -> nodes + dependencies 변환
+ *  섹션별 CSV 파일 -> nodes + dependencies 변환
  *
- *  노드 시트 컬럼: type, name, description, team, internal_ips, nat_ips, infra_type, host, port, dns_type, record_value
- *  의존성 시트 컬럼: source, target, type, description
- *  두 섹션은 빈 줄 + "# Dependencies" 헤더로 구분
+ *  섹션 구분: # Servers, # L7, # Infra, # DNS, # External, # Dependencies
+ *  각 섹션은 자체 헤더를 가짐 (해당 노드 타입에 필요한 컬럼만)
  */
 
 export type NodeKind = 'server' | 'l7' | 'infra' | 'dns' | 'external'
@@ -45,8 +44,27 @@ export interface CsvParseResult {
   warnings: CsvParseWarning[]
 }
 
-const VALID_NODE_KINDS = new Set<string>(['server', 'l7', 'infra', 'dns', 'external'])
 const VALID_DEP_TYPES = new Set<string>(['http', 'tcp', 'websocket', 'dns', 'other'])
+
+type Section = 'servers' | 'l7' | 'infra' | 'dns' | 'external' | 'dependencies' | null
+
+const SECTION_MAP: Record<string, Section> = {
+  'servers': 'servers',
+  'server': 'servers',
+  'l7': 'l7',
+  'infra': 'infra',
+  'dns': 'dns',
+  'external': 'external',
+  'dependencies': 'dependencies',
+}
+
+const SECTION_NODE_KIND: Record<string, NodeKind> = {
+  'servers': 'server',
+  'l7': 'l7',
+  'infra': 'infra',
+  'dns': 'dns',
+  'external': 'external',
+}
 
 function generateId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -98,6 +116,12 @@ function parseIpList(value: string): string[] {
   return value.split(';').map(ip => ip.trim()).filter(Boolean)
 }
 
+function detectSection(line: string): Section | false {
+  if (!line.startsWith('#')) return false
+  const key = line.replace(/^#\s*/, '').trim().toLowerCase()
+  return SECTION_MAP[key] ?? false
+}
+
 export function parseCSV(text: string): CsvParseResult {
   const nodes: CsvParsedNode[] = []
   const dependencies: CsvParsedDependency[] = []
@@ -105,107 +129,66 @@ export function parseCSV(text: string): CsvParseResult {
 
   const lines = text.split(/\r?\n/)
 
-  // 빈 줄과 주석(#)으로 섹션 분리
-  let section: 'nodes' | 'dependencies' = 'nodes'
-  let nodeHeaderParsed = false
-  let depHeaderParsed = false
-  let nodeColMap: Record<string, number> = {}
-  let depColMap: Record<string, number> = {}
+  let currentSection: Section = null
+  let headerParsed = false
+  let colMap: Record<string, number> = {}
 
   for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
     const raw = lines[lineIdx].trim()
 
     // 섹션 전환 감지
-    if (raw.toLowerCase().startsWith('# dependencies') || raw.toLowerCase() === '# dependencies') {
-      section = 'dependencies'
-      depHeaderParsed = false
+    const detected = detectSection(raw)
+    if (detected !== false) {
+      currentSection = detected
+      headerParsed = false
+      colMap = {}
       continue
     }
 
     // 빈 줄, 주석 건너뛰기
     if (!raw || raw.startsWith('#')) continue
 
+    // 섹션이 아직 없으면 무시
+    if (!currentSection) continue
+
     const fields = parseCSVLine(raw)
 
-    if (section === 'nodes') {
-      if (!nodeHeaderParsed) {
-        // 헤더 파싱
-        fields.forEach((col, i) => { nodeColMap[col.toLowerCase()] = i })
-        if (!('type' in nodeColMap) || !('name' in nodeColMap)) {
-          throw new Error('노드 헤더에 type, name 컬럼이 필요합니다')
+    // 헤더 파싱
+    if (!headerParsed) {
+      fields.forEach((col, i) => { colMap[col.toLowerCase()] = i })
+
+      if (currentSection === 'dependencies') {
+        if (!('source' in colMap) || !('target' in colMap)) {
+          throw new Error('Dependencies 헤더에 source, target 컬럼이 필요합니다')
         }
-        nodeHeaderParsed = true
-        continue
-      }
-
-      const type = fields[nodeColMap['type']]?.toLowerCase()
-      const name = fields[nodeColMap['name']]
-
-      if (!name) {
-        warnings.push({ level: 'warn', message: `${lineIdx + 1}행: name이 비어있어 건너뜁니다` })
-        continue
-      }
-
-      if (!VALID_NODE_KINDS.has(type)) {
-        warnings.push({ level: 'warn', message: `${lineIdx + 1}행: 알 수 없는 타입 "${type}" 건너뜁니다 (server, l7, infra, dns, external)` })
-        continue
-      }
-
-      const col = (key: string) => (nodeColMap[key] !== undefined ? fields[nodeColMap[key]] : '') || ''
-
-      const node: CsvParsedNode = {
-        tempId: generateId(),
-        nodeKind: type as NodeKind,
-        name,
-        description: col('description'),
-        selected: true,
-      }
-
-      switch (type) {
-        case 'server':
-          node.team = col('team')
-          node.internalIps = parseIpList(col('internal_ips'))
-          node.natIps = parseIpList(col('nat_ips'))
-          break
-        case 'infra':
-          node.infraType = col('infra_type')
-          node.host = col('host')
-          node.port = col('port')
-          break
-        case 'dns':
-          node.dnsType = col('dns_type') || 'A'
-          node.recordValue = col('record_value')
-          break
-      }
-
-      nodes.push(node)
-    } else {
-      // dependencies 섹션
-      if (!depHeaderParsed) {
-        fields.forEach((col, i) => { depColMap[col.toLowerCase()] = i })
-        if (!('source' in depColMap) || !('target' in depColMap)) {
-          throw new Error('의존성 헤더에 source, target 컬럼이 필요합니다')
+      } else {
+        if (!('name' in colMap)) {
+          throw new Error(`${currentSection} 헤더에 name 컬럼이 필요합니다`)
         }
-        depHeaderParsed = true
-        continue
       }
+      headerParsed = true
+      continue
+    }
 
-      const source = fields[depColMap['source']]
-      const target = fields[depColMap['target']]
+    const col = (key: string) => (colMap[key] !== undefined ? fields[colMap[key]] : '') || ''
+
+    // 의존성 섹션
+    if (currentSection === 'dependencies') {
+      const source = col('source')
+      const target = col('target')
 
       if (!source || !target) {
         warnings.push({ level: 'warn', message: `${lineIdx + 1}행: source 또는 target이 비어있어 건너뜁니다` })
         continue
       }
 
-      const depTypeRaw = (fields[depColMap['type']] || 'http').toLowerCase()
+      const depTypeRaw = (col('type') || 'http').toLowerCase()
       const depType = VALID_DEP_TYPES.has(depTypeRaw) ? depTypeRaw as DepType : 'http'
 
       if (!VALID_DEP_TYPES.has(depTypeRaw)) {
         warnings.push({ level: 'info', message: `${lineIdx + 1}행: 알 수 없는 의존성 타입 "${depTypeRaw}", http로 대체합니다` })
       }
 
-      // source/target이 실제 노드에 있는지 확인
       const sourceExists = nodes.some(n => n.name === source)
       const targetExists = nodes.some(n => n.name === target)
       if (!sourceExists) {
@@ -222,10 +205,47 @@ export function parseCSV(text: string): CsvParseResult {
         sourceName: source,
         targetName: target,
         type: depType,
-        description: fields[depColMap['description']] || '',
+        description: col('description'),
         selected: true,
       })
+      continue
     }
+
+    // 노드 섹션
+    const nodeKind = SECTION_NODE_KIND[currentSection]
+    const name = col('name')
+
+    if (!name) {
+      warnings.push({ level: 'warn', message: `${lineIdx + 1}행: name이 비어있어 건너뜁니다` })
+      continue
+    }
+
+    const node: CsvParsedNode = {
+      tempId: generateId(),
+      nodeKind,
+      name,
+      description: col('description'),
+      selected: true,
+    }
+
+    switch (nodeKind) {
+      case 'server':
+        node.team = col('team')
+        node.internalIps = parseIpList(col('internal_ips'))
+        node.natIps = parseIpList(col('nat_ips'))
+        break
+      case 'infra':
+        node.infraType = col('infra_type')
+        node.host = col('host')
+        node.port = col('port')
+        break
+      case 'dns':
+        node.dnsType = col('dns_type') || 'A'
+        node.recordValue = col('record_value')
+        break
+    }
+
+    nodes.push(node)
   }
 
   if (nodes.length === 0) {

@@ -1,12 +1,25 @@
-type,name,description,team,internal_ips,nat_ips,infra_type,host,port,dns_type,record_value
-server,web-api-1,Main API server,Backend,10.0.1.10;10.0.1.11,52.78.100.1,,,,,
-server,web-api-2,Main API server (replica),Backend,10.0.1.20,52.78.100.2,,,,,
-server,worker-1,Background job processor,Backend,10.0.2.10,,,,,,
-l7,main-alb,Application Load Balancer,,,,,,,,
-infra,postgres-primary,Primary database,,,,PostgreSQL,db.internal.io,5432,,
-infra,redis-cache,Session cache,,,,Redis,redis.internal.io,6379,,
-dns,api.example.com,Public API endpoint,,,,,,,,A,52.78.100.1
-external,Stripe API,Payment gateway,,,,,,,,
+# Servers
+name,description,team,internal_ips,nat_ips
+web-api-1,Main API server,Backend,10.0.1.10;10.0.1.11,52.78.100.1
+web-api-2,Main API server (replica),Backend,10.0.1.20,52.78.100.2
+worker-1,Background job processor,Backend,10.0.2.10,
+
+# L7
+name,description
+main-alb,Application Load Balancer
+
+# Infra
+name,description,infra_type,host,port
+postgres-primary,Primary database,PostgreSQL,db.internal.io,5432
+redis-cache,Session cache,Redis,redis.internal.io,6379
+
+# DNS
+name,description,dns_type,record_value
+api.example.com,Public API endpoint,A,52.78.100.1
+
+# External
+name,description
+Stripe API,Payment gateway
 
 # Dependencies
 source,target,type,description
