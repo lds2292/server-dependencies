@@ -392,12 +392,14 @@ export default {
       connect: '(Release to create dependency)',
       blocked: 'Cannot connect',
       default: 'Release on another node to create a dependency',
+      copy: '(Release to duplicate node)',
     },
     contextMenu: {
       selected: '{count} selected',
       pathFind: 'Find Path',
       addDep: 'Add Dependency',
       addNode: 'Add Node',
+      copy: 'Copy',
       readOnlyMode: 'Read-only mode',
     },
     export: {

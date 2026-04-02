@@ -800,6 +800,97 @@ export const useGraphStore = defineStore('graph', () => {
     saveError.value = null
   }
 
+  // --- Node Duplication ---
+  function duplicateNodes(nodeIds: string[]): Map<string, string> {
+    saveSnapshot()
+    const idMap = new Map<string, string>()
+
+    // 1: clone nodes
+    for (const id of nodeIds) {
+      const node = findNodeById(id)
+      if (!node) continue
+      const newId = generateId()
+      idMap.set(id, newId)
+      const kind = node.nodeKind ?? 'server'
+
+      if (kind === 'server') {
+        const src = node as Server
+        servers.value.push({
+          ...JSON.parse(JSON.stringify(src)),
+          id: newId,
+          name: src.name + ' (copy)',
+        })
+      } else if (kind === 'l7') {
+        const src = node as L7Node
+        l7Nodes.value.push({
+          ...JSON.parse(JSON.stringify(src)),
+          id: newId,
+          name: src.name + ' (copy)',
+          memberServerIds: [],
+        })
+      } else if (kind === 'infra') {
+        const src = node as InfraNode
+        infraNodes.value.push({
+          ...JSON.parse(JSON.stringify(src)),
+          id: newId,
+          name: src.name + ' (copy)',
+        })
+      } else if (kind === 'external') {
+        const src = node as ExternalServiceNode
+        externalNodes.value.push({
+          ...JSON.parse(JSON.stringify(src)),
+          id: newId,
+          name: src.name + ' (copy)',
+        })
+      } else if (kind === 'dns') {
+        const src = node as DnsNode
+        dnsNodes.value.push({
+          ...JSON.parse(JSON.stringify(src)),
+          id: newId,
+          name: src.name + ' (copy)',
+        })
+      }
+    }
+
+    // 2: remap L7 memberServerIds
+    for (const id of nodeIds) {
+      const node = findNodeById(id)
+      if (!node || node.nodeKind !== 'l7') continue
+      const src = node as L7Node
+      const newL7Id = idMap.get(id)!
+      const newL7 = l7Nodes.value.find(n => n.id === newL7Id)
+      if (!newL7) continue
+      newL7.memberServerIds = src.memberServerIds.map(mid =>
+        idMap.get(mid) ?? mid
+      )
+    }
+
+    // 3: clone dependencies
+    const targetSet = new Set(nodeIds)
+    for (const dep of [...dependencies.value]) {
+      const srcInSet = targetSet.has(dep.source)
+      const tgtInSet = targetSet.has(dep.target)
+
+      if (srcInSet || tgtInSet) {
+        const newSource = idMap.get(dep.source) ?? dep.source
+        const newTarget = idMap.get(dep.target) ?? dep.target
+        const exists = dependencies.value.some(
+          d => d.source === newSource && d.target === newTarget
+        )
+        if (!exists && newSource !== newTarget) {
+          dependencies.value.push({
+            ...JSON.parse(JSON.stringify(dep)),
+            id: generateId(),
+            source: newSource,
+            target: newTarget,
+          })
+        }
+      }
+    }
+
+    return idMap
+  }
+
   return {
     servers, l7Nodes, infraNodes, externalNodes, dnsNodes, dependencies, currentProjectId,
     conflictState, saveError,
@@ -809,6 +900,7 @@ export const useGraphStore = defineStore('graph', () => {
     addExternalNode, updateExternalNode, deleteExternalNode,
     addDnsNode, updateDnsNode, deleteDnsNode,
     addDependency, removeDependency, updateDependency, isL7MemberDependency, isInfraSourceDependency,
+    duplicateNodes,
     findNodeById, getImpactedNodes, getCycleNodes, findPath, exportJSON, importJSON, loadData,
     undo, redo, beginBatch, endBatch, canUndo, canRedo, saveSnapshot, positionRestoreVersion,
     setProject, resetGraph, saveGraph, savePositions, flushPositions, getPositions, syncExternalNodes,

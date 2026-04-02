@@ -151,6 +151,23 @@
           pointer-events="none"
         />
 
+        <!-- Copy ghost nodes -->
+        <g v-for="ghost in copyGhosts" :key="'ghost-' + ghost.id"
+          :transform="`translate(${ghost.x}, ${ghost.y})`"
+          opacity="0.4" pointer-events="none">
+          <rect x="-86" y="-37" width="187" height="74" rx="6"
+            :fill="nodeColor(ghost.node)"
+            :stroke="cssVar('--accent-focus')"
+            stroke-width="2"
+            stroke-dasharray="6,3"
+          />
+          <text text-anchor="middle" x="7.5" dy="5"
+            :font-size="cssVar('--text-xs')"
+            :fill="cssVar('--text-secondary')">
+            {{ ghost.node.name }}
+          </text>
+        </g>
+
         <!-- 노드 -->
         <g
           v-for="node in renderedNodes"
@@ -166,6 +183,7 @@
           }"
           :filter="nodeFilter(node)"
           :opacity="nodeOpacity(node)"
+          :style="{ cursor: shiftHeld && !readOnly ? 'copy' : 'grab' }"
           @mousedown="onNodeMouseDown($event, node)"
           @click.stop="onNodeClick(node)"
           @contextmenu.prevent.stop="onNodeContextMenu($event, node)"
@@ -676,6 +694,9 @@
     <div v-else-if="arrowSource && arrowPreview && !connectTarget" class="drag-hint">
       {{ t('graph.dragHint.default') }}
     </div>
+    <div v-else-if="copyGhosts.length > 0" class="drag-hint">
+      {{ t('graph.dragHint.copy') }}
+    </div>
     <!-- 연결 차단 토스트 -->
     <transition name="fade">
       <div v-if="connectBlockedMsg" class="blocked-toast">{{ connectBlockedMsg }}</div>
@@ -738,6 +759,7 @@
       <template v-if="multiSelectedIds.size > 1 && contextMenu.node && multiSelectedIds.has(contextMenu.node.id)">
         <div class="context-multi-label">{{ t('graph.contextMenu.selected', { count: multiSelectedIds.size }) }}</div>
         <div class="context-divider"></div>
+        <button v-if="!readOnly" @click="onCopyMultiNodes">{{ t('graph.contextMenu.copy') }}</button>
         <button v-if="!readOnly" class="danger" @click="onDeleteMultiNodes">{{ t('common.delete') }}</button>
         <button v-else class="disabled-item" disabled>{{ t('graph.contextMenu.readOnlyMode') }}</button>
       </template>
@@ -747,6 +769,7 @@
           <div class="context-divider"></div>
           <button @click="onEditNode">{{ t('common.edit') }}</button>
           <button @click="onAddDep">{{ t('graph.contextMenu.addDep') }}</button>
+          <button @click="onCopyNode">{{ t('graph.contextMenu.copy') }}</button>
           <button class="danger" @click="onDeleteNode">{{ t('common.delete') }}</button>
         </template>
         <template v-else>
@@ -957,6 +980,8 @@ const tooltipNode = computed(() => {
 })
 const arrowSource = ref<D3Node | null>(null)
 const spaceHeld = ref(false)
+const shiftHeld = ref(false)
+const copyGhosts = ref<Array<{ id: string; x: number; y: number; node: D3Node }>>([])
 const multiSelectedIds = ref<Set<string>>(new Set())
 const boxSelect = ref<{ startX: number; startY: number; endX: number; endY: number } | null>(null)
 const arrowPreview = ref<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
@@ -1737,6 +1762,78 @@ function startArrowDrag(event: MouseEvent, node: D3Node) {
   window.addEventListener('mouseup', handleUp)
 }
 
+// --- Copy drag (Shift+drag) ---
+function startCopyDrag(event: MouseEvent, node: D3Node) {
+  event.preventDefault()
+  const startWorld = getSvgPoint(event)
+  let hasMoved = false
+
+  const isMulti = multiSelectedIds.value.size > 1 && multiSelectedIds.value.has(node.id)
+  const targetIds = isMulti ? Array.from(multiSelectedIds.value) : [node.id]
+
+  const startPositions = new Map<string, { x: number; y: number }>()
+  for (const id of targetIds) {
+    const n = renderedNodes.value.find(rn => rn.id === id)
+    if (n) startPositions.set(id, { x: n.x ?? 0, y: n.y ?? 0 })
+  }
+
+  const handleMove = (e: MouseEvent) => {
+    const { x, y } = getSvgPoint(e)
+    if (!hasMoved) {
+      if (Math.hypot(x - startWorld.x, y - startWorld.y) < 5) return
+      hasMoved = true
+    }
+    const dx = x - startWorld.x
+    const dy = y - startWorld.y
+
+    const ghosts: typeof copyGhosts.value = []
+    for (const id of targetIds) {
+      const sp = startPositions.get(id)
+      if (!sp) continue
+      const srcNode = renderedNodes.value.find(rn => rn.id === id)
+      if (!srcNode) continue
+      ghosts.push({
+        id,
+        x: sp.x + dx,
+        y: sp.y + dy,
+        node: srcNode,
+      })
+    }
+    copyGhosts.value = ghosts
+  }
+
+  const handleUp = (e: MouseEvent) => {
+    window.removeEventListener('mousemove', handleMove)
+    window.removeEventListener('mouseup', handleUp)
+
+    if (!hasMoved) {
+      copyGhosts.value = []
+      return
+    }
+
+    const { x, y } = getSvgPoint(e)
+    const dx = x - startWorld.x
+    const dy = y - startWorld.y
+
+    const idMap = graphStore.duplicateNodes(targetIds)
+
+    const positions = { ...graphStore.getPositions() }
+    for (const [oldId, newId] of idMap) {
+      const sp = startPositions.get(oldId)
+      if (sp) {
+        positions[newId] = { x: sp.x + dx, y: sp.y + dy }
+      }
+    }
+    graphStore.savePositions(positions)
+
+    copyGhosts.value = []
+    nodeDragMoved = true
+  }
+
+  window.addEventListener('mousemove', handleMove)
+  window.addEventListener('mouseup', handleUp)
+}
+
 let boxSelectDone = false
 let nodeDragMoved = false
 
@@ -1779,6 +1876,7 @@ function onNodeMouseDown(event: MouseEvent, node: D3Node) {
   event.stopPropagation()
   if (props.pathMode || props.pathNodes.size > 0) return
   if (event.ctrlKey || event.metaKey) startArrowDrag(event, node)
+  else if (event.shiftKey) startCopyDrag(event, node)
   else startNodeDrag(event, node)
 }
 
@@ -1792,9 +1890,11 @@ function onKeyDown(e: KeyboardEvent) {
     e.preventDefault()
     spaceHeld.value = true
   }
+  if (e.key === 'Shift') shiftHeld.value = true
 }
 function onKeyUp(e: KeyboardEvent) {
   if (e.code === 'Space') spaceHeld.value = false
+  if (e.key === 'Shift') shiftHeld.value = false
 }
 
 onMounted(() => {
@@ -1832,6 +1932,36 @@ function onDeleteMultiNodes() {
 }
 function onAddDep() { if (contextMenu.value.node) emit('addDependency', contextMenu.value.node); contextMenu.value.visible = false }
 function onStartPath() { if (contextMenu.value.node) emit('startPathFrom', contextMenu.value.node); contextMenu.value.visible = false }
+function onCopyNode() {
+  if (!contextMenu.value.node) return
+  const node = contextMenu.value.node
+  const idMap = graphStore.duplicateNodes([node.id])
+  const positions = { ...graphStore.getPositions() }
+  const newId = idMap.get(node.id)
+  if (newId) {
+    const srcPos = positions[node.id]
+    positions[newId] = {
+      x: (srcPos?.x ?? 0) + 40,
+      y: (srcPos?.y ?? 0) + 40,
+    }
+    graphStore.savePositions(positions)
+  }
+  contextMenu.value.visible = false
+}
+function onCopyMultiNodes() {
+  const ids = Array.from(multiSelectedIds.value)
+  const idMap = graphStore.duplicateNodes(ids)
+  const positions = { ...graphStore.getPositions() }
+  for (const [oldId, newId] of idMap) {
+    const srcPos = positions[oldId]
+    positions[newId] = {
+      x: (srcPos?.x ?? 0) + 40,
+      y: (srcPos?.y ?? 0) + 40,
+    }
+  }
+  graphStore.savePositions(positions)
+  contextMenu.value.visible = false
+}
 
 function closeContextMenu() {
   contextMenu.value.visible = false

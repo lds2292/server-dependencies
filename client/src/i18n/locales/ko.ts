@@ -392,12 +392,14 @@ export default {
       connect: '(놓으면 의존관계 생성)',
       blocked: '연결 불가',
       default: '다른 노드 위에서 놓으면 의존관계를 생성합니다',
+      copy: '(놓으면 노드 복제)',
     },
     contextMenu: {
       selected: '{count}개 선택됨',
       pathFind: '경로 탐색',
       addDep: '의존성 추가',
       addNode: '노드 추가',
+      copy: '복사',
       readOnlyMode: '읽기 전용 모드',
     },
     export: {
