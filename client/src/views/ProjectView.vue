@@ -257,12 +257,13 @@
             <div class="help-col">
               <div class="shortcuts-section-title">{{ $t('project.shortcuts.canvasTitle') }}</div>
               <div class="shortcuts-grid">
-                <div class="shortcut-row"><kbd>Drag</kbd><span>Box select</span></div>
-                <div class="shortcut-row"><kbd>Space</kbd><span>+ drag to pan</span></div>
-                <div class="shortcut-row"><kbd>Ctrl</kbd><span>{{ $t('project.shortcuts.ctrlDrag') }}</span></div>
+                <div class="shortcut-row"><kbd>Drag</kbd><span>{{ $t('project.shortcuts.boxSelect') }}</span></div>
+                <div class="shortcut-row"><kbd>Space + Drag</kbd><span>{{ $t('project.shortcuts.pan') }}</span></div>
+                <div class="shortcut-row"><kbd>Ctrl + Drag</kbd><span>{{ $t('project.shortcuts.ctrlDrag') }}</span></div>
+                <div class="shortcut-row"><kbd>Shift + Drag</kbd><span>{{ $t('project.shortcuts.shiftDrag') }}</span></div>
                 <div class="shortcut-row"><kbd>Dbl-click</kbd><span>{{ $t('project.shortcuts.dblClick') }}</span></div>
                 <div class="shortcut-row"><kbd>Right-click</kbd><span>{{ $t('project.shortcuts.rightClick') }}</span></div>
-                <div class="shortcut-row"><kbd>Wheel</kbd><span>Zoom in / out</span></div>
+                <div class="shortcut-row"><kbd>Wheel</kbd><span>{{ $t('project.shortcuts.zoom') }}</span></div>
                 <div class="shortcut-row"><kbd>Minimap</kbd><span>{{ $t('project.shortcuts.minimapClick') }}</span></div>
               </div>
 
@@ -275,13 +276,6 @@
                 <div class="shortcut-row"><kbd>Delete</kbd><span>{{ $t('project.shortcuts.deleteNode') }}</span></div>
                 <div class="shortcut-row"><kbd>?</kbd><span>{{ $t('project.shortcuts.openHelp') }}</span></div>
                 <div class="shortcut-row"><kbd>Esc</kbd><span>{{ $t('project.shortcuts.escape') }}</span></div>
-              </div>
-
-              <div class="shortcuts-section-title">{{ $t('serverPanel.title') }}</div>
-              <div class="shortcuts-grid">
-                <div class="shortcut-row"><kbd>+</kbd><span>{{ $t('graph.contextMenu.addNode') }}</span></div>
-                <div class="shortcut-row"><kbd>JSON Export</kbd><span>{{ $t('graph.export.submit') }}</span></div>
-                <div class="shortcut-row"><kbd>JSON Import</kbd><span>Import</span></div>
               </div>
             </div>
           </div>
