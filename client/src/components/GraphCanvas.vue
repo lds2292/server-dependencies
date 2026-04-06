@@ -1181,6 +1181,12 @@ function loadSavedPositions(): Record<string, { x: number; y: number }> {
 
 function savePositions() {
   const positions: Record<string, { x: number; y: number }> = {}
+  // 기존 Zone 위치 보존 (renderedNodes에 포함되지 않으므로 명시적으로 유지)
+  const existing = graphStore.getPositions()
+  const zoneIds = new Set(graphStore.zones.map(z => z.id))
+  for (const id in existing) {
+    if (zoneIds.has(id)) positions[id] = existing[id]
+  }
   renderedNodes.value.forEach(n => {
     if (n.x != null && n.y != null) positions[n.id] = { x: n.x, y: n.y }
   })
