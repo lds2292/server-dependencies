@@ -119,6 +119,126 @@
   --role-writer-bg: rgba(66, 184, 131, 0.15);
   --role-readonly: #94a3b8;
   --role-readonly-bg: rgba(148, 163, 184, 0.15);
+
+  /* ── Zone 색상 프리셋 ──
+     캔버스 상의 시각적 그룹핑 전용. 다른 UI에서 사용 금지.
+     bg는 8% alpha (영역 채움), border는 35% alpha (점선 테두리),
+     text는 라벨 텍스트 (300번대 톤, WCAG AA 충족) */
+  --zone-blue-bg:     rgba(59, 130, 246, 0.08);
+  --zone-blue-border: rgba(59, 130, 246, 0.35);
+  --zone-blue-text:   #93b4f5;
+
+  --zone-green-bg:     rgba(34, 197, 94, 0.08);
+  --zone-green-border: rgba(34, 197, 94, 0.35);
+  --zone-green-text:   #86efac;
+
+  --zone-purple-bg:     rgba(168, 85, 247, 0.08);
+  --zone-purple-border: rgba(168, 85, 247, 0.35);
+  --zone-purple-text:   #d8b4fe;
+
+  --zone-orange-bg:     rgba(249, 115, 22, 0.08);
+  --zone-orange-border: rgba(249, 115, 22, 0.35);
+  --zone-orange-text:   #fdba74;
+
+  --zone-pink-bg:     rgba(236, 72, 153, 0.08);
+  --zone-pink-border: rgba(236, 72, 153, 0.35);
+  --zone-pink-text:   #f9a8d4;
+
+  --zone-cyan-bg:     rgba(6, 182, 212, 0.08);
+  --zone-cyan-border: rgba(6, 182, 212, 0.35);
+  --zone-cyan-text:   #67e8f9;
+
+  /* Zone 헤더 hover/선택 상태용 */
+  --zone-header-hover-overlay: rgba(255, 255, 255, 0.04);
+  --zone-drop-target-overlay:  rgba(245, 158, 11, 0.10);
+  --zone-drop-target-stroke:   rgba(245, 158, 11, 0.65);
+}
+
+/* ── Zone 인라인 이름 편집 input ── */
+.zone-name-input {
+  width: 100%;
+  height: 100%;
+  padding: 0 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.zone-name-input:focus {
+  border-color: var(--accent-focus);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+}
+
+/* ── add-node-menu의 Zone 항목 구분선 ── */
+.add-node-menu-divider {
+  height: 1px;
+  background: var(--border-default);
+  margin: 4px 0;
+}
+
+/* ── Zone 컨텍스트 메뉴 색상 서브메뉴 ── */
+.zone-color-submenu {
+  min-width: 140px;
+  padding: 4px 0;
+}
+.zone-color-option {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 14px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.zone-color-option:hover {
+  background: var(--border-default);
+}
+.zone-color-option.is-active {
+  color: var(--accent-soft);
+}
+.zone-color-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1.5px solid transparent;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.zone-color-option.is-active .zone-color-swatch {
+  box-shadow: 0 0 0 2px var(--accent-focus);
+}
+
+/* ── Zone SVG 그룹 상태 ── */
+.zone-group .zone-bg {
+  transition: x 0.18s ease-out, y 0.18s ease-out,
+              width 0.18s ease-out, height 0.18s ease-out;
+}
+.zone-group--dragging .zone-bg,
+.zone-group--node-dragging .zone-bg {
+  transition: none;
+}
+.zone-group--dragging .zone-bg {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+}
+
+/* 노드 드롭 완료 펄스 */
+@keyframes zone-attach-pulse {
+  0%   { filter: drop-shadow(0 0 0 rgba(245, 158, 11, 0)); }
+  40%  { filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.55)); }
+  100% { filter: drop-shadow(0 0 0 rgba(245, 158, 11, 0)); }
+}
+.zone-group--just-attached .zone-bg {
+  animation: zone-attach-pulse 0.4s ease-out;
 }
 
 /* ── 스크롤바 ── */

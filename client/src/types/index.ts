@@ -74,6 +74,16 @@ export interface Dependency {
   firewallUrl?: string
 }
 
+export type ZoneColor = 'blue' | 'green' | 'purple' | 'orange' | 'pink' | 'cyan'
+
+export interface Zone {
+  id: string
+  name: string
+  color: ZoneColor
+  description?: string
+  nodeIds: string[]
+}
+
 export interface GraphData {
   servers: Server[]
   l7Nodes?: L7Node[]
@@ -81,6 +91,7 @@ export interface GraphData {
   externalNodes?: ExternalServiceNode[]
   dnsNodes?: DnsNode[]
   dependencies: Dependency[]
+  zones?: Zone[]
 }
 
 export type D3Node = AnyNode & {

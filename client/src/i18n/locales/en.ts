@@ -463,6 +463,21 @@ export default {
       dns: 'DNS',
     },
     exportError: 'Failed to load SVG',
+    zone: {
+      addZone: 'Add Zone',
+      defaultName: 'New Zone',
+      rename: 'Rename',
+      changeColor: 'Change Color',
+      emptyHint: 'Drag nodes here',
+      colors: {
+        blue: 'Blue',
+        green: 'Green',
+        purple: 'Purple',
+        orange: 'Orange',
+        pink: 'Pink',
+        cyan: 'Cyan',
+      },
+    },
   },
 
   // -- conflict modal --

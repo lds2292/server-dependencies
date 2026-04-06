@@ -41,6 +41,138 @@
           <circle cx="0" cy="0" r="4" fill="none" stroke="#f59e0b" stroke-width="1.2"/>
         </g>
 
+        <!-- ============ Zone 영역 (L7 hull보다 뒤) ============ -->
+        <g
+          v-for="zone in zoneRects"
+          :key="'zone-' + zone.id"
+          :class="['zone-group', {
+            'zone-group--empty': zone.isEmpty,
+            'zone-group--drop-target': dropTargetZoneId === zone.id,
+            'zone-group--dragging': draggingZoneId === zone.id,
+            'zone-group--just-attached': justAttachedZoneId === zone.id,
+            'zone-group--node-dragging': anyNodeDragging,
+          }]"
+          :opacity="(pathMode || pathNodes.size > 0) ? 0.15 : 1"
+        >
+          <!-- (1) 영역 배경 + 점선 테두리 -->
+          <rect
+            class="zone-bg"
+            :x="zone.x" :y="zone.y"
+            :width="zone.width" :height="zone.height"
+            :rx="ZONE_CORNER_R"
+            :fill="dropTargetZoneId === zone.id
+              ? cssVar('--zone-drop-target-overlay')
+              : cssVar(`--zone-${zone.color}-bg`)"
+            :stroke="dropTargetZoneId === zone.id
+              ? cssVar('--zone-drop-target-stroke')
+              : cssVar(`--zone-${zone.color}-border`)"
+            :stroke-width="ZONE_BORDER_W"
+            :stroke-dasharray="ZONE_BORDER_DASH"
+            pointer-events="none"
+          />
+
+          <!-- (2) 헤더 바 (드래그/우클릭/더블클릭 핫스팟) -->
+          <rect
+            class="zone-header"
+            :x="zone.x" :y="zone.y"
+            :width="zone.width" :height="ZONE_HEADER_H"
+            :rx="ZONE_CORNER_R"
+            :fill="cssVar(`--zone-${zone.color}-bg`)"
+            :style="{ cursor: readOnly ? 'default' : (draggingZoneId === zone.id ? 'grabbing' : 'grab') }"
+            @mousedown.stop="onZoneHeaderMouseDown($event, zone)"
+            @dblclick.stop="onZoneNameDblClick(zone)"
+            @contextmenu.prevent.stop="onZoneContextMenu($event, zone)"
+            @mouseenter="hoveredZoneId = zone.id"
+            @mouseleave="hoveredZoneId = null"
+          />
+
+          <!-- (3) 헤더 하단 모서리 직각 보정 -->
+          <rect
+            :x="zone.x" :y="zone.y + ZONE_HEADER_H - ZONE_CORNER_R"
+            :width="zone.width" :height="ZONE_CORNER_R"
+            :fill="cssVar(`--zone-${zone.color}-bg`)"
+            pointer-events="none"
+          />
+
+          <!-- (4) 헤더 hover 오버레이 -->
+          <rect
+            v-if="hoveredZoneId === zone.id && !readOnly && draggingZoneId !== zone.id"
+            :x="zone.x" :y="zone.y"
+            :width="zone.width" :height="ZONE_HEADER_H"
+            :rx="ZONE_CORNER_R"
+            :fill="cssVar('--zone-header-hover-overlay')"
+            pointer-events="none"
+          />
+
+          <!-- (5) 헤더-본문 구분선 -->
+          <line
+            :x1="zone.x" :y1="zone.y + ZONE_HEADER_H"
+            :x2="zone.x + zone.width" :y2="zone.y + ZONE_HEADER_H"
+            :stroke="cssVar(`--zone-${zone.color}-border`)"
+            stroke-width="0.8"
+            pointer-events="none"
+          />
+
+          <!-- (6) Zone 이름 라벨 -->
+          <text
+            v-if="editingZoneId !== zone.id"
+            :x="zone.x + ZONE_LABEL_PADDING_X"
+            :y="zone.y + ZONE_HEADER_H / 2 + 1"
+            dominant-baseline="central"
+            :fill="cssVar(`--zone-${zone.color}-text`)"
+            :font-size="ZONE_LABEL_FONT_SIZE"
+            :font-weight="ZONE_LABEL_FONT_WEIGHT"
+            font-family="var(--font-sans)"
+            pointer-events="none"
+          >{{ zone.name }}</text>
+
+          <!-- (7) 노드 카운트 마이크로 뱃지 -->
+          <g v-if="!zone.isEmpty" pointer-events="none">
+            <text
+              :x="zone.x + zone.width - ZONE_LABEL_PADDING_X"
+              :y="zone.y + ZONE_HEADER_H / 2 + 1"
+              text-anchor="end"
+              dominant-baseline="central"
+              :fill="cssVar('--text-tertiary')"
+              :font-size="ZONE_EMPTY_HINT_FONT_SIZE"
+              font-family="var(--font-sans)"
+            >{{ zone.memberCount }}</text>
+          </g>
+
+          <!-- (8) 빈 Zone 안내 -->
+          <text
+            v-if="zone.isEmpty && !readOnly"
+            :x="zone.x + zone.width / 2"
+            :y="zone.y + (zone.height + ZONE_HEADER_H) / 2"
+            text-anchor="middle"
+            dominant-baseline="central"
+            :fill="cssVar('--text-disabled')"
+            :font-size="ZONE_EMPTY_HINT_FONT_SIZE"
+            font-family="var(--font-sans)"
+            pointer-events="none"
+          >{{ t('graph.zone.emptyHint') }}</text>
+
+          <!-- (9) 인라인 이름 편집 -->
+          <foreignObject
+            v-if="editingZoneId === zone.id"
+            :x="zone.x + 8" :y="zone.y + 4"
+            :width="zone.width - 16" :height="ZONE_HEADER_H - 8"
+          >
+            <input
+              ref="zoneNameInputRef"
+              class="zone-name-input"
+              :style="{ color: cssVar(`--zone-${zone.color}-text`) }"
+              v-model="editingZoneName"
+              @blur="commitZoneNameEdit"
+              @keydown.enter.prevent="commitZoneNameEdit"
+              @keydown.escape.prevent="cancelZoneNameEdit"
+              @click.stop
+              @mousedown.stop
+            />
+          </foreignObject>
+        </g>
+        <!-- ============ /Zone 영역 ============ -->
+
         <!-- L7 그룹 영역 -->
         <path v-for="hull in l7GroupHulls" :key="'hull-' + hull.l7Id"
           :d="hull.path"
@@ -610,6 +742,17 @@
           </clipPath>
         </defs>
         <g clip-path="url(#minimap-clip)">
+          <!-- Zone 영역 (노드 점 뒤) -->
+          <rect
+            v-for="mz in minimapZones"
+            :key="'mz-' + mz.id"
+            :x="mz.mx" :y="mz.my" :width="mz.mw" :height="mz.mh"
+            rx="2"
+            :fill="cssVar(`--zone-${mz.color}-bg`)"
+            :stroke="cssVar(`--zone-${mz.color}-border`)"
+            stroke-width="0.5"
+            opacity="0.7"
+          />
           <!-- 노드 점 -->
           <circle
             v-for="node in minimapNodes"
@@ -751,6 +894,18 @@
         </svg>
         DNS
       </button>
+      <div class="add-node-menu-divider"></div>
+      <button @click="onAddZoneMenuSelect()">
+        <svg class="menu-icon" viewBox="0 0 14 14" fill="none">
+          <rect
+            x="1.25" y="1.25" width="11.5" height="11.5"
+            rx="2"
+            stroke="currentColor" stroke-width="1"
+            stroke-dasharray="2,1.5"
+          />
+        </svg>
+        {{ t('graph.zone.addZone') }}
+      </button>
     </div>
 
     <!-- 컨텍스트 메뉴 -->
@@ -834,8 +989,50 @@
             </button>
           </div>
         </div>
+        <button @click="onCanvasAddZone()">
+          <svg class="menu-icon" viewBox="0 0 14 14" fill="none">
+            <rect
+              x="1.25" y="1.25" width="11.5" height="11.5"
+              rx="2"
+              stroke="currentColor" stroke-width="1"
+              stroke-dasharray="2,1.5"
+            />
+          </svg>
+          {{ t('graph.zone.addZone') }}
+        </button>
       </template>
       <button @click="openExportModal">{{ t('graph.export.title') }}</button>
+    </div>
+
+    <!-- Zone 컨텍스트 메뉴 -->
+    <div v-if="zoneContextMenu.visible" class="context-menu zone-context-menu"
+      :style="{ left: zoneContextMenu.x + 'px', top: zoneContextMenu.y + 'px' }" @click.stop>
+      <button @click="onZoneRename">{{ t('graph.zone.rename') }}</button>
+      <div class="submenu-item"
+        @mouseenter="zoneContextMenu.activeSubmenu = 'color'"
+        @mouseleave="zoneContextMenu.activeSubmenu = null">
+        <span>{{ t('graph.zone.changeColor') }}</span>
+        <span class="submenu-arrow">▶</span>
+        <div v-if="zoneContextMenu.activeSubmenu === 'color'" class="submenu zone-color-submenu">
+          <button
+            v-for="c in zoneColorPresets"
+            :key="c"
+            class="zone-color-option"
+            :class="{ 'is-active': currentZoneColor === c }"
+            @click="onZoneChangeColor(c)"
+          >
+            <span class="zone-color-swatch"
+              :style="{
+                background: cssVar(`--zone-${c}-bg`),
+                borderColor: cssVar(`--zone-${c}-border`),
+              }"
+            ></span>
+            <span>{{ t(`graph.zone.colors.${c}`) }}</span>
+          </button>
+        </div>
+      </div>
+      <div class="context-divider"></div>
+      <button class="danger" @click="onZoneDelete">{{ t('common.delete') }}</button>
     </div>
 
     <!-- 내보내기 모달 -->
@@ -866,10 +1063,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as d3 from 'd3'
-import type { AnyNode, DnsNode, D3Node, D3Link, Server, L7Node, InfraNode, ExternalServiceNode, ExternalContact } from '../types'
+import type { AnyNode, DnsNode, D3Node, D3Link, Server, L7Node, InfraNode, ExternalServiceNode, ExternalContact, ZoneColor } from '../types'
 import { useGraphStore } from '../stores/graph'
 
 const { t } = useI18n()
@@ -930,6 +1127,48 @@ const markerDefs = [
   { id: 'arrow-green',   fill: '#42b883' },
   { id: 'arrow-amber',   fill: '#f59e0b' },
 ]
+
+// --- Zone 시각 상수 ---
+const ZONE_PADDING = 40
+const ZONE_HEADER_H = 32
+const ZONE_MIN_W = 220
+const ZONE_MIN_H = 120
+const ZONE_CORNER_R = 10
+const ZONE_BORDER_W = 1.5
+const ZONE_BORDER_DASH = '6,4'
+const ZONE_LABEL_PADDING_X = 14
+const ZONE_LABEL_FONT_SIZE = 13
+const ZONE_LABEL_FONT_WEIGHT = 600
+const ZONE_EMPTY_HINT_FONT_SIZE = 11
+const NODE_HALF_W = 93.5
+const NODE_HALF_H = 37
+
+// --- Zone 상태 ---
+const editingZoneId = ref<string | null>(null)
+const editingZoneName = ref('')
+const zoneNameInputRef = ref<HTMLInputElement | null>(null)
+const hoveredZoneId = ref<string | null>(null)
+const draggingZoneId = ref<string | null>(null)
+const dropTargetZoneId = ref<string | null>(null)
+const justAttachedZoneId = ref<string | null>(null)
+const anyNodeDragging = ref(false)
+
+const zoneContextMenu = ref<{
+  visible: boolean
+  x: number
+  y: number
+  zoneId: string | null
+  activeSubmenu: 'color' | null
+}>({ visible: false, x: 0, y: 0, zoneId: null, activeSubmenu: null })
+
+const zoneColorPresets: readonly ZoneColor[] =
+  ['blue','green','purple','orange','pink','cyan'] as const
+
+const currentZoneColor = computed(() => {
+  const id = zoneContextMenu.value.zoneId
+  if (!id) return null
+  return graphStore.zones.find(z => z.id === id)?.color ?? null
+})
 
 let simulation: d3.Simulation<D3Node, D3Link> | null = null
 let zoomSetup = false
@@ -1378,6 +1617,249 @@ const l7GroupHulls = computed(() => {
   return hulls
 })
 
+// ─── Zone 영역 계산 ──────────────────────────────────────
+interface ZoneRect {
+  id: string
+  name: string
+  color: ZoneColor
+  x: number
+  y: number
+  width: number
+  height: number
+  isEmpty: boolean
+  memberCount: number
+}
+
+const zoneRects = computed<ZoneRect[]>(() => {
+  const nodeMap = new Map(renderedNodes.value.map(n => [n.id, n]))
+  const positions = graphStore.getPositions()
+  return graphStore.zones.map(zone => {
+    const members = zone.nodeIds
+      .map(nid => nodeMap.get(nid))
+      .filter((n): n is D3Node => !!n)
+
+    if (members.length === 0) {
+      const pos = positions[zone.id] ?? { x: 0, y: 0 }
+      return {
+        id: zone.id, name: zone.name, color: zone.color,
+        x: pos.x - ZONE_MIN_W / 2,
+        y: pos.y - ZONE_MIN_H / 2,
+        width: ZONE_MIN_W, height: ZONE_MIN_H,
+        isEmpty: true,
+        memberCount: 0,
+      }
+    }
+
+    const minX = Math.min(...members.map(n => (n.x ?? 0) - NODE_HALF_W))
+    const maxX = Math.max(...members.map(n => (n.x ?? 0) + NODE_HALF_W))
+    const minY = Math.min(...members.map(n => (n.y ?? 0) - NODE_HALF_H))
+    const maxY = Math.max(...members.map(n => (n.y ?? 0) + NODE_HALF_H))
+
+    return {
+      id: zone.id, name: zone.name, color: zone.color,
+      x: minX - ZONE_PADDING,
+      y: minY - ZONE_PADDING - ZONE_HEADER_H,
+      width: Math.max(maxX - minX + ZONE_PADDING * 2, ZONE_MIN_W),
+      height: Math.max(maxY - minY + ZONE_PADDING * 2 + ZONE_HEADER_H, ZONE_MIN_H),
+      isEmpty: false,
+      memberCount: members.length,
+    }
+  })
+})
+
+// ─── Zone 핸들러 ─────────────────────────────────────────
+function flashZoneAttach(zoneId: string) {
+  justAttachedZoneId.value = zoneId
+  setTimeout(() => {
+    if (justAttachedZoneId.value === zoneId) justAttachedZoneId.value = null
+  }, 400)
+}
+
+function updateDropTarget(nodeX: number, nodeY: number) {
+  for (const zone of zoneRects.value) {
+    if (
+      nodeX >= zone.x + NODE_HALF_W &&
+      nodeX <= zone.x + zone.width - NODE_HALF_W &&
+      nodeY >= zone.y + ZONE_HEADER_H &&
+      nodeY <= zone.y + zone.height
+    ) {
+      dropTargetZoneId.value = zone.id
+      return
+    }
+  }
+  dropTargetZoneId.value = null
+}
+
+function resolveNodeZone(nodeId: string) {
+  const node = renderedNodes.value.find(n => n.id === nodeId)
+  if (!node) return
+  const nx = node.x ?? 0
+  const ny = node.y ?? 0
+
+  for (const zone of zoneRects.value) {
+    if (
+      nx >= zone.x + NODE_HALF_W &&
+      nx <= zone.x + zone.width - NODE_HALF_W &&
+      ny >= zone.y + ZONE_HEADER_H &&
+      ny <= zone.y + zone.height
+    ) {
+      const prev = graphStore.getZoneByNodeId(nodeId)
+      if (prev?.id !== zone.id) {
+        graphStore.addNodeToZone(zone.id, nodeId)
+        flashZoneAttach(zone.id)
+      }
+      return
+    }
+  }
+  graphStore.removeNodeFromZone(nodeId)
+}
+
+function onZoneNameDblClick(zone: ZoneRect) {
+  if (props.readOnly) return
+  editingZoneId.value = zone.id
+  editingZoneName.value = zone.name
+  nextTick(() => zoneNameInputRef.value?.select())
+}
+
+function commitZoneNameEdit() {
+  const id = editingZoneId.value
+  if (!id) return
+  const name = editingZoneName.value.trim()
+  if (name) {
+    graphStore.updateZone(id, { name })
+  }
+  editingZoneId.value = null
+}
+
+function cancelZoneNameEdit() {
+  editingZoneId.value = null
+}
+
+function onZoneContextMenu(event: MouseEvent, zone: ZoneRect) {
+  if (props.readOnly) return
+  contextMenu.value.visible = false
+  canvasContextMenu.value.visible = false
+  addNodeMenu.value.visible = false
+  zoneContextMenu.value = {
+    visible: true,
+    x: event.offsetX,
+    y: event.offsetY,
+    zoneId: zone.id,
+    activeSubmenu: null,
+  }
+}
+
+function onZoneRename() {
+  const id = zoneContextMenu.value.zoneId
+  zoneContextMenu.value.visible = false
+  if (!id) return
+  const z = graphStore.zones.find(zo => zo.id === id)
+  if (!z) return
+  editingZoneId.value = id
+  editingZoneName.value = z.name
+  nextTick(() => zoneNameInputRef.value?.select())
+}
+
+function onZoneChangeColor(color: ZoneColor) {
+  const id = zoneContextMenu.value.zoneId
+  if (!id) return
+  graphStore.updateZone(id, { color })
+  zoneContextMenu.value.visible = false
+}
+
+function onZoneDelete() {
+  const id = zoneContextMenu.value.zoneId
+  if (!id) return
+  graphStore.deleteZone(id)
+  zoneContextMenu.value.visible = false
+}
+
+function onZoneHeaderMouseDown(event: MouseEvent, zone: ZoneRect) {
+  if (props.readOnly) return
+  if (editingZoneId.value === zone.id) return
+  event.preventDefault()
+  contextMenu.value.visible = false
+  canvasContextMenu.value.visible = false
+  addNodeMenu.value.visible = false
+  zoneContextMenu.value.visible = false
+
+  graphStore.saveSnapshot()
+  draggingZoneId.value = zone.id
+  const startWorld = getSvgPoint(event)
+  const zoneData = graphStore.zones.find(z => z.id === zone.id)
+  if (!zoneData) return
+
+  const memberNodes = renderedNodes.value.filter(n => zoneData.nodeIds.includes(n.id))
+  const startPositions = new Map(memberNodes.map(n => [n.id, { x: n.x ?? 0, y: n.y ?? 0 }]))
+  const startZonePos = graphStore.getPositions()[zone.id] ?? null
+
+  memberNodes.forEach(n => { n.fx = n.x ?? 0; n.fy = n.y ?? 0 })
+  simulation?.alphaTarget(0.3).restart()
+
+  const handleMove = (e: MouseEvent) => {
+    const { x, y } = getSvgPoint(e)
+    const dx = x - startWorld.x
+    const dy = y - startWorld.y
+    memberNodes.forEach(n => {
+      const sp = startPositions.get(n.id)!
+      n.fx = sp.x + dx; n.fy = sp.y + dy
+      n.x = n.fx; n.y = n.fy
+    })
+    if (memberNodes.length === 0 && startZonePos) {
+      // 빈 Zone: positions 맵의 zone 좌표만 갱신
+      const positions = { ...graphStore.getPositions() }
+      positions[zone.id] = { x: startZonePos.x + dx, y: startZonePos.y + dy }
+      graphStore.savePositions(positions)
+    }
+    renderedNodes.value = [...renderedNodes.value]
+  }
+
+  const handleUp = () => {
+    window.removeEventListener('mousemove', handleMove)
+    window.removeEventListener('mouseup', handleUp)
+    simulation?.alphaTarget(0)
+    draggingZoneId.value = null
+    savePositions()
+  }
+
+  window.addEventListener('mousemove', handleMove)
+  window.addEventListener('mouseup', handleUp)
+}
+
+async function onAddZoneMenuSelect() {
+  addNodeMenu.value.visible = false
+  const pos = pendingNodePosition ?? { x: 0, y: 0 }
+  pendingNodePosition = null
+  const zone = graphStore.addZone({
+    name: t('graph.zone.defaultName'),
+    color: 'blue',
+    nodeIds: [],
+  })
+  graphStore.savePositions({ ...graphStore.getPositions(), [zone.id]: pos })
+  await nextTick()
+  editingZoneId.value = zone.id
+  editingZoneName.value = zone.name
+  await nextTick()
+  zoneNameInputRef.value?.select()
+}
+
+async function onCanvasAddZone() {
+  canvasContextMenu.value.visible = false
+  const pos = pendingNodePosition ?? { x: 0, y: 0 }
+  pendingNodePosition = null
+  const zone = graphStore.addZone({
+    name: t('graph.zone.defaultName'),
+    color: 'blue',
+    nodeIds: [],
+  })
+  graphStore.savePositions({ ...graphStore.getPositions(), [zone.id]: pos })
+  await nextTick()
+  editingZoneId.value = zone.id
+  editingZoneName.value = zone.name
+  await nextTick()
+  zoneNameInputRef.value?.select()
+}
+
 // ─── SVG 좌표 변환 ───────────────────────────────────────
 function getSvgPoint(event: MouseEvent): { x: number; y: number } {
   if (!svgRef.value) return { x: 0, y: 0 }
@@ -1657,6 +2139,7 @@ function startNodeDrag(event: MouseEvent, node: D3Node) {
   graphStore.saveSnapshot()
   const startWorld = getSvgPoint(event)
   const isMultiDrag = multiSelectedIds.value.size > 1 && multiSelectedIds.value.has(node.id)
+  anyNodeDragging.value = true
 
   if (isMultiDrag) {
     const startPositions = new Map(
@@ -1680,12 +2163,16 @@ function startNodeDrag(event: MouseEvent, node: D3Node) {
           n.x = n.fx; n.y = n.fy
         }
       })
+      updateDropTarget(node.x ?? 0, node.y ?? 0)
       renderedNodes.value = [...renderedNodes.value]
     }
     const handleUp = () => {
       window.removeEventListener('mousemove', handleMove)
       window.removeEventListener('mouseup', handleUp)
       simulation?.alphaTarget(0)
+      anyNodeDragging.value = false
+      dropTargetZoneId.value = null
+      multiSelectedIds.value.forEach(id => resolveNodeZone(id))
       savePositions()
     }
     window.addEventListener('mousemove', handleMove)
@@ -1701,12 +2188,16 @@ function startNodeDrag(event: MouseEvent, node: D3Node) {
       node.fx = startX + (x - startWorld.x)
       node.fy = startY + (y - startWorld.y)
       node.x = node.fx; node.y = node.fy
+      updateDropTarget(node.x ?? 0, node.y ?? 0)
       renderedNodes.value = [...renderedNodes.value]
     }
     const handleUp = () => {
       window.removeEventListener('mousemove', handleMove)
       window.removeEventListener('mouseup', handleUp)
       simulation?.alphaTarget(0)
+      anyNodeDragging.value = false
+      dropTargetZoneId.value = null
+      resolveNodeZone(node.id)
       savePositions()
     }
     window.addEventListener('mousemove', handleMove)
@@ -1967,6 +2458,7 @@ function closeContextMenu() {
   contextMenu.value.visible = false
   addNodeMenu.value.visible = false
   canvasContextMenu.value.visible = false
+  zoneContextMenu.value.visible = false
 }
 onMounted(() => document.addEventListener('click', closeContextMenu))
 onUnmounted(() => document.removeEventListener('click', closeContextMenu))
@@ -1996,6 +2488,19 @@ const minimapNodes = computed(() => {
     ...n,
     mx: layout.cx + (n.x ?? 0) * layout.scale,
     my: layout.cy + (n.y ?? 0) * layout.scale,
+  }))
+})
+
+const minimapZones = computed(() => {
+  const layout = minimapLayout.value
+  if (!layout) return []
+  return zoneRects.value.map(zone => ({
+    id: zone.id,
+    color: zone.color,
+    mx: layout.cx + zone.x * layout.scale,
+    my: layout.cy + zone.y * layout.scale,
+    mw: zone.width * layout.scale,
+    mh: zone.height * layout.scale,
   }))
 })
 

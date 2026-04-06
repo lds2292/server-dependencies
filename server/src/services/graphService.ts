@@ -112,7 +112,7 @@ function decryptGraphData(data: GraphDataJson): GraphDataJson {
 export async function getGraph(projectId: string) {
   const record = await prisma.graphData.findUnique({ where: { projectId } })
   if (!record) {
-    return { servers: [], l7Nodes: [], infraNodes: [], externalNodes: [], dependencies: [], version: 0 }
+    return { servers: [], l7Nodes: [], infraNodes: [], externalNodes: [], dnsNodes: [], dependencies: [], zones: [], version: 0 }
   }
   const graphData = decryptGraphData(record.data as unknown as GraphDataJson)
   const contactsMap = (record.contacts ?? {}) as unknown as Record<string, ExternalContact[]>
@@ -209,7 +209,7 @@ export async function savePositions(projectId: string, positions: Record<string,
     update: { positions: positions as object },
     create: {
       projectId,
-      data: { servers: [], l7Nodes: [], infraNodes: [], externalNodes: [], dependencies: [] },
+      data: { servers: [], l7Nodes: [], infraNodes: [], externalNodes: [], dnsNodes: [], dependencies: [], zones: [] },
       contacts: {},
       positions: positions as object,
     },

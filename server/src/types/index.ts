@@ -11,4 +11,5 @@ export interface GraphDataJson {
   externalNodes: unknown[]
   dnsNodes: unknown[]
   dependencies: unknown[]
+  zones?: unknown[]
 }

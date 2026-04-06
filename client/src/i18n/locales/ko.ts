@@ -463,6 +463,21 @@ export default {
       dns: 'DNS',
     },
     exportError: 'SVG 로드 실패',
+    zone: {
+      addZone: 'Zone 추가',
+      defaultName: '새 Zone',
+      rename: '이름 변경',
+      changeColor: '색상 변경',
+      emptyHint: '노드를 여기로 드래그하세요',
+      colors: {
+        blue: '파랑',
+        green: '초록',
+        purple: '보라',
+        orange: '주황',
+        pink: '분홍',
+        cyan: '청록',
+      },
+    },
   },
 
   // -- conflict modal --

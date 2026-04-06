@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Server, L7Node, InfraNode, ExternalServiceNode, DnsNode, AnyNode, Dependency, GraphData } from '../types'
+import type { Server, L7Node, InfraNode, ExternalServiceNode, DnsNode, AnyNode, Dependency, GraphData, Zone } from '../types'
 import { graphApi, type PositionMap, type GraphDataWithVersion } from '../api/graphApi'
 
 type Snapshot = {
@@ -10,7 +10,7 @@ type Snapshot = {
 
 export interface ConflictItem {
   id: string
-  nodeType: 'server' | 'l7' | 'infra' | 'external' | 'dns' | 'dependency'
+  nodeType: 'server' | 'l7' | 'infra' | 'external' | 'dns' | 'dependency' | 'zone'
   label: string
   mine: unknown | null
   server: unknown | null
@@ -147,6 +147,12 @@ function mergeGraphData(
     asNL(server.dependencies ?? []),
     'dependency'
   )
+  const zones = mergeNodeArrays(
+    asNL(base.zones ?? []),
+    asNL(mine.zones ?? []),
+    asNL(server.zones ?? []),
+    'zone'
+  )
 
   return {
     merged: {
@@ -156,6 +162,7 @@ function mergeGraphData(
       externalNodes: cast<ExternalServiceNode>(externalNodes.result),
       dnsNodes: cast<DnsNode>(dnsNodes.result),
       dependencies: cast<Dependency>(dependencies.result),
+      zones: cast<Zone>(zones.result),
     },
     conflicts: [
       ...servers.conflicts,
@@ -164,6 +171,7 @@ function mergeGraphData(
       ...externalNodes.conflicts,
       ...dnsNodes.conflicts,
       ...dependencies.conflicts,
+      ...zones.conflicts,
     ],
   }
 }
@@ -176,10 +184,11 @@ export const useGraphStore = defineStore('graph', () => {
   const externalNodes = ref<ExternalServiceNode[]>([])
   const dnsNodes = ref<DnsNode[]>([])
   const dependencies = ref<Dependency[]>([])
+  const zones = ref<Zone[]>([])
   const currentPositions = ref<PositionMap>({})
 
   const currentVersion = ref<number>(0)
-  const baseSnapshot = ref<GraphData>({ servers: [], l7Nodes: [], infraNodes: [], externalNodes: [], dnsNodes: [], dependencies: [] })
+  const baseSnapshot = ref<GraphData>({ servers: [], l7Nodes: [], infraNodes: [], externalNodes: [], dnsNodes: [], dependencies: [], zones: [] })
   const conflictState = ref<ConflictState | null>(null)
   const saveError = ref<string | null>(null)
 
@@ -202,6 +211,7 @@ export const useGraphStore = defineStore('graph', () => {
         externalNodes: JSON.parse(JSON.stringify(externalNodes.value)),
         dnsNodes: JSON.parse(JSON.stringify(dnsNodes.value)),
         dependencies: JSON.parse(JSON.stringify(dependencies.value)),
+        zones: JSON.parse(JSON.stringify(zones.value)),
       },
       positions: JSON.parse(JSON.stringify(currentPositions.value)),
     }
@@ -215,6 +225,7 @@ export const useGraphStore = defineStore('graph', () => {
       externalNodes: JSON.parse(JSON.stringify(externalNodes.value)),
       dnsNodes: JSON.parse(JSON.stringify(dnsNodes.value)),
       dependencies: JSON.parse(JSON.stringify(dependencies.value)),
+      zones: JSON.parse(JSON.stringify(zones.value)),
     }
   }
 
@@ -234,6 +245,7 @@ export const useGraphStore = defineStore('graph', () => {
     externalNodes.value = snap.data.externalNodes ?? []
     dnsNodes.value = snap.data.dnsNodes ?? []
     dependencies.value = snap.data.dependencies ?? []
+    zones.value = snap.data.zones ?? []
   }
 
   function applyGraphData(data: GraphData) {
@@ -243,6 +255,7 @@ export const useGraphStore = defineStore('graph', () => {
     externalNodes.value = data.externalNodes ?? []
     dnsNodes.value = data.dnsNodes ?? []
     dependencies.value = data.dependencies ?? []
+    zones.value = data.zones ?? []
   }
 
   function undo(): boolean {
@@ -314,6 +327,9 @@ export const useGraphStore = defineStore('graph', () => {
       if (conflict.nodeType === 'dependency') {
         finalData.dependencies = (finalData.dependencies ?? []).filter(d => d.id !== conflict.id)
         if (chosen !== null) finalData.dependencies.push(chosen as Dependency)
+      } else if (conflict.nodeType === 'zone') {
+        finalData.zones = (finalData.zones ?? []).filter(z => z.id !== conflict.id)
+        if (chosen !== null) finalData.zones.push(chosen as Zone)
       } else {
         const arrayKey = (conflict.nodeType === 'server' ? 'servers'
           : conflict.nodeType === 'l7' ? 'l7Nodes'
@@ -377,6 +393,7 @@ export const useGraphStore = defineStore('graph', () => {
     externalNodes.value = []
     dnsNodes.value = []
     dependencies.value = []
+    zones.value = []
     const [graphRes, posRes] = await Promise.all([
       graphApi.getGraph(projectId),
       graphApi.getPositions(projectId),
@@ -388,6 +405,7 @@ export const useGraphStore = defineStore('graph', () => {
     externalNodes.value = graphData.externalNodes ?? []
     dnsNodes.value = (graphData as GraphData).dnsNodes ?? []
     dependencies.value = graphData.dependencies ?? []
+    zones.value = (graphData as GraphData).zones ?? []
     currentPositions.value = posRes.data
     currentVersion.value = version
     baseSnapshot.value = JSON.parse(JSON.stringify(graphData))
@@ -414,6 +432,7 @@ export const useGraphStore = defineStore('graph', () => {
       ...n, memberServerIds: n.memberServerIds.filter(mid => mid !== id),
     }))
     dependencies.value = dependencies.value.filter(d => d.source !== id && d.target !== id)
+    removeNodeFromZoneInternal(id)
   }
 
   // --- L7 CRUD ---
@@ -432,6 +451,7 @@ export const useGraphStore = defineStore('graph', () => {
     saveSnapshot()
     l7Nodes.value = l7Nodes.value.filter(n => n.id !== id)
     dependencies.value = dependencies.value.filter(d => d.source !== id && d.target !== id)
+    removeNodeFromZoneInternal(id)
   }
 
   // --- Infra CRUD ---
@@ -450,6 +470,7 @@ export const useGraphStore = defineStore('graph', () => {
     saveSnapshot()
     infraNodes.value = infraNodes.value.filter(n => n.id !== id)
     dependencies.value = dependencies.value.filter(d => d.source !== id && d.target !== id)
+    removeNodeFromZoneInternal(id)
   }
 
   // --- External CRUD ---
@@ -468,6 +489,7 @@ export const useGraphStore = defineStore('graph', () => {
     saveSnapshot()
     externalNodes.value = externalNodes.value.filter(n => n.id !== id)
     dependencies.value = dependencies.value.filter(d => d.source !== id && d.target !== id)
+    removeNodeFromZoneInternal(id)
   }
 
   // --- DNS CRUD ---
@@ -486,6 +508,67 @@ export const useGraphStore = defineStore('graph', () => {
     saveSnapshot()
     dnsNodes.value = dnsNodes.value.filter(n => n.id !== id)
     dependencies.value = dependencies.value.filter(d => d.source !== id && d.target !== id)
+    removeNodeFromZoneInternal(id)
+  }
+
+  // --- Zone CRUD ---
+  // Internal helper that removes a node from any zone WITHOUT taking a snapshot
+  // (used by node delete functions which already snapshot themselves).
+  function removeNodeFromZoneInternal(nodeId: string) {
+    for (const z of zones.value) {
+      if (z.nodeIds.includes(nodeId)) {
+        z.nodeIds = z.nodeIds.filter(nid => nid !== nodeId)
+      }
+    }
+  }
+
+  function addZone(data: Omit<Zone, 'id'>): Zone {
+    saveSnapshot()
+    const z: Zone = { ...data, id: generateId() }
+    zones.value.push(z)
+    return z
+  }
+
+  function updateZone(id: string, data: Partial<Omit<Zone, 'id'>>) {
+    saveSnapshot()
+    const idx = zones.value.findIndex(z => z.id === id)
+    if (idx !== -1) Object.assign(zones.value[idx], data)
+  }
+
+  function deleteZone(id: string) {
+    saveSnapshot()
+    zones.value = zones.value.filter(z => z.id !== id)
+  }
+
+  function addNodeToZone(zoneId: string, nodeId: string) {
+    saveSnapshot()
+    // 중첩 불가: 다른 Zone에서 먼저 제거
+    for (const z of zones.value) {
+      if (z.id !== zoneId && z.nodeIds.includes(nodeId)) {
+        z.nodeIds = z.nodeIds.filter(nid => nid !== nodeId)
+      }
+    }
+    const zone = zones.value.find(z => z.id === zoneId)
+    if (zone && !zone.nodeIds.includes(nodeId)) {
+      zone.nodeIds.push(nodeId)
+    }
+  }
+
+  function removeNodeFromZone(nodeId: string) {
+    // snapshot only when there is actually something to remove
+    let touched = false
+    for (const z of zones.value) {
+      if (z.nodeIds.includes(nodeId)) { touched = true; break }
+    }
+    if (!touched) return
+    saveSnapshot()
+    for (const z of zones.value) {
+      z.nodeIds = z.nodeIds.filter(nid => nid !== nodeId)
+    }
+  }
+
+  function getZoneByNodeId(nodeId: string): Zone | undefined {
+    return zones.value.find(z => z.nodeIds.includes(nodeId))
   }
 
   // --- L7 멤버 의존성 차단 검증 ---
@@ -743,6 +826,7 @@ export const useGraphStore = defineStore('graph', () => {
       servers: servers.value, l7Nodes: l7Nodes.value,
       infraNodes: infraNodes.value, externalNodes: externalNodes.value,
       dnsNodes: dnsNodes.value, dependencies: dependencies.value,
+      zones: zones.value,
     }
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -759,6 +843,7 @@ export const useGraphStore = defineStore('graph', () => {
     externalNodes.value = data.externalNodes ?? []
     dnsNodes.value = data.dnsNodes ?? []
     dependencies.value = data.dependencies ?? []
+    zones.value = data.zones ?? []
   }
 
   function importJSON(file: File): Promise<void> {
@@ -774,6 +859,7 @@ export const useGraphStore = defineStore('graph', () => {
           externalNodes.value = data.externalNodes ?? []
           dnsNodes.value = data.dnsNodes ?? []
           dependencies.value = data.dependencies ?? []
+          zones.value = data.zones ?? []
           resolve()
         } catch { reject(new Error('유효하지 않은 JSON 파일입니다.')) }
       }
@@ -796,6 +882,7 @@ export const useGraphStore = defineStore('graph', () => {
     externalNodes.value = []
     dnsNodes.value = []
     dependencies.value = []
+    zones.value = []
     conflictState.value = null
     saveError.value = null
   }
@@ -892,13 +979,14 @@ export const useGraphStore = defineStore('graph', () => {
   }
 
   return {
-    servers, l7Nodes, infraNodes, externalNodes, dnsNodes, dependencies, currentProjectId,
+    servers, l7Nodes, infraNodes, externalNodes, dnsNodes, dependencies, zones, currentProjectId,
     conflictState, saveError,
     addServer, updateServer, deleteServer,
     addL7Node, updateL7Node, deleteL7Node,
     addInfraNode, updateInfraNode, deleteInfraNode,
     addExternalNode, updateExternalNode, deleteExternalNode,
     addDnsNode, updateDnsNode, deleteDnsNode,
+    addZone, updateZone, deleteZone, addNodeToZone, removeNodeFromZone, getZoneByNodeId,
     addDependency, removeDependency, updateDependency, isL7MemberDependency, isInfraSourceDependency,
     duplicateNodes,
     findNodeById, getImpactedNodes, getCycleNodes, findPath, exportJSON, importJSON, loadData,
