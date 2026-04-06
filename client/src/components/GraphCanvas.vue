@@ -1776,7 +1776,10 @@ function onZoneDelete() {
 
 function onZoneHeaderMouseDown(event: MouseEvent, zone: ZoneRect) {
   if (props.readOnly) return
-  if (editingZoneId.value === zone.id) return
+  // 편집 중이면 commit 후 드래그 진행 (새 Zone 생성 직후 즉시 드래그 허용)
+  if (editingZoneId.value === zone.id) {
+    commitZoneNameEdit()
+  }
   event.preventDefault()
   contextMenu.value.visible = false
   canvasContextMenu.value.visible = false
