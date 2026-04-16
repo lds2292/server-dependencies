@@ -1,15 +1,20 @@
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["server_deps"]
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 enum UserStatus {
   ACTIVE
   DEACTIVATED
+
+  @@schema("server_deps")
 }
 
 model User {
@@ -31,6 +36,7 @@ model User {
   oauthAccounts       OAuthAccount[]
 
   @@index([status, deactivatedAt])
+  @@schema("server_deps")
 }
 
 model Session {
@@ -41,11 +47,15 @@ model Session {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@schema("server_deps")
 }
 
 enum ProjectStatus {
   ACTIVE
   ARCHIVED
+
+  @@schema("server_deps")
 }
 
 model Project {
@@ -64,6 +74,7 @@ model Project {
   invitations ProjectInvitation[]
 
   @@index([status])
+  @@schema("server_deps")
 }
 
 enum ProjectMemberRole {
@@ -71,6 +82,8 @@ enum ProjectMemberRole {
   ADMIN
   WRITER
   READONLY
+
+  @@schema("server_deps")
 }
 
 model ProjectMember {
@@ -83,12 +96,15 @@ model ProjectMember {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([projectId, userId])
+  @@schema("server_deps")
 }
 
 enum InvitationStatus {
   PENDING
   ACCEPTED
   REJECTED
+
+  @@schema("server_deps")
 }
 
 model ProjectInvitation {
@@ -106,6 +122,7 @@ model ProjectInvitation {
   invitee User    @relation("InvitationsReceived", fields: [inviteeId], references: [id])
 
   @@unique([projectId, inviteeId])
+  @@schema("server_deps")
 }
 
 model GraphData {
@@ -118,6 +135,8 @@ model GraphData {
   updatedAt DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@schema("server_deps")
 }
 
 model AuditLog {
@@ -142,6 +161,7 @@ model AuditLog {
   @@index([email, createdAt(sort: Desc)])
   @@index([action, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
+  @@schema("server_deps")
 }
 
 model OAuthAccount {
@@ -155,4 +175,5 @@ model OAuthAccount {
 
   @@unique([provider, providerSub])
   @@index([userId])
+  @@schema("server_deps")
 }

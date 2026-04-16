@@ -925,6 +925,7 @@
           <button @click="onEditNode">{{ t('common.edit') }}</button>
           <button @click="onAddDep">{{ t('graph.contextMenu.addDep') }}</button>
           <button @click="onCopyNode">{{ t('graph.contextMenu.copy') }}</button>
+          <button v-if="contextMenu.node && graphStore.getZoneByNodeId(contextMenu.node.id)" @click="onRemoveNodeFromZone">{{ t('graph.contextMenu.removeFromZone') }}</button>
           <button class="danger" @click="onDeleteNode">{{ t('common.delete') }}</button>
         </template>
         <template v-else>
@@ -2431,6 +2432,32 @@ function onDeleteMultiNodes() {
   contextMenu.value.visible = false
 }
 function onAddDep() { if (contextMenu.value.node) emit('addDependency', contextMenu.value.node); contextMenu.value.visible = false }
+function onRemoveNodeFromZone() {
+  const node = contextMenu.value.node
+  if (!node) return
+  const zone = graphStore.getZoneByNodeId(node.id)
+  if (!zone) { contextMenu.value.visible = false; return }
+
+  // Zone에서 먼저 제거 (rect가 노드 없이 재계산되도록)
+  const rect = zoneRects.value.find(z => z.id === zone.id)
+  graphStore.removeNodeFromZone(node.id)
+
+  // Zone rect 밖으로 노드 위치 이동 (다시 끌려 들어가지 않도록)
+  if (rect) {
+    const offset = ZONE_PADDING + NODE_HALF_H + 20
+    const newX = node.x ?? 0
+    const newY = rect.y + rect.height + offset
+    node.x = newX
+    node.y = newY
+    node.fx = newX
+    node.fy = newY
+    const positions = { ...graphStore.getPositions() }
+    positions[node.id] = { x: newX, y: newY }
+    graphStore.savePositions(positions)
+    renderedNodes.value = [...renderedNodes.value]
+  }
+  contextMenu.value.visible = false
+}
 function onStartPath() { if (contextMenu.value.node) emit('startPathFrom', contextMenu.value.node); contextMenu.value.visible = false }
 function onCopyNode() {
   if (!contextMenu.value.node) return

@@ -814,9 +814,11 @@ function openEditExternalModal(n: ExternalServiceNode) { externalModal.value = {
 async function onExternalModalSubmit(data: Omit<ExternalServiceNode, 'id'>) {
   const { contacts, ...nodeData } = data
   const projectId = projectStore.currentProject?.id ?? ''
+  const editing = externalModal.value.editing
+  externalModal.value.visible = false
 
-  if (externalModal.value.editing) {
-    const nodeId = externalModal.value.editing.id
+  if (editing) {
+    const nodeId = editing.id
     store.updateExternalNode(nodeId, { ...nodeData, contacts: [] })
     if (projectId) {
       await graphApi.saveNodeContacts(projectId, nodeId, contacts)
@@ -828,6 +830,7 @@ async function onExternalModalSubmit(data: Omit<ExternalServiceNode, 'id'>) {
   } else {
     const newNode = store.addExternalNode({ ...nodeData, contacts: [] })
     if (projectId && newNode?.id) {
+      await store.saveGraph()
       await graphApi.saveNodeContacts(projectId, newNode.id, contacts)
       await store.syncExternalNodes()
       if (selectedNode.value?.id === newNode.id) {
@@ -835,7 +838,6 @@ async function onExternalModalSubmit(data: Omit<ExternalServiceNode, 'id'>) {
       }
     }
   }
-  externalModal.value.visible = false
 }
 
 // Toast

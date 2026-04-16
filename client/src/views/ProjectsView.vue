@@ -44,7 +44,19 @@
         <button class="btn-outline btn-sm" @click="showCreate = true">{{ $t('projects.newProject') }}</button>
       </div>
 
-      <template v-if="!loaded"><!-- 로딩 중: 빈 화면 --></template>
+      <div v-if="!loaded" class="projects-grid" aria-busy="true" aria-label="Loading projects">
+        <div v-for="n in 6" :key="n" class="project-card-skeleton">
+          <div class="sk-graph skeleton"></div>
+          <div class="sk-body">
+            <div class="sk-title skeleton"></div>
+            <div class="sk-desc skeleton"></div>
+            <div class="sk-meta">
+              <div class="sk-badge skeleton"></div>
+              <div class="sk-date skeleton"></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div v-else-if="projectStore.projects.length === 0" class="projects-empty-wrapper">
         <!-- 온보딩 가이드 (스텝 바이 스텝) -->

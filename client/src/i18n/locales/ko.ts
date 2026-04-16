@@ -404,6 +404,7 @@ export default {
       addDep: '의존성 추가',
       addNode: '노드 추가',
       copy: '복사',
+      removeFromZone: 'Zone에서 빼기',
       readOnlyMode: '읽기 전용 모드',
     },
     export: {

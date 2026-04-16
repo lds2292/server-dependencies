@@ -404,6 +404,7 @@ export default {
       addDep: 'Add Dependency',
       addNode: 'Add Node',
       copy: 'Copy',
+      removeFromZone: 'Remove from Zone',
       readOnlyMode: 'Read-only mode',
     },
     export: {
